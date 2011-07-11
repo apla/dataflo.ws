@@ -6,7 +6,7 @@ SCRIPT_PATH=`pwd`/$0
 
 echo $SCRIPT_PATH
 
-NODE_PATH=/usr/local/lib/node_modules/
+# NODE_PATH=/usr/local/lib/node_modules/
 UNAMES=`uname -s`
 
 IS_WINDOWS=
@@ -30,29 +30,29 @@ fi
 
 NODE_PATH_DELIMITER=":"
 
-if [ "x$NODE_PATH" == "x" ] ; then
-	NODE_PATH_DELIMITER=""
-fi
+#if [ "x$NODE_PATH" == "x" ] ; then
+#	NODE_PATH_DELIMITER=""
+#fi
 
-if [ "x$IS_WINDOWS" != "x" ] ; then
-	NODE_PATH_DELIMITER=":"
-fi
+#if [ "x$IS_WINDOWS" != "x" ] ; then
+#	NODE_PATH_DELIMITER=":"
+#fi
 
 
 PROJECT_DIR=${SCRIPT_PATH%%bin/node}
 
-echo $PROJECT_DIR
+# echo $PROJECT_DIR
 
 if [ "x$IS_WINDOWS" != "x" ] ; then
 	PROJECT_DIR="/cygdrive$PROJECT_DIR"
 fi
 
-NODE_PATH=$NODE_PATH$NODE_PATH_DELIMITER${PROJECT_DIR}lib
+NODE_PATH=$NODE_PATH$NODE_PATH_DELIMITER${PROJECT_DIR}lib$NODE_PATH_DELIMITER${PROJECT_DIR}lib/workflow.nodejs
 
-echo $NODE_PATH
+# echo $NODE_PATH
 
 if [ "x$1" == "x" ] ; then
-	NODE_PATH=$NODE_PATH /usr/bin/env node ${PROJECT_DIR}bin/repl.js
+	NODE_PATH=$NODE_PATH /usr/bin/env node ${PROJECT_DIR}lib/workflow.nodejs/repl.js
 else
 	NODE_PATH=$NODE_PATH /usr/bin/env node $@
 fi
