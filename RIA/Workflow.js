@@ -151,7 +151,8 @@ var Workflow = module.exports = function (config, reqParam) {
 			});
 			
 			task = new xTaskClass ({
-				className: taskParams.logTitle,
+				functionName: taskParams.functionName,
+				logTitle: taskParams.logTitle,
 				require: checkRequirements
 			});
 			
@@ -205,10 +206,10 @@ common.extend (Workflow.prototype, {
 		console.log.apply (console, toLog);
 	},
 	logTask: function (task, msg) {
-		this.log (task.className || task.functionName || task.logTitle,  "("+task.state+")",  msg);
+		this.log (task.logTitle,  "("+task.state+")",  msg);
 	},
 	logTaskError: function (task, msg) {
-		this.log(task.className || task.functionName || task.logTitle, "("+task.state+") \x1B[0;31m" + msg + "\x1B[0m");
+		this.log(task.logTitle, "("+task.state+") \x1B[0;31m" + msg + "\x1B[0m");
 	},
 	
 	haveCompletedTasks: false,
@@ -305,14 +306,14 @@ common.extend (Workflow.prototype, {
 			== self.tasks.length
 		) {
 		
-			var scarceTaskMessage = ', unsatisfied requirements:';
+			var scarceTaskMessage = ', unsatisfied requirements: ';
 		
 			// TODO: display scarce tasks unsatisfied requirements
 			if (this.taskStates[taskStateNames.scarce]) {
 				scarceTaskMessage += self.tasks.map (function (task) {
 					if (task.state != taskStateNames.scarce)
 						return;
-					return (task.className || task.functionName || task.logTitle) + ' => ' + task.unsatisfiedRequirements.join (', ');
+					return (task.logTitle) + ' => ' + task.unsatisfiedRequirements.join (', ');
 				}).join ('; ');
 			}
 			

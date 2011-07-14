@@ -34,7 +34,11 @@ common.extend (task.prototype, taskStateMethods, {
 		this.cbScope      = config.cbScope;
 		this.className    = config.className;
 		this.functionName = config.functionName;
-
+		
+		if (!this.logTitle) {
+			this.logTitle = this.className || this.functionName;
+		}
+		
 		var stateList = taskStateList;
 		
 		var self = this;
@@ -179,7 +183,18 @@ common.extend (task.prototype, taskStateMethods, {
 		}
 	},
 	
-	stateNames: taskStateNames
+	stateNames: taskStateNames,
+	
+	emitError: function (e) {
+		if (e) {
+			this.state = 5;
+			this.emit('error', e);
+			this.cancel();
+			return true;
+		} else {
+			return false;
+		}
+	}
 
 
 });
