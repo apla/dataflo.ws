@@ -135,8 +135,15 @@ var Workflow = module.exports = function (config, reqParam) {
 
 			common.extend (xTaskClass.prototype, {
 				run: function () {
-					if (taskParams.functionName && process.mainModule.exports[taskParams.functionName]) {
-						this.completed (process.mainModule.exports[taskParams.functionName] (this));
+					if (taskParams.functionName) {
+						if (process.mainModule.exports[taskParams.functionName]) {
+							this.completed (process.mainModule.exports[taskParams.functionName] (this));
+						} else {
+							var err = "you defined functionName as " + taskParams.functionName
+								+ " but we cannot find this name in current scope.\nplease add 'module.exports = {"
+								+ taskParams.functionName + ": function (params) {...}}' in your main module";
+							throw err;
+						}
 					} else {
 						this.completed (taskParams.coderef (this));
 					}
