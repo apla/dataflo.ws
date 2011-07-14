@@ -75,6 +75,62 @@ Number.prototype.times = function (cb) {
 	return a;
 }
 
+var pathToVal = module.exports.pathToVal = function (dict, path, value) {
+//	console.log ('pathToVal ('+ dict + ', '+ path + ', '+value+')');
+	var chunks = path.split ('.');
+	if (chunks.length == 1) {
+		var oldValue = dict[chunks[0]];
+		if (value !== void(0))
+			dict[chunks[0]] = value;
+//		console.log (''+oldValue);
+		return oldValue;
+	}
+	return pathToVal (dict[chunks.shift()], chunks.join('.'), value)
+}
+
+
+String.prototype.interpolate = function (dict, template) {
+	if (!template)
+		template = ['{$', '}', '.'];
+	
+	var result;
+	
+	var pos = this.indexOf (template[0]);
+	while (pos > -1) {
+		var end = this.indexOf (template[1], pos);
+		var str = this.substr (pos + 2, end - pos - 2);
+		
+		// console.log ("found replacement: key => "+key+", requires => $"+str+"\n";
+		
+		var fix;
+		if (str.indexOf (template[2]) > -1) { //  treat as path
+			//  warn join ', ', keys %{$self->var};
+			fix = pathToVal (dict, str);
+		} else { // scalar
+			fix = dict[str];
+		}
+		
+		if (fix === void(0))
+			throw this;
+		
+		// warn "value for replace is: $fix\n";
+		
+		if (pos == 0 && end == (this.length - 1)) {
+			result = fix;
+		} else {
+			result = this.substr (0, pos) + fix + this.substr (end - pos + 1);
+		}
+		
+		if (this.indexOf)
+			pos = this.indexOf (template[0], end);
+		else
+			break;
+	}
+	
+	return result;
+
+};
+
 var path = require ('path');
 
 var io = require (path.join ('IO', 'Easy'));

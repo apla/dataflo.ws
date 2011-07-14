@@ -29,19 +29,6 @@ var colours = {
 
 var taskStateNames = taskClass.prototype.stateNames;
 
-function pathToVal (dict, path, value) {
-//	console.log ('pathToVal ('+ dict + ', '+ path + ', '+value+')');
-	var chunks = path.split ('.');
-	if (chunks.length == 1) {
-		var oldValue = dict[chunks[0]];
-		if (value !== void(0))
-			dict[chunks[0]] = value;
-//		console.log (''+oldValue);
-		return oldValue;
-	}
-	return pathToVal (dict[chunks.shift()], chunks.join('.'), value)
-}
-
 function checkTaskParams (taskParams, dict) {
 	// parse task params
 		
@@ -51,56 +38,25 @@ function checkTaskParams (taskParams, dict) {
 	
 	var failedParams = [];
 	
-	try {
 	
-		for (var key in taskParams) {
-			var val = taskParams[key];
-			var valCheck = val;
-			
-			if (!val.indexOf) {
-				modifiedParams[key] = val;
-				continue;
-			}
-			
-			var pos = val.indexOf ('{$');
-			while (pos > -1) {
-				var end = val.indexOf ('}', pos);
-				var str = val.substr (pos + 2, end - pos - 2);
-				
-				// console.log ("found replacement: key => "+key+", requires => $"+str+"\n";
-				
-				var fix;
-				if (str.indexOf ('.') > -1) { //  treat as path
-					//  warn join ', ', keys %{$self->var};
-					fix = pathToVal (dict, str);
-				} else { // scalar
-					fix = dict[str];
-				}
-				
-				if (fix === void(0))
-					throw [key, val];
-				
-				// warn "value for replace is: $fix\n";
-				
-				if (pos == 0 && end == (val.length - 1)) {
-					val = fix;
-				} else {
-					val = val.substr (0, pos) + fix + val.substr (end - pos + 1);
-				}
-				
-				if (val.indexOf)
-					pos = val.indexOf ('{$', end);
-				else
-					break;
-			}
-//			if (val != valCheck)
+	
+	for (var key in taskParams) {
+		var val = taskParams[key];
+		var valCheck = val;
+		
+		if (!val.indexOf) {
 			modifiedParams[key] = val;
-			// console.log ("key is: " + key + ", param is: " + $1);
+			continue;
 		}
-	} catch (e) {
-//		console.log (e[1], ' of task param '+e[0]+' is undefined');
-//		console.log (taskParams, '!!!!!!!!!!!' + e) //, new Error().stack);
-		failedParams.push (e[0]);
+		
+//		console.log (key, val, val.interpolate (dict));
+		
+		try {
+			modifiedParams[key] = val.interpolate (dict) || val;
+		} catch (e) {
+			failedParams.push (key);
+		}
+			
 	}
 	
 	if (failedParams.length > 0) {
@@ -284,7 +240,7 @@ common.extend (Workflow.prototype, {
 				task.on ('complete', function (t, result) {
 					
 					if (t.produce && result)
-						pathToVal (self, t.produce, result);
+						common.pathToVal (self, t.produce, result);
 					
 					self.logTask (task, 'task completed');
 					
