@@ -108,7 +108,7 @@ var Workflow = module.exports = function (config, reqParam) {
 //		console.log (taskParams);
 		
 		if (taskParams.className) {
-			self.log (taskParams.className + ': initializing task from class');
+//			self.log (taskParams.className + ': initializing task from class');
 			var xTaskClass;
 			
 			try {
@@ -123,7 +123,7 @@ var Workflow = module.exports = function (config, reqParam) {
 			});
 		} else if (taskParams.coderef || taskParams.functionName) {
 		
-			self.log ((taskParams.functionName || taskParams.logTitle) + ': initializing task from function');
+//			self.log ((taskParams.functionName || taskParams.logTitle) + ': initializing task from function');
 			if (!taskParams.functionName && !taskParams.logTitle)
 				throw "task must have a logTitle when using call parameter";
 			
@@ -220,7 +220,7 @@ common.extend (Workflow.prototype, {
 		self.isIdle = 0;
 		self.haveCompletedTasks = false;
 				
-		self.log ('workflow run');
+//		self.log ('workflow run');
 		
 		this.taskStates = [0, 0, 0, 0, 0, 0];
 		
@@ -283,8 +283,8 @@ common.extend (Workflow.prototype, {
 		
 		// check workflow
 		
-		if (this.taskStates[taskStateNames.complete] > 0)
-			self.log ('completed tasks count ' + this.taskStates[taskStateNames.complete] + '/'+ self.tasks.length);
+//		if (this.taskStates[taskStateNames.complete] > 0)
+//			self.log ('progress: ' + this.taskStates[taskStateNames.complete] + '/'+ self.tasks.length);
 
 //		console.log (
 //			'%%%%%%%%%%%%%',
@@ -310,18 +310,21 @@ common.extend (Workflow.prototype, {
 		
 			// TODO: display scarce tasks unsatisfied requirements
 			if (this.taskStates[taskStateNames.scarce]) {
-				scarceTaskMessage += self.tasks.map (function (task) {
+				self.tasks.map (function (task) {
 					if (task.state != taskStateNames.scarce)
 						return;
-					return (task.logTitle) + ' => ' + task.unsatisfiedRequirements.join (', ');
-				}).join ('; ');
+					scarceTaskMessage += (task.logTitle) + ' => ' + task.unsatisfiedRequirements.join (', ') + '; ';
+				});
 			}
 			
 			var requestDump = 'CIRCULAR';
 			try {requestDump = JSON.stringify (self.request)} catch (e) {};
 
 			
-			self.log ('workflow failed, request: ' + requestDump + scarceTaskMessage);
+			self.log ('workflow failed, progress: '
+				+ this.taskStates[taskStateNames.complete] + '/'+ self.tasks.length 
+				+ ', request: ' + requestDump + scarceTaskMessage
+			);
 		} else if (self.haveCompletedTasks) {
 			
 			setTimeout (function () {
