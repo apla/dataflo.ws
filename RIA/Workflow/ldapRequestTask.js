@@ -29,7 +29,7 @@ common.extend (ldapRequestTask.prototype, {
 
 		var self = this;
 		
-		console.log ('run', self);
+//		console.log ('run', self);
 		
 		self.emit ('log', 'requested '+this.searchString);
 		
@@ -77,6 +77,9 @@ common.extend (ldapRequestTask.prototype, {
 					if (!account)
 						account = {};
 					
+					if (self.toLowerCase)
+						parts[0] = parts[0].toLowerCase();
+					
 					account[parts[0]] = parts[1];
 					
 				});
@@ -87,23 +90,15 @@ common.extend (ldapRequestTask.prototype, {
 				
 			});
 		
-			searchResult = JSON.stringify({records: found});
+//			searchResult = JSON.stringify({records: found});
 //			console.log("result is",  JSON.stringify(searchResult));
 //			self.completed ({records: found});
-			self.completed ({records: found, position: self.position, text: self.searchString, type: self.dataType});
+			var result = {};
+			result[self.keyName || 'records'] = found;
+			self.completed (result);
+//			{records: found, position: self.position, text: self.searchString, type: self.dataType});
 		
 		});
 	
-	},
-	
-	emitError: function (e) {
-		if (e) {
-			this.state = 5;
-			this.emit('error', e);
-			this.cancel();
-			return true;
-		} else {
-			return false;
-		}
 	}
 });
