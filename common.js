@@ -139,9 +139,9 @@ var project = function () {
 	// TODO: root directory object
 	var script = process.argv[1];
 	
-//	console.log (process.argv);
+//	console.log (script);
 	
-	var root = new io (script.match (/(.*)\/(bin|t)\//)[1]);
+	var root = new io (script.match (/(.*)\/(bin|t|lib)\//)[1]);
 //	console.log (root);
 	
 	this.root = root;
