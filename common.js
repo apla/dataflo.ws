@@ -89,21 +89,25 @@ var pathToVal = module.exports.pathToVal = function (dict, path, value) {
 }
 
 
-String.prototype.interpolate = function (dict, template) {
-	if (!template)
-		template = ['{$', '}', '.'];
+String.prototype.interpolate = function (dict, marks) {
+	if (!marks)
+		marks = {
+			start: '{$', end: '}', path: '.'
+		};
 	
 	var result;
 	
-	var pos = this.indexOf (template[0]);
+	var template = this;
+	
+	var pos = this.indexOf (marks.start);
 	while (pos > -1) {
-		var end = this.indexOf (template[1], pos);
-		var str = this.substr (pos + 2, end - pos - 2);
+		var end = (result || this).indexOf (marks.end, pos);
+		var str = (result || this).substr (pos + 2, end - pos - 2);
 		
-		// console.log ("found replacement: key => "+key+", requires => $"+str+"\n";
+		// console.log ("found replacement: key => ???, requires => $"+this+"\n");
 		
 		var fix;
-		if (str.indexOf (template[2]) > -1) { //  treat as path
+		if (str.indexOf (marks.path) > -1) { //  treat as path
 			//  warn join ', ', keys %{$self->var};
 			fix = pathToVal (dict, str);
 		} else { // scalar
@@ -111,18 +115,19 @@ String.prototype.interpolate = function (dict, template) {
 		}
 		
 		if (fix === void(0))
-			throw this;
+			throw (result || this);
 		
 		// warn "value for replace is: $fix\n";
 		
-		if (pos == 0 && end == (this.length - 1)) {
+		if (pos == 0 && end == ((result || this).length - 1)) {
 			result = fix;
 		} else {
-			result = this.substr (0, pos) + fix + this.substr (end - pos + 1);
+			result = (result || this).substr (0, pos) + fix + (result || this).substr (end + 1);
+//			console.log ('!!!', (result || this).toString(), fix.toString(), pos, end, end - pos + 1);
 		}
 		
-		if (this.indexOf)
-			pos = this.indexOf (template[0], end);
+		if ((result || this).indexOf)
+			pos = (result || this).indexOf (marks.start, end);
 		else
 			break;
 	}
