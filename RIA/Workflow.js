@@ -111,6 +111,8 @@ var Workflow = module.exports = function (config, reqParam) {
 //			self.log (taskParams.className + ': initializing task from class');
 			var xTaskClass;
 			
+			// TODO: need check all task classes, because some compile errors may be there
+			
 			try {
 				xTaskClass = require ('RIA/Workflow/'+taskParams.className);
 			} catch (e) {
