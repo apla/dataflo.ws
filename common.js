@@ -75,6 +75,67 @@ Number.prototype.times = function (cb) {
 	return a;
 }
 
+var pathToVal = module.exports.pathToVal = function (dict, path, value) {
+//	console.log ('pathToVal ('+ dict + ', '+ path + ', '+value+')');
+	var chunks = path.split ('.');
+	if (chunks.length == 1) {
+		var oldValue = dict[chunks[0]];
+		if (value !== void(0))
+			dict[chunks[0]] = value;
+//		console.log (''+oldValue);
+		return oldValue;
+	}
+	return pathToVal (dict[chunks.shift()], chunks.join('.'), value)
+}
+
+
+String.prototype.interpolate = function (dict, marks) {
+	if (!marks)
+		marks = {
+			start: '{$', end: '}', path: '.'
+		};
+	
+	var result;
+	
+	var template = this;
+	
+	var pos = this.indexOf (marks.start);
+	while (pos > -1) {
+		var end = (result || this).indexOf (marks.end, pos);
+		var str = (result || this).substr (pos + 2, end - pos - 2);
+		
+		// console.log ("found replacement: key => ???, requires => $"+this+"\n");
+		
+		var fix;
+		if (str.indexOf (marks.path) > -1) { //  treat as path
+			//  warn join ', ', keys %{$self->var};
+			fix = pathToVal (dict, str);
+		} else { // scalar
+			fix = dict[str];
+		}
+		
+		if (fix === void(0))
+			throw (result || this);
+		
+		// warn "value for replace is: $fix\n";
+		
+		if (pos == 0 && end == ((result || this).length - 1)) {
+			result = fix;
+		} else {
+			result = (result || this).substr (0, pos) + fix + (result || this).substr (end + 1);
+//			console.log ('!!!', (result || this).toString(), fix.toString(), pos, end, end - pos + 1);
+		}
+		
+		if ((result || this).indexOf)
+			pos = (result || this).indexOf (marks.start, end);
+		else
+			break;
+	}
+	
+	return result;
+
+};
+
 var path = require ('path');
 
 var io = require (path.join ('IO', 'Easy'));
@@ -83,9 +144,9 @@ var project = function () {
 	// TODO: root directory object
 	var script = process.argv[1];
 	
-//	console.log (process.argv);
+//	console.log (script);
 	
-	var root = new io (script.match (/(.*)\/(bin|t)\//)[1]);
+	var root = new io (script.match (/(.*)\/(bin|t|lib)\//)[1]);
 //	console.log (root);
 	
 	this.root = root;

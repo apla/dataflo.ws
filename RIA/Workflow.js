@@ -29,19 +29,6 @@ var colours = {
 
 var taskStateNames = taskClass.prototype.stateNames;
 
-function pathToVal (dict, path, value) {
-//	console.log ('pathToVal ('+ dict + ', '+ path + ', '+value+')');
-	var chunks = path.split ('.');
-	if (chunks.length == 1) {
-		var oldValue = dict[chunks[0]];
-		if (value !== void(0))
-			dict[chunks[0]] = value;
-//		console.log (''+oldValue);
-		return oldValue;
-	}
-	return pathToVal (dict[chunks.shift()], chunks.join('.'), value)
-}
-
 function checkTaskParams (taskParams, dict) {
 	// parse task params
 		
@@ -51,56 +38,25 @@ function checkTaskParams (taskParams, dict) {
 	
 	var failedParams = [];
 	
-	try {
 	
-		for (var key in taskParams) {
-			var val = taskParams[key];
-			var valCheck = val;
-			
-			if (!val.indexOf) {
-				modifiedParams[key] = val;
-				continue;
-			}
-			
-			var pos = val.indexOf ('{$');
-			while (pos > -1) {
-				var end = val.indexOf ('}', pos);
-				var str = val.substr (pos + 2, end - pos - 2);
-				
-				// console.log ("found replacement: key => "+key+", requires => $"+str+"\n";
-				
-				var fix;
-				if (str.indexOf ('.') > -1) { //  treat as path
-					//  warn join ', ', keys %{$self->var};
-					fix = pathToVal (dict, str);
-				} else { // scalar
-					fix = dict[str];
-				}
-				
-				if (fix === void(0))
-					throw [key, val];
-				
-				// warn "value for replace is: $fix\n";
-				
-				if (pos == 0 && end == (val.length - 1)) {
-					val = fix;
-				} else {
-					val = val.substr (0, pos) + fix + val.substr (end - pos + 1);
-				}
-				
-				if (val.indexOf)
-					pos = val.indexOf ('{$', end);
-				else
-					break;
-			}
-//			if (val != valCheck)
+	
+	for (var key in taskParams) {
+		var val = taskParams[key];
+		var valCheck = val;
+		
+		if (!val.indexOf) {
 			modifiedParams[key] = val;
-			// console.log ("key is: " + key + ", param is: " + $1);
+			continue;
 		}
-	} catch (e) {
-//		console.log (e[1], ' of task param '+e[0]+' is undefined');
-//		console.log (taskParams, '!!!!!!!!!!!' + e) //, new Error().stack);
-		failedParams.push (e[0]);
+		
+//		console.log (key, val, val.interpolate (dict));
+		
+		try {
+			modifiedParams[key] = val.interpolate (dict) || val;
+		} catch (e) {
+			failedParams.push (key);
+		}
+			
 	}
 	
 	if (failedParams.length > 0) {
@@ -152,7 +108,7 @@ var Workflow = module.exports = function (config, reqParam) {
 //		console.log (taskParams);
 		
 		if (taskParams.className) {
-			self.log (taskParams.className + ': initializing task from class');
+//			self.log (taskParams.className + ': initializing task from class');
 			var xTaskClass;
 			
 			try {
@@ -167,7 +123,7 @@ var Workflow = module.exports = function (config, reqParam) {
 			});
 		} else if (taskParams.coderef || taskParams.functionName) {
 		
-			self.log ((taskParams.functionName || taskParams.logTitle) + ': initializing task from function');
+//			self.log ((taskParams.functionName || taskParams.logTitle) + ': initializing task from function');
 			if (!taskParams.functionName && !taskParams.logTitle)
 				throw "task must have a logTitle when using call parameter";
 			
@@ -179,8 +135,15 @@ var Workflow = module.exports = function (config, reqParam) {
 
 			common.extend (xTaskClass.prototype, {
 				run: function () {
-					if (taskParams.functionName && process.mainModule.exports[taskParams.functionName]) {
-						this.completed (process.mainModule.exports[taskParams.functionName] (this));
+					if (taskParams.functionName) {
+						if (process.mainModule.exports[taskParams.functionName]) {
+							this.completed (process.mainModule.exports[taskParams.functionName] (this));
+						} else {
+							var err = "you defined functionName as " + taskParams.functionName
+								+ " but we cannot find this name in current scope.\nplease add 'module.exports = {"
+								+ taskParams.functionName + ": function (params) {...}}' in your main module";
+							throw err;
+						}
 					} else {
 						this.completed (taskParams.coderef (this));
 					}
@@ -188,7 +151,8 @@ var Workflow = module.exports = function (config, reqParam) {
 			});
 			
 			task = new xTaskClass ({
-				className: taskParams.logTitle,
+				functionName: taskParams.functionName,
+				logTitle: taskParams.logTitle,
 				require: checkRequirements
 			});
 			
@@ -242,10 +206,10 @@ common.extend (Workflow.prototype, {
 		console.log.apply (console, toLog);
 	},
 	logTask: function (task, msg) {
-		this.log (task.className || task.functionName || task.logTitle,  "("+task.state+")",  msg);
+		this.log (task.logTitle,  "("+task.state+")",  msg);
 	},
 	logTaskError: function (task, msg) {
-		this.log(task.className || task.functionName || task.logTitle, "("+task.state+") \x1B[0;31m" + msg + "\x1B[0m");
+		this.log(task.logTitle, "("+task.state+") \x1B[0;31m" + msg + "\x1B[0m");
 	},
 	
 	haveCompletedTasks: false,
@@ -256,7 +220,7 @@ common.extend (Workflow.prototype, {
 		self.isIdle = 0;
 		self.haveCompletedTasks = false;
 				
-		self.log ('workflow run');
+//		self.log ('workflow run');
 		
 		this.taskStates = [0, 0, 0, 0, 0, 0];
 		
@@ -284,7 +248,7 @@ common.extend (Workflow.prototype, {
 				task.on ('complete', function (t, result) {
 					
 					if (t.produce && result)
-						pathToVal (self, t.produce, result);
+						common.pathToVal (self, t.produce, result);
 					
 					self.logTask (task, 'task completed');
 					
@@ -319,8 +283,8 @@ common.extend (Workflow.prototype, {
 		
 		// check workflow
 		
-		if (this.taskStates[taskStateNames.complete] > 0)
-			self.log ('completed tasks count ' + this.taskStates[taskStateNames.complete] + '/'+ self.tasks.length);
+//		if (this.taskStates[taskStateNames.complete] > 0)
+//			self.log ('progress: ' + this.taskStates[taskStateNames.complete] + '/'+ self.tasks.length);
 
 //		console.log (
 //			'%%%%%%%%%%%%%',
@@ -342,22 +306,25 @@ common.extend (Workflow.prototype, {
 			== self.tasks.length
 		) {
 		
-			var scarceTaskMessage = ', unsatisfied requirements:';
+			var scarceTaskMessage = ', unsatisfied requirements: ';
 		
 			// TODO: display scarce tasks unsatisfied requirements
 			if (this.taskStates[taskStateNames.scarce]) {
-				scarceTaskMessage += self.tasks.map (function (task) {
+				self.tasks.map (function (task) {
 					if (task.state != taskStateNames.scarce)
 						return;
-					return (task.className || task.functionName || task.logTitle) + ' => ' + task.unsatisfiedRequirements.join (', ');
-				}).join ('; ');
+					scarceTaskMessage += (task.logTitle) + ' => ' + task.unsatisfiedRequirements.join (', ') + '; ';
+				});
 			}
 			
 			var requestDump = 'CIRCULAR';
 			try {requestDump = JSON.stringify (self.request)} catch (e) {};
 
 			
-			self.log ('workflow failed, request: ' + requestDump + scarceTaskMessage);
+			self.log ('workflow failed, progress: '
+				+ this.taskStates[taskStateNames.complete] + '/'+ self.tasks.length 
+				+ ', request: ' + requestDump + scarceTaskMessage
+			);
 		} else if (self.haveCompletedTasks) {
 			
 			setTimeout (function () {

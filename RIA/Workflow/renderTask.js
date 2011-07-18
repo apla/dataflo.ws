@@ -17,22 +17,15 @@ common.extend (renderTask.prototype, {
 		var self = this;
 		
 		if (this.type == 'json') {
-//			self.emit ('log', 'data: ' + JSON.stringify(self.data));
-//			self.emit ('log', 'out: ' + JSON.stringify(self.output));
+			self.output.setHeader("Content-Type", "text/json; charset=utf-8");
 			self.output.end (JSON.stringify(self.data));
 			self.completed ();
+		} else  if (this.type == 'asis') {
+			self.output.setHeader ("Content-Type", self.contentType);
+			self.output.end (self.data);
+			self.completed ();
 		}
+
 		
-	},
-	
-	emitError: function (e) {
-		if (e) {
-			this.state = 5;
-			this.emit('error', e);
-			this.cancel();
-			return true;
-		} else {
-			return false;
-		}
 	}
 });
