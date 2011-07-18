@@ -90,12 +90,19 @@ var project = function () {
 	
 	this.root = root;
 	
+	// TODO:
+	// 1. detect instance name after reading var/instance
+	// 2. load configuration
+	// 3. load local fixup for configuration and override default
+
 	// TODO: walk filetree to find directory root if script located in
 	// subdir of bin or t
 //	console.log (root);
 	
 	// TODO: emit ready event on ready
 }
+
+
 
 global.project = new project ();
 
