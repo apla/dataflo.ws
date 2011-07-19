@@ -101,7 +101,6 @@ io.prototype.parent = function () {
 }
 
 io.prototype.fileIO = function (path) {
-	console.log (path, path instanceof io);
 	return new io (Path.join (this.path, path instanceof io ? path.path : path));
 }
 
