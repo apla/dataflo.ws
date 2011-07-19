@@ -8,7 +8,7 @@
 
 var util = require ('util');
 
-util.extend = function () {
+util.extend = function extend () {
 	// copy reference to target object
 	var target = arguments[0] || {}, i = 1, length = arguments.length, deep = false, options, name, src, copy;
 	// Handle a deep copy situation
