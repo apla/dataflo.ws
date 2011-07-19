@@ -1,5 +1,4 @@
-var common       = require ('common'),
-	task         = require ('RIA/Workflow/Task'),
+var task         = require ('RIA/Workflow/Task'),
 	util         = require ('util');
 
 var renderTask = module.exports = function (config) {
@@ -10,7 +9,7 @@ var renderTask = module.exports = function (config) {
 
 util.inherits (renderTask, task);
 
-common.extend (renderTask.prototype, {
+util.extend (renderTask.prototype, {
 	
 	run: function () {
 

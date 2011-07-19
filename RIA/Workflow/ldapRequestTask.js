@@ -1,5 +1,4 @@
 var EventEmitter = require ('events').EventEmitter,
-	common       = require ('common'),
 	crypto       = require ('crypto'),
 	task         = require ('RIA/Workflow/Task'),
 	util         = require ('util'),
@@ -23,7 +22,7 @@ var ldapRequestTask = module.exports = function (config) {
 
 util.inherits (ldapRequestTask, task);
 
-common.extend (ldapRequestTask.prototype, {
+util.extend (ldapRequestTask.prototype, {
 	
 	run: function () {
 

@@ -1,5 +1,4 @@
 var EventEmitter = require ('events').EventEmitter,
-	common       = require ('common'),
 	crypto       = require ('crypto'),
 	task         = require ('RIA/Workflow/Task'),
 	util         = require ('util'),
@@ -15,7 +14,7 @@ var mongoAddTagTask = module.exports = function (config) {
 
 util.inherits (mongoAddTagTask, task);
 
-common.extend (mongoAddTagTask.prototype, {
+util.extend (mongoAddTagTask.prototype, {
 	
 	run: function () {
 

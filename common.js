@@ -5,7 +5,10 @@
  *
  * Modified by Brian White to use Array.isArray instead of the custom isArray method
  */
-module.exports.extend = function extend() {
+
+var util = require ('util');
+
+util.extend = function () {
 	// copy reference to target object
 	var target = arguments[0] || {}, i = 1, length = arguments.length, deep = false, options, name, src, copy;
 	// Handle a deep copy situation
@@ -153,7 +156,13 @@ var project = function () {
 	
 	// TODO: detect instance from var/instance
 	root.fileIO ('var/instance').readFile (function (data, err) {
+		if (err) {
+			return;
+		}
 		
+		var instance = data.split (/\n/)[0];
+		
+		console.log (instance);
 	});
 	
 	// TODO: read config
@@ -170,9 +179,9 @@ var project = function () {
 
 var EventEmitter = require ('events').EventEmitter;
 
-require ('util').inherits (project, EventEmitter);
+util.inherits (project, EventEmitter);
 
-common.extend (project.prototype, {
+util.extend (project.prototype, {
 	
 });
 
