@@ -151,12 +151,30 @@ var project = function () {
 	
 	this.root = root;
 	
+	// TODO: detect instance from var/instance
+	root.fileIO ('var/instance').readFile (function (data, err) {
+		
+	});
+	
+	// TODO: read config
+	
+	// TODO: read config fixup
+	
 	// TODO: walk filetree to find directory root if script located in
 	// subdir of bin or t
 //	console.log (root);
 	
 	// TODO: emit ready event on ready
+	this.emit ('ready');
 }
+
+var EventEmitter = require ('events').EventEmitter;
+
+require ('util').inherits (project, EventEmitter);
+
+common.extend (project.prototype, {
+	
+});
 
 global.project = new project ();
 
