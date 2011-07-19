@@ -58,7 +58,7 @@ util.extend (httpdi.prototype, {
 					self.emit ("detected", req, res, item);
 
 					workflow = new Workflow (
-						common.extend (true, {}, item),
+						util.extend (true, {}, item),
 						{request: req, response: res}
 					);
 					workflow.run();
@@ -71,7 +71,7 @@ util.extend (httpdi.prototype, {
 					self.emit ("detected", req, res, item);
 					
 					workflow = new Workflow (
-						common.extend (true, {}, item),
+						util.extend (true, {}, item),
 						{request: req, response: res}
 					);
 					workflow.run();
