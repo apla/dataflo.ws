@@ -2,6 +2,7 @@ var EventEmitter = require ('events').EventEmitter,
 	http         = require ('http'),
 	util         = require ('util'),
 	common       = require ('common'),
+	mime         = require ('mime'),
 	Workflow     = require ('RIA/Workflow');
 
 var httpdi = module.exports = function (config) {
@@ -13,11 +14,12 @@ var httpdi = module.exports = function (config) {
 	if (!config.port)
 		throw "you must define 'port' key for http initiator";
 	else 
-		this.port = config.port;
+		this.port  = config.port;
 	
 	this.workflows = config.workflows;
+	this.static    = config.static;
 	
-	if (this.host == "auto") {
+	if (this.host  == "auto") {
 		this.detectIP (this.listen);
 	} else {
 		this.listen ();
@@ -57,7 +59,7 @@ common.extend (httpdi.prototype, {
 					self.emit ("detected", req, res, item);
 
 					workflow = new Workflow (
-						common.extend (true, {}, item), 
+						common.extend (true, {}, item),
 						{request: req, response: res}
 					);
 					workflow.run();
@@ -81,6 +83,26 @@ common.extend (httpdi.prototype, {
 			});
 			
 			if (!workflow) {
+				if (self.static) {
+					var pathName = req.url.pathname;
+					if (pathName.match (/\/$/)) {
+						pathName += self.static.index;
+					}
+					var contentType = mime.lookup (pathName);
+
+					// charset for video? cool!
+					res.writeHead (200, {
+						'Content-Type': contentType + '; charset=utf-8'
+					});
+					
+					self.static.root.fileIO (pathName).readStream (function (readStream, stats) {
+						readStream.pipe (res);
+						readStream.resume ();
+					});
+					
+					return;
+				}
+				
 				console.log ('not detected');
 				self.emit ("undefined", req, res);
 			}
