@@ -1,5 +1,4 @@
 var EventEmitter = require ('events').EventEmitter,
-	common       = require ('common'),
 	crypto       = require ('crypto'),
 	task         = require ('RIA/Workflow/Task'),
 	util         = require ('util'),
@@ -8,22 +7,20 @@ var EventEmitter = require ('events').EventEmitter,
 
 var command = 'ldapsearch';
 
-var host = "ldap://ml1.rian.ru:636";
-var bind = "DC=msk,DC=rian";
-var user = "cn=SA_LDAP-Reader,ou=Test&ServiceUsers,dc=msk,dc=rian";
-var pass = "SaL123456";
-
-var defaults = "-LLL -z 50 -x -H "+host+" -b "+bind+" -D "+user+" -w "+pass
+/**********************************
+ ldap connector
+ need connector property and configuration:
+ host, base, user, pass
+ **********************************/
 
 var ldapRequestTask = module.exports = function (config) {
-	
 	this.init (config);
 	
 };
 
 util.inherits (ldapRequestTask, task);
 
-common.extend (ldapRequestTask.prototype, {
+util.extend (ldapRequestTask.prototype, {
 	
 	run: function () {
 
@@ -33,9 +30,14 @@ common.extend (ldapRequestTask.prototype, {
 		
 		self.emit ('log', 'requested '+this.searchString);
 		
+		// TODO: error handling
+		var connector = project.config.db[this.connector];
+		
+		var connectorString = "-LLL -z 50 -x -H "+connector.host+" -b "+connector.base+" -D "+connector.user+" -w "+connector.pass;
+		
 		// params preparation
 		var args = [
-			defaults,
+			connectorString,
 			this.searchPattern.replace (/\{\}/g, this.searchString),
 			this.fields
 		].join (' ').split (' ');

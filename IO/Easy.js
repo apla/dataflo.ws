@@ -43,6 +43,9 @@ io.prototype.writeStream = function (options) {
 
 io.prototype.readStream = function (options, cb) {
 	
+	if (arguments.length == 1)
+		cb = arguments[0];
+	
 	var self = this;
 	
 	this.stat (function (err, stats) {
@@ -98,7 +101,6 @@ io.prototype.parent = function () {
 }
 
 io.prototype.fileIO = function (path) {
-	console.log (path, path instanceof IO.Easy);
 	return new io (Path.join (this.path, path instanceof io ? path.path : path));
 }
 

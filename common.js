@@ -5,7 +5,10 @@
  *
  * Modified by Brian White to use Array.isArray instead of the custom isArray method
  */
-module.exports.extend = function extend() {
+
+var util = require ('util');
+
+util.extend = function extend () {
 	// copy reference to target object
 	var target = arguments[0] || {}, i = 1, length = arguments.length, deep = false, options, name, src, copy;
 	// Handle a deep copy situation
@@ -89,21 +92,25 @@ var pathToVal = module.exports.pathToVal = function (dict, path, value) {
 }
 
 
-String.prototype.interpolate = function (dict, template) {
-	if (!template)
-		template = ['{$', '}', '.'];
+String.prototype.interpolate = function (dict, marks) {
+	if (!marks)
+		marks = {
+			start: '{$', end: '}', path: '.'
+		};
 	
 	var result;
 	
-	var pos = this.indexOf (template[0]);
+	var template = this;
+	
+	var pos = this.indexOf (marks.start);
 	while (pos > -1) {
-		var end = this.indexOf (template[1], pos);
-		var str = this.substr (pos + 2, end - pos - 2);
+		var end = (result || this).indexOf (marks.end, pos);
+		var str = (result || this).substr (pos + 2, end - pos - 2);
 		
-		// console.log ("found replacement: key => "+key+", requires => $"+str+"\n";
+		// console.log ("found replacement: key => ???, requires => $"+this+"\n");
 		
 		var fix;
-		if (str.indexOf (template[2]) > -1) { //  treat as path
+		if (str.indexOf (marks.path) > -1) { //  treat as path
 			//  warn join ', ', keys %{$self->var};
 			fix = pathToVal (dict, str);
 		} else { // scalar
@@ -111,18 +118,19 @@ String.prototype.interpolate = function (dict, template) {
 		}
 		
 		if (fix === void(0))
-			throw this;
+			throw (result || this);
 		
 		// warn "value for replace is: $fix\n";
 		
-		if (pos == 0 && end == (this.length - 1)) {
+		if (pos == 0 && end == ((result || this).length - 1)) {
 			result = fix;
 		} else {
-			result = this.substr (0, pos) + fix + this.substr (end - pos + 1);
+			result = (result || this).substr (0, pos) + fix + (result || this).substr (end + 1);
+//			console.log ('!!!', (result || this).toString(), fix.toString(), pos, end, end - pos + 1);
 		}
 		
-		if (this.indexOf)
-			pos = this.indexOf (template[0], end);
+		if ((result || this).indexOf)
+			pos = (result || this).indexOf (marks.start, end);
 		else
 			break;
 	}
@@ -139,19 +147,100 @@ var project = function () {
 	// TODO: root directory object
 	var script = process.argv[1];
 	
-//	console.log (script);
-	
 	var root = new io (script.match (/(.*)\/(bin|t|lib)\//)[1]);
-//	console.log (root);
 	
 	this.root = root;
+	
+	var self = this;
+	
+	// TODO: detect instance from var/instance
+	root.fileIO ('var/instance').readFile (function (err, data) {
+		
+		if (err) {
+			console.log (""+err);
+			return;
+		}
+		
+		var instance = (""+data).split (/\n/)[0];
+		
+		self.instance = instance;
+		
+		console.log ('instance is: ', instance);
+		
+		root.fileIO ('etc/project').readFile (function (err, data) {
+			if (err) {
+				console.log ("can't access etc/project file. create one and define project id");
+				process.kill ();
+				return;
+			}
+			
+			var configData = (""+data).match (/(\w+)(\W[^]*)/);
+			configData.shift ();
+			var parser = configData.shift ();
+
+			console.log ('parsing etc/project using "' + parser + '" parser');
+			
+			if (parser == 'json') {
+//				console.log (configData[0]);
+				var config = JSON.parse (configData[0]);
+//				console.log (config);
+				
+				self.id     = config.id;
+				self.config = config;
+				
+				
+				// TODO: read config fixup
+			} else {
+				console.log ('parser ' + parser + ' unknown');
+				process.kill ();
+			}
+			
+			
+			root.fileIO ('etc/' + instance + '/fixup').readFile (function (err, data) {
+				if (err) {
+					console.log ("can't access "+'etc/' + instance + '/fixup'+" file. create one and define local configuration fixup");
+					process.kill ();
+				}
+				
+				var fixupData = (""+data).match (/(\w+)(\W[^]*)/);
+				fixupData.shift ();
+				var fixupParser = fixupData.shift ();
+
+				var fixupData = (""+data).match (/(\w+)(\W[^]*)/);
+				fixupData.shift ();
+				var fixupParser = fixupData.shift ();
+
+				console.log ('parsing etc/' + instance + '/fixup using "' + fixupParser + '" parser');
+
+				if (fixupParser == 'json') {
+					var config = JSON.parse (configData[0]);
+					
+					util.extend (true, self.config, config);
+				} else {
+					console.log ('parser ' + fixupParser + ' unknown');
+					process.kill ();
+				}
+				
+				console.log ('project ready');
+				
+				self.emit ('ready');
+			});
+		});
+	});
 	
 	// TODO: walk filetree to find directory root if script located in
 	// subdir of bin or t
 //	console.log (root);
 	
-	// TODO: emit ready event on ready
 }
+
+var EventEmitter = require ('events').EventEmitter;
+
+util.inherits (project, EventEmitter);
+
+util.extend (project.prototype, {
+	
+});
 
 global.project = new project ();
 
