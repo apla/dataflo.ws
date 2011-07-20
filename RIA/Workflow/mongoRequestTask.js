@@ -4,7 +4,7 @@ var EventEmitter = require ('events').EventEmitter,
 	task         = require ('RIA/Workflow/Task'),
 	util         = require ('util'),
 	urlUtil      = require ('url'),
-	spawn        = require('child_process').spawn;
+	spawn        = require ('child_process').spawn;
 
 
 
