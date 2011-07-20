@@ -1,7 +1,6 @@
 var EventEmitter = require ('events').EventEmitter,
 	http         = require ('http'),
 	util         = require ('util'),
-	common       = require ('common'),
 	mime         = require ('mime'),
 	Workflow     = require ('RIA/Workflow');
 
@@ -28,7 +27,7 @@ var httpdi = module.exports = function (config) {
 
 util.inherits (httpdi, EventEmitter);
 
-common.extend (httpdi.prototype, {
+util.extend (httpdi.prototype, {
 	ready: function () {
 		// called from server listen
 		console.log('Server running at http://'+(this.host ? this.host : '127.0.0.1')+(this.port == 80 ? '' : ':'+this.port)+'/');
@@ -59,7 +58,7 @@ common.extend (httpdi.prototype, {
 					self.emit ("detected", req, res, item);
 
 					workflow = new Workflow (
-						common.extend (true, {}, item),
+						util.extend (true, {}, item),
 						{request: req, response: res}
 					);
 					workflow.run();
@@ -72,7 +71,7 @@ common.extend (httpdi.prototype, {
 					self.emit ("detected", req, res, item);
 					
 					workflow = new Workflow (
-						common.extend (true, {}, item),
+						util.extend (true, {}, item),
 						{request: req, response: res}
 					);
 					workflow.run();

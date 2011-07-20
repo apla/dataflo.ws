@@ -1,6 +1,5 @@
 var EventEmitter = require ('events').EventEmitter;
 var util         = require ('util');
-var common       = require ('common');
 
 var barrier = module.exports = function (config) {
 	
@@ -19,7 +18,7 @@ var barrier = module.exports = function (config) {
 
 util.inherits (barrier, EventEmitter);
 
-common.extend (barrier.prototype, {
+util.extend (barrier.prototype, {
 	waitingItems: 0,
 	checkBroken: function () {
 		this.waitingItems--;

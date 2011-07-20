@@ -5,7 +5,10 @@
  *
  * Modified by Brian White to use Array.isArray instead of the custom isArray method
  */
-module.exports.extend = function extend() {
+
+var util = require ('util');
+
+util.extend = function extend () {
 	// copy reference to target object
 	var target = arguments[0] || {}, i = 1, length = arguments.length, deep = false, options, name, src, copy;
 	// Handle a deep copy situation
@@ -144,41 +147,98 @@ var project = function () {
 	// TODO: root directory object
 	var script = process.argv[1];
 	
-//	console.log (script);
-	
 	var root = new io (script.match (/(.*)\/(bin|t|lib)\//)[1]);
-//	console.log (root);
 	
 	this.root = root;
 	
-	// TODO:
-	// 1. detect instance name after reading var/instance
-	// 2. load configuration
-	// 3. load local fixup for configuration and override default
-
+	var self = this;
+	
 	// TODO: detect instance from var/instance
-	root.fileIO ('var/instance').readFile (function (data, err) {
+	root.fileIO ('var/instance').readFile (function (err, data) {
 		
+		if (err) {
+			console.log (""+err);
+			return;
+		}
+		
+		var instance = (""+data).split (/\n/)[0];
+		
+		self.instance = instance;
+		
+		console.log ('instance is: ', instance);
+		
+		root.fileIO ('etc/project').readFile (function (err, data) {
+			if (err) {
+				console.log ("can't access etc/project file. create one and define project id");
+				process.kill ();
+				return;
+			}
+			
+			var configData = (""+data).match (/(\w+)(\W[^]*)/);
+			configData.shift ();
+			var parser = configData.shift ();
+
+			console.log ('parsing etc/project using "' + parser + '" parser');
+			
+			if (parser == 'json') {
+//				console.log (configData[0]);
+				var config = JSON.parse (configData[0]);
+//				console.log (config);
+				
+				self.id     = config.id;
+				self.config = config;
+				
+				
+				// TODO: read config fixup
+			} else {
+				console.log ('parser ' + parser + ' unknown');
+				process.kill ();
+			}
+			
+			
+			root.fileIO ('etc/' + instance + '/fixup').readFile (function (err, data) {
+				if (err) {
+					console.log ("can't access "+'etc/' + instance + '/fixup'+" file. create one and define local configuration fixup");
+					process.kill ();
+				}
+				
+				var fixupData = (""+data).match (/(\w+)(\W[^]*)/);
+				fixupData.shift ();
+				var fixupParser = fixupData.shift ();
+
+				var fixupData = (""+data).match (/(\w+)(\W[^]*)/);
+				fixupData.shift ();
+				var fixupParser = fixupData.shift ();
+
+				console.log ('parsing etc/' + instance + '/fixup using "' + fixupParser + '" parser');
+
+				if (fixupParser == 'json') {
+					var config = JSON.parse (configData[0]);
+					
+					util.extend (true, self.config, config);
+				} else {
+					console.log ('parser ' + fixupParser + ' unknown');
+					process.kill ();
+				}
+				
+				console.log ('project ready');
+				
+				self.emit ('ready');
+			});
+		});
 	});
-	
-	// TODO: read config
-	
-	// TODO: read config fixup
 	
 	// TODO: walk filetree to find directory root if script located in
 	// subdir of bin or t
 //	console.log (root);
 	
-	// TODO: emit ready event on ready
-	this.emit ('ready');
 }
-
 
 var EventEmitter = require ('events').EventEmitter;
 
-require ('util').inherits (project, EventEmitter);
+util.inherits (project, EventEmitter);
 
-common.extend (project.prototype, {
+util.extend (project.prototype, {
 	
 });
 

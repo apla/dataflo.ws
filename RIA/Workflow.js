@@ -1,6 +1,6 @@
 var EventEmitter = require ('events').EventEmitter,
-	common       = require ('common'),
 	util         = require ('util'),
+	common       = require ('common'),
 	taskClass    = require ('RIA/Workflow/Task');
 
 var colours = {
@@ -69,8 +69,8 @@ function checkTaskParams (taskParams, dict) {
 var Workflow = module.exports = function (config, reqParam) {
 		
 	var self = this;
-	common.extend (true, this, config);
-	common.extend (true, this, reqParam);
+	util.extend (true, this, config);
+	util.extend (true, this, reqParam);
 	
 	this.started = new Date().getTime();
 	this.id      = this.started % 1e6;
@@ -100,7 +100,7 @@ var Workflow = module.exports = function (config, reqParam) {
 				this.unsatisfiedRequirements = modifiedParams;
 				return false;
 			} else if (modifiedParams) {
-				common.extend (this, modifiedParams);
+				util.extend (this, modifiedParams);
 				return true;
 			}
 		}
@@ -133,7 +133,7 @@ var Workflow = module.exports = function (config, reqParam) {
 
 			util.inherits (xTaskClass, taskClass);
 
-			common.extend (xTaskClass.prototype, {
+			util.extend (xTaskClass.prototype, {
 				run: function () {
 					if (taskParams.functionName) {
 						if (process.mainModule.exports[taskParams.functionName]) {
@@ -191,7 +191,7 @@ function timestamp () {
 }
 
 
-common.extend (Workflow.prototype, {
+util.extend (Workflow.prototype, {
 	
 	isIdle: 1,
 	log: function (msg) {

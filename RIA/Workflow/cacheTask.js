@@ -1,5 +1,4 @@
 var EventEmitter = require ('events').EventEmitter,
-	common       = require ('common'),
 	crypto       = require ('crypto'),
 	task         = require ('RIA/Workflow/Task'),
 	util         = require ('util'),
@@ -18,7 +17,7 @@ var cacheTask = module.exports = function (config) {
 
 util.inherits (cacheTask, task);
 
-common.extend (cacheTask.prototype, {
+util.extend (cacheTask.prototype, {
 	generateCacheFileName: function () {
 		
 		if (this.cacheFileName)

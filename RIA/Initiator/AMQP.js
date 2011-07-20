@@ -1,7 +1,6 @@
 var EventEmitter   = require ('events').EventEmitter,
 	http           = require ('http'),
 	util           = require ('util'),
-	common         = require ('common'),
 	Workflow       = require ('RIA/Workflow');
 
 var amqp = require ('node-amqp/amqp.js');
@@ -33,7 +32,7 @@ var amqpi = module.exports = function (config) {
 
 util.inherits (amqpi, EventEmitter);
 
-common.extend (amqpi.prototype, {
+util.extend (amqpi.prototype, {
 	
 	ready: function () {
 		

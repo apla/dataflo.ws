@@ -1,5 +1,4 @@
 var EventEmitter = require ('events').EventEmitter,
-	common       = require ('common'),
 	fs           = require ('fs'),
 	task         = require ('RIA/Workflow/Task'),
 	util         = require ('util'),
@@ -15,7 +14,7 @@ var deliveryTask = module.exports = function (config) {
 
 util.inherits (deliveryTask, task);
 
-common.extend (deliveryTask.prototype, {
+util.extend (deliveryTask.prototype, {
 	
 	run: function () {
 		

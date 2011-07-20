@@ -1,5 +1,4 @@
 var EventEmitter   = require ('events').EventEmitter,
-	common         = require ('common'),
 	Workflow       = require ('RIA/Workflow');
 
 var timeri = module.exports = function (config) {
@@ -20,7 +19,7 @@ var timeri = module.exports = function (config) {
 
 util.inherits (amqpi, EventEmitter);
 
-common.extend (amqpi.prototype, {
+util.extend (amqpi.prototype, {
 	
 	ready: function () {
 		

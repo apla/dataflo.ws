@@ -1,6 +1,5 @@
 var EventEmitter = require ('events').EventEmitter,
-	util         = require ('util'),
-	common       = require ('common');
+	util         = require ('util');
 
 var taskStateList = ['scarce', 'ready', 'running', 'idle', 'complete', 'failed'];
 
@@ -20,12 +19,11 @@ for (var stateNum = 0; stateNum < taskStateList.length; stateNum++) {
 
 
 var task = module.exports = function (config) {
-	//	common.extend (this, config);
 }
 
 util.inherits (task, EventEmitter);
 
-common.extend (task.prototype, taskStateMethods, {
+util.extend (task.prototype, taskStateMethods, {
 	
 	init: function (config) {
 		this.require      = config.require || null;
