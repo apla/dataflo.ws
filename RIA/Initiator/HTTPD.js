@@ -89,14 +89,18 @@ util.extend (httpdi.prototype, {
 					}
 					var contentType = mime.lookup (pathName);
 
-					// charset for video? cool!
-					res.writeHead (200, {
-						'Content-Type': contentType + '; charset=utf-8'
-					});
-					
 					self.static.root.fileIO (pathName).readStream (function (readStream, stats) {
-						readStream.pipe (res);
-						readStream.resume ();
+						
+						if (stats) {
+							res.writeHead (200, {
+								'Content-Type': contentType + '; charset=utf-8'
+							});
+							readStream.pipe (res);
+							readStream.resume ();
+						} else {
+							res.writeHead (404, {});
+							res.end();
+						}
 					});
 					
 					return;
