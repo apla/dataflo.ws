@@ -1,5 +1,4 @@
-var common       = require ('common'),
-	task         = require ('RIA/Workflow/Task'),
+var task         = require ('RIA/Workflow/Task'),
 	util         = require ('util'),
 	qs			 = require ('querystring');
 
@@ -13,10 +12,12 @@ var postTask = module.exports = function (config) {
 
 util.inherits (postTask, task);
 
-common.extend (postTask.prototype, {
+util.extend (postTask.prototype, {
 	
 	run: function () {
-
+		
+		// TODO: add data limit
+		
 		var self = this;
 		
 		self.data = "";
@@ -29,8 +30,21 @@ common.extend (postTask.prototype, {
 			self.emmitError(e);
 		});
 		
+		// TODO: file uploads
+		
 		self.request.on("end", function () {
-			self.completed (qs.parse(self.data));
+			var parsedData;
+			if (self.dumpData) {
+				self.emit ('log', self.data);
+			}
+			
+			if (self.jsonEncoded) {
+				parsedData = JSON.parse (self.data);
+			} else {
+				parsedData = qs.parse (self.data);
+			}
+			
+			self.completed (parsedData);
 		});
 	}
 });
