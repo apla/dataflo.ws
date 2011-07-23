@@ -42,7 +42,7 @@ util.extend (httpdi.prototype, {
 	
 		this.server = http.createServer (function (req, res) {
 			
-			console.log ('serving: ' + req.url);
+			console.log ('serving: ' + req.method + ' ' + req.url);
 			
 			// here we need to find matching workflows
 			// for received request
