@@ -112,16 +112,17 @@ var Workflow = module.exports = function (config, reqParam) {
 			var xTaskClass;
 			
 			// TODO: need check all task classes, because some compile errors may be there
-			
 			try {
 				xTaskClass = require ('RIA/Workflow/'+taskParams.className);
 			} catch (e) {
+				console.log (e);
 				xTaskClass = require (taskParams.className);
 			}
 			
 			task = new xTaskClass ({
 				className: taskParams.className,
-				require: checkRequirements
+				method:    taskParams.method,
+				require:   checkRequirements
 			});
 		} else if (taskParams.coderef || taskParams.functionName) {
 		

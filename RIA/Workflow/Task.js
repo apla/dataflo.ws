@@ -46,7 +46,7 @@ util.extend (task.prototype, taskStateMethods, {
 		var state = this.checkState ();
 //		console.log (this.url, 'state is', stateList[state], ' (' + state + ')', (state == 0 ? (this.require instanceof Array ? this.require.join (', ') : this.require) : ''));
 		
-		var oldRun = this.run;
+		var oldRun = this[config.method || 'run'];
 		
 		this.run = function () {
 			
