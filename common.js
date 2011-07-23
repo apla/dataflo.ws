@@ -153,53 +153,55 @@ var project = function () {
 	
 	var self = this;
 	
-	// TODO: detect instance from var/instance
-	root.fileIO ('var/instance').readFile (function (err, data) {
-		
+	root.fileIO ('etc/project').readFile (function (err, data) {
 		if (err) {
-			console.log (""+err);
+			console.log ("can't access etc/project file. create one and define project id");
+			process.kill ();
 			return;
 		}
 		
-		var instance = (""+data).split (/\n/)[0];
+		var configData = (""+data).match (/(\w+)(\W[^]*)/);
+		configData.shift ();
+		var parser = configData.shift ();
+
+		console.log ('parsing etc/project using "' + parser + '" parser');
 		
-		self.instance = instance;
-		
-		console.log ('instance is: ', instance);
-		
-		root.fileIO ('etc/project').readFile (function (err, data) {
+		if (parser == 'json') {
+			var config = JSON.parse (configData[0]);
+			
+			self.id     = config.id;
+			self.config = config;
+			
+			
+			// TODO: read config fixup
+		} else {
+			console.log ('parser ' + parser + ' unknown');
+			process.kill ();
+		}
+
+
+		root.fileIO ('var/instance').readFile (function (err, data) {
+			
 			if (err) {
-				console.log ("can't access etc/project file. create one and define project id");
-				process.kill ();
+				console.log ("PROBABLY HARMFUL: can't access var/instance: "+err);
+				self.emit ('ready');
 				return;
 			}
 			
-			var configData = (""+data).match (/(\w+)(\W[^]*)/);
-			configData.shift ();
-			var parser = configData.shift ();
-
-			console.log ('parsing etc/project using "' + parser + '" parser');
+			var instance = (""+data).split (/\n/)[0];
 			
-			if (parser == 'json') {
-//				console.log (configData[0]);
-				var config = JSON.parse (configData[0]);
-//				console.log (config);
-				
-				self.id     = config.id;
-				self.config = config;
-				
-				
-				// TODO: read config fixup
-			} else {
-				console.log ('parser ' + parser + ' unknown');
-				process.kill ();
-			}
+			self.instance = instance;
 			
-			
+			console.log ('instance is: ', instance);
+		
 			root.fileIO ('etc/' + instance + '/fixup').readFile (function (err, data) {
 				if (err) {
-					console.log ("can't access "+'etc/' + instance + '/fixup'+" file. create one and define local configuration fixup");
-					process.kill ();
+					console.log ("PROBABLY HARMFUL: can't access "+'etc/' + instance + '/fixup'+" file. "
+						+ "create one and define local configuration fixup. "
+					);
+					self.emit ('ready');
+					return;
+					// process.kill ();
 				}
 				
 				var fixupData = (""+data).match (/(\w+)(\W[^]*)/);
