@@ -241,7 +241,8 @@ var EventEmitter = require ('events').EventEmitter;
 util.inherits (project, EventEmitter);
 
 util.extend (project.prototype, {
-	
+	connectors:  {},
+	connections: {}
 });
 
 global.project = new project ();
