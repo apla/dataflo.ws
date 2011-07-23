@@ -43,20 +43,32 @@ util.extend (mongoRequestTask.prototype, {
 		
 		var client = this._getConnector ();
 		
-		if (project.connections[this.connector][this.collection]) {
-			cb.call (self, false, project.connections[this.connector][this.collection]);
+		console.log ('cheking project.connections', self.connector, self.collection);
+		
+		if (project.connections[self.connector][self.collection]) {
+			cb.call (self, false, project.connections[self.connector][self.collection]);
+			console.log ('%%%%%%%%%% cached');
 			return;
 		}
 		
 		client.open (function (err, p_client) {
 			client.collection(self.collection, function (err, collection) {
-				if (!err)
+				if (err) {
+					console.log (err);
+				} else {
+					console.log ('storing project.connections', self.connector, self.collection);
 					project.connections[self.connector][self.collection] = collection;
+				}
+				console.log ('%%%%%%%%%% not cached');
 				cb.call (self, err, collection);
 			});
 		});
 //	});
 
+	},
+	_objectId: function (hexString) {
+		var ObjectID = project.connectors[this.connector].bson_serializer.ObjectID;
+		return new ObjectID (hexString);
 	},
 	// actually, it's a fetch function
 	run: function () {
@@ -68,7 +80,7 @@ util.extend (mongoRequestTask.prototype, {
 		// we need to return {data: []}
 		this._openCollection (function (err, collection) {
 			console.log (this.collection);
-			collection.find ().toArray (function (err, results) {
+			collection.find (this.filter || {}).toArray (function (err, results) {
 				self.completed ({data: results});
 			});
 		});
@@ -76,12 +88,20 @@ util.extend (mongoRequestTask.prototype, {
 	insert: function () {
 		var self = this;
 		
-		this.emit ('log', 'insert called' + self.data);
+		this.emit ('log', 'insert called ' + self.data);
 		
 		this._openCollection (function (err, collection) {
 			if (self.data.constructor != Array) {
 				self.data = [self.data];
 			}
+			
+			self.data.map (function (item) {
+				// 
+				if (item._id && item._id != "") {
+					// probably things goes bad. we don't want to insert items
+					// with _id field defined
+				}
+			});
 			
 			collection.insert (self.data, {safe: true}, function (err, docs) {
 				
@@ -92,39 +112,44 @@ util.extend (mongoRequestTask.prototype, {
 			});
 		});
 	},
-	mongoResponse: function(tagColl, text) {
-
-		var result = [];
+	update: function () {
 		var self = this;
 		
-		tagColl.count(function(err, count) 
-		{
-			tagColl.find(function(err, cursor) 
-			{
-
-				cursor.each(function(err, item) {
-					if (item != null) {
-						if(item[self.matchField]) {
-							var _name = item[self.matchField].toString();
-
-							if(text == _name.substr(0, text.length)) 
-							{
-								result.push(item);
-							}
-						}
-					} else {
-
-						searchResult = JSON.stringify({records: result});
-						self.completed ({records: result, position: self.position, text: self.searchString, type: self.dataType});
+		this.emit ('log', 'update called ' + self.data);
+		
+		this._openCollection (function (err, collection) {
+			
+			if (self.data.constructor != Array) {
+				self.data = [self.data];
+			}
+			
+			console.log ('data for update', self.data);
+			
+			var idList = self.data.map (function (item) {
+				if (item._id && item._id != "") {
+					var id = self._objectId (item._id);
+					var set = {};
+					for (var k in item) {
+						if (k != '_id')
+							set[k] = item[k];
 					}
-				});
+					collection.update ({_id: id}, {$set: set}); //, {safe: true}, function (err) {
+//						console.log (docs);
+						
+						
+						// {"data": {"username":"xyz","email":"z@x.com","password":"abcd","id":"1"},"success":true,"error":null,"errors":[]}
+					//});
+					return id;
+					
+				} else {
+					// something wrong. this couldn't happen
+					self.emit ('log', 'strange things with _id: "'+item._id+'"');
+				}
 			});
 			
+			self.completed ({_id: {$in: idList}});
 		});
-		
-//		return result;
 	},
-	
 	emitError: function (e) {
 		if (e) {
 			this.state = 5;
