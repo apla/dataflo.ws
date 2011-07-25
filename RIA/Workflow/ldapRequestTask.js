@@ -96,7 +96,7 @@ util.extend (ldapRequestTask.prototype, {
 //			console.log("result is",  JSON.stringify(searchResult));
 //			self.completed ({records: found});
 			var result = {};
-			result[self.keyName || 'records'] = found;
+			result[self.keyName || 'data'] = found;
 			self.completed (result);
 //			{records: found, position: self.position, text: self.searchString, type: self.dataType});
 		
