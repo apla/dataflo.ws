@@ -82,7 +82,13 @@ util.extend (ldapRequestTask.prototype, {
 					if (self.toLowerCase)
 						parts[0] = parts[0].toLowerCase();
 					
-					account[parts[0]] = parts[1];
+					if (account[parts[0]] && account[parts[0]].constructor == Array) {
+						account[parts[0]].push (parts[1]);
+					} else if (account[parts[0]]) {
+						account[parts[0]] = [account[parts[0]], parts[1]];
+					} else {
+						account[parts[0]] = parts[1];
+					}
 					
 				});
 				
@@ -95,7 +101,7 @@ util.extend (ldapRequestTask.prototype, {
 //			searchResult = JSON.stringify({records: found});
 //			console.log("result is",  JSON.stringify(searchResult));
 //			self.completed ({records: found});
-			var result = {};
+			var result = {filter: self.searchString};
 			result[self.keyName || 'data'] = found;
 			self.completed (result);
 //			{records: found, position: self.position, text: self.searchString, type: self.dataType});
