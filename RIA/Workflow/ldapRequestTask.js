@@ -93,6 +93,9 @@ util.extend (ldapRequestTask.prototype, {
 				});
 				
 				if (account) {
+					if (self.mapping) {
+						self.mapFields (account);
+					}
 					found.push (account);
 				}
 				

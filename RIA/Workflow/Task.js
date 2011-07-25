@@ -118,6 +118,15 @@ util.extend (task.prototype, taskStateMethods, {
 		this.emit ("complete", this, result);
 	},
 	
+	mapFields: function (item) {
+		var self = this;
+		
+		for (var k in self.mapping) {
+			if (item[self.mapping[k]])
+				item[k] = item[self.mapping[k]];
+		}
+	},
+	
 	checkState: function () {
 		
 		var self = this;

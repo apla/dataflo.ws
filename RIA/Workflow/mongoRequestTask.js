@@ -81,6 +81,11 @@ util.extend (mongoRequestTask.prototype, {
 		this._openCollection (function (err, collection) {
 			console.log (this.collection);
 			collection.find (this.filter || {}).toArray (function (err, results) {
+				results.map (function (item) {
+					if (self.mapping) {
+						self.mapFields (item);
+					}
+				});
 				self.completed ({data: results, filter: this.filter || {}});
 			});
 		});
@@ -105,7 +110,14 @@ util.extend (mongoRequestTask.prototype, {
 			
 			collection.insert (self.data, {safe: true}, function (err, docs) {
 				
-				console.log (docs);
+//				console.log (docs);
+				
+				docs.map (function (item) {
+					if (self.mapping) {
+						self.mapFields (item);
+					}
+				});
+
 				
 				self.completed ({data: docs, success: true, error: null, errors: []});
 				// {"data": {"username":"xyz","email":"z@x.com","password":"abcd","id":"1"},"success":true,"error":null,"errors":[]}
