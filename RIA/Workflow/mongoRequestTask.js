@@ -81,7 +81,7 @@ util.extend (mongoRequestTask.prototype, {
 		this._openCollection (function (err, collection) {
 			console.log (this.collection);
 			collection.find (this.filter || {}).toArray (function (err, results) {
-				self.completed ({data: results});
+				self.completed ({data: results, filter: this.filter || {}});
 			});
 		});
 	},
