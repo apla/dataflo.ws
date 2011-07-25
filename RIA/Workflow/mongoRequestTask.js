@@ -81,11 +81,13 @@ util.extend (mongoRequestTask.prototype, {
 		this._openCollection (function (err, collection) {
 			console.log (this.collection);
 			collection.find (this.filter || {}).toArray (function (err, results) {
-				results.map (function (item) {
-					if (self.mapping) {
-						self.mapFields (item);
-					}
-				});
+				if (results) {
+					results.map (function (item) {
+						if (self.mapping) {
+							self.mapFields (item);
+						}
+					});
+				}
 				self.completed ({data: results, filter: this.filter || {}});
 			});
 		});
