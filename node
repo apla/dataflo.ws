@@ -4,7 +4,7 @@ SCRIPT_PATH=`pwd`/$0
 
 # here we append lib location to the node's lib
 
-echo $SCRIPT_PATH
+#echo $SCRIPT_PATH
 
 # NODE_PATH=/usr/local/lib/node_modules/
 UNAMES=`uname -s`
@@ -40,6 +40,11 @@ NODE_PATH_DELIMITER=":"
 
 
 PROJECT_DIR=${SCRIPT_PATH%%bin/node}
+
+if [ "x$1" == "x--project-root" ] ; then
+	echo $PROJECT_DIR
+	exit
+fi
 
 # echo $PROJECT_DIR
 
