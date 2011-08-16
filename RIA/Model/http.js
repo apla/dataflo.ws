@@ -1,12 +1,12 @@
 var HTTPClient = require ('http'),
-	common     = require ('common'),
+	util     = require ('util'),
 	fs         = require ('fs');
 
 var pipeProgress = function (config) {
 	this.bytesTotal = 0;
 	this.bytesPass  = 0; // because bytes can be read and written
 	this.lastLogged = 0;
-	common.extend (this, config);
+	util.extend (this, config);
 }
 
 pipeProgress.prototype.watch = function () {
@@ -33,7 +33,7 @@ var httpModel = module.exports = function (modelBase) {
 	this.fetch = function (target) {
 	
 		var isStream = target.to instanceof fs.WriteStream;
-		if (!isStream) target.to = '';
+		if (!isStream) target.to.data = '';
 		
 		var progress = new pipeProgress ({
 			writer: target.to
@@ -48,7 +48,7 @@ var httpModel = module.exports = function (modelBase) {
 				return;
 			}
 			
-			common.extend (progress, {
+			util.extend (progress, {
 				bytesTotal: res.headers['content-length'],
 				reader: res,
 				readerWatch: "data"
@@ -66,7 +66,7 @@ var httpModel = module.exports = function (modelBase) {
 			});
 			
 			res.on ('data', function (chunk) {
-				if (!isStream) target.to += chunk;
+				if (!isStream) target.to.data += chunk;
 				modelBase.emit ('data', chunk);
 			});
 			
