@@ -146,8 +146,13 @@ var io = require (path.join ('IO', 'Easy'));
 var project = function () {
 	// TODO: root directory object
 	var script = process.argv[1];
+	var rootPath = script.match (/(.*)\/(bin|t|lib)\//);
 	
-	var root = new io (script.match (/(.*)\/(bin|t|lib)\//)[1]);
+	if (!rootPath) {//win
+		rootPath = script.match (/(.*)\\(bin|t|lib)\\/)
+	}
+	
+	var root = new io ([1]);
 	
 	this.root = root;
 	
