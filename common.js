@@ -152,10 +152,9 @@ var project = function () {
 		rootPath = script.match (/(.*)\\(bin|t|lib)\\/)
 	}
 	
-	var root = new io ([1]);
+	var root = new io (rootPath[1]);
 	
 	this.root = root;
-	
 	var self = this;
 	
 	root.fileIO ('etc/project').readFile (function (err, data) {

@@ -7,9 +7,7 @@ var EventEmitter = require ('events').EventEmitter,
 var downloadTask = module.exports = function (config) {
 	
 	this.url = config.url;
-	
 	this.init (config);
-	
 };
 
 util.inherits (downloadTask, task);
@@ -19,6 +17,7 @@ util.extend (downloadTask.prototype, {
 	run: function () {
 
 		var self = this;
+		
 		self.download = {};
 		self.activityCheck ('task run');
 				
