@@ -105,7 +105,7 @@ var Workflow = module.exports = function (config, reqParam) {
 			}
 		}
 		
-//		console.log (taskParams);
+		//console.log (taskParams);
 		
 		if (taskParams.className) {
 //			self.log (taskParams.className + ': initializing task from class');
@@ -328,6 +328,12 @@ util.extend (Workflow.prototype, {
 				+ this.taskStates[taskStateNames.complete] + '/'+ self.tasks.length 
 				+ ', request: ' + requestDump + scarceTaskMessage
 			);
+			
+			if (self.response) {
+				self.response.writeHead (404, {});
+				self.response.end();
+			}
+			
 		} else if (self.haveCompletedTasks) {
 			
 			setTimeout (function () {

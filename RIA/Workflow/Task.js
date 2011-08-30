@@ -19,6 +19,7 @@ for (var stateNum = 0; stateNum < taskStateList.length; stateNum++) {
 
 
 var task = module.exports = function (config) {
+
 }
 
 util.inherits (task, EventEmitter);
@@ -43,6 +44,11 @@ util.extend (task.prototype, taskStateMethods, {
 		
 		this.state = 0;
 		
+		// default values
+		
+		self.timeout = 5;
+		self.retries = 1;
+		
 		var state = this.checkState ();
 //		console.log (this.url, 'state is', stateList[state], ' (' + state + ')', (state == 0 ? (this.require instanceof Array ? this.require.join (', ') : this.require) : ''));
 		
@@ -50,7 +56,7 @@ util.extend (task.prototype, taskStateMethods, {
 		
 		this.run = function () {
 			
-//			this.emit ('log', 'RUN RETRIES : ' + this.retries);
+			//this.emit ('log', 'RUN RETRIES : ' + this.retries);
 			
 			if (this.retries < 1) {
 				this.cancel();
@@ -76,13 +82,19 @@ util.extend (task.prototype, taskStateMethods, {
 			
 			self.clearOperationTimeout();
 			
-//			this.emit ('log', 'CANCEL RETRIES : ' + this.retries);
+			//this.emit ('log', 'CANCEL RETRIES : ' + this.retries);
 			
 			if (this.retries > 0) {
+				
+				this.retries--;
+				
 				this.state = 1;
+				
 				setTimeout(function () {
-					self.retries--;
-					self.run();
+					if (self.retries > 0) {
+						//self.retries--;
+						self.run();
+					}
 				}, this.timeout.seconds());
 			}
 

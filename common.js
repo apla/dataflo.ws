@@ -146,16 +146,20 @@ var io = require (path.join ('IO', 'Easy'));
 var project = function () {
 	// TODO: root directory object
 	var script = process.argv[1];
+	var rootPath = script.match (/(.*)\/(bin|t|lib)\//);
 	
-	var root = new io (script.match (/(.*)\/(bin|t|lib)\//)[1]);
+	if (!rootPath) {//win
+		rootPath = script.match (/(.*)\\(bin|t|lib)\\/)
+	}
+	
+	var root = new io (rootPath[1]);
 	
 	this.root = root;
-	
 	var self = this;
 	
 	root.fileIO ('etc/project').readFile (function (err, data) {
 		if (err) {
-			console.log ("can't access etc/project file. create one and define project id");
+			console.error ("can't access etc/project file. create one and define project id");
 			process.kill ();
 			return;
 		}
@@ -164,9 +168,12 @@ var project = function () {
 		configData.shift ();
 		var parser = configData.shift ();
 
-		console.log ('parsing etc/project using "' + parser + '" parser');
+		// console.log ('parsing etc/project using "' + parser + '" parser');
 		
 		if (parser == 'json') {
+
+			// TODO: error handling
+
 			var config = JSON.parse (configData[0]);
 			
 			self.id     = config.id;
@@ -175,7 +182,7 @@ var project = function () {
 			
 			// TODO: read config fixup
 		} else {
-			console.log ('parser ' + parser + ' unknown');
+			console.error ('parser ' + parser + ' unknown');
 			process.kill ();
 		}
 
@@ -183,7 +190,7 @@ var project = function () {
 		root.fileIO ('var/instance').readFile (function (err, data) {
 			
 			if (err) {
-				console.log ("PROBABLY HARMFUL: can't access var/instance: "+err);
+				console.error ("PROBABLY HARMFUL: can't access var/instance: "+err);
 				self.emit ('ready');
 				return;
 			}
@@ -196,7 +203,7 @@ var project = function () {
 		
 			root.fileIO ('etc/' + instance + '/fixup').readFile (function (err, data) {
 				if (err) {
-					console.log ("PROBABLY HARMFUL: can't access "+'etc/' + instance + '/fixup'+" file. "
+					console.error ("PROBABLY HARMFUL: can't access "+'etc/' + instance + '/fixup'+" file. "
 						+ "create one and define local configuration fixup. "
 					);
 					self.emit ('ready');
@@ -212,7 +219,8 @@ var project = function () {
 				fixupData.shift ();
 				var fixupParser = fixupData.shift ();
 
-				console.log ('parsing etc/' + instance + '/fixup using "' + fixupParser + '" parser');
+				// console.log ('parsing etc/' + instance + '/fixup using "' + fixupParser + '" parser');
+				// TODO: error handling
 
 				if (fixupParser == 'json') {
 					var config = JSON.parse (configData[0]);

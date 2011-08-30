@@ -2,7 +2,8 @@ var EventEmitter = require ('events').EventEmitter,
 	http         = require ('http'),
 	util         = require ('util'),
 	mime         = require ('mime'),
-	Workflow     = require ('RIA/Workflow');
+	Workflow     = require ('RIA/Workflow'),
+	os			 = require('os');
 
 var httpdi = module.exports = function (config) {
 	// we need to launch httpd
@@ -23,6 +24,10 @@ var httpdi = module.exports = function (config) {
 	} else {
 		this.listen ();
 	}
+	
+	// - - - OS detected
+	
+	this.win = (os.type() == 'Windows_NT');
 }
 
 util.inherits (httpdi, EventEmitter);
@@ -42,7 +47,7 @@ util.extend (httpdi.prototype, {
 	
 		this.server = http.createServer (function (req, res) {
 			
-			console.log ('serving: ' + req.method + ' ' + req.url);
+			console.log ('serving: ' + req.method + ' ' + req.url + ' for ', req.connection.remoteAddress + ':' + req.connection.remotePort);
 			
 			// here we need to find matching workflows
 			// for received request
@@ -52,8 +57,12 @@ util.extend (httpdi.prototype, {
 			var workflow;
 			
 			self.workflows.map (function (item) {
+				
 				// TODO: make real work
-				if (item.url == req.url.pathname) {
+				var match = req.url.pathname.match(item.url);
+				
+				if (match && match[0] == req.url.pathname) { //exact match
+					
 					console.log ('match');
 					self.emit ("detected", req, res, item);
 
@@ -83,7 +92,13 @@ util.extend (httpdi.prototype, {
 			
 			if (!workflow) {
 				if (self.static) {
+					
 					var pathName = req.url.pathname;
+					
+					if (self.win) {
+						pathName = pathName.split('/').join('\\');						
+					}
+					
 					if (pathName.match (/\/$/)) {
 						pathName += self.static.index;
 					}
