@@ -113,8 +113,8 @@ util.extend (mongoRequestTask.prototype, {
 			collection.insert (self.data, {safe: true}, function (err, docs) {
 				
 //				console.log (docs);
-				
-				docs.map (function (item) {
+				// TODO: check two parallels tasks: if one from its completed, then workflow must be completed (for exaple mongo & ldap tasks)
+				if (docs) docs.map (function (item) {
 					if (self.mapping) {
 						self.mapFields (item);
 					}
