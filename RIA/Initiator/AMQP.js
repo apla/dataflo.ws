@@ -46,55 +46,63 @@ util.extend (amqpi.prototype, {
 		self.workflows.map(function (workflowParams) {
 
 //			console.log ("--- workflowParams: ", workflowParams);
-
-			var exchange = self.connection.exchange (workflowParams.exchange, {type: 'topic'});
 			
-			var q = self.connection.queue (workflowParams.queue, function (name, messageCount, consumerCount) {
-				console.log ("there are " + messageCount + " messages awaits processing for " + self.config.qName);
-			});
-
-			if (workflowParams.routingKey) q.bind (exchange, workflowParams.routingKey);
-
-			q.subscribeRaw (function (m) {
-				
-//				console.log ("--- contentType: " );
-
-				m.body = '';
+			var exchangeParams = workflowParams.exchange;
+			var exchangeName;
 			
-				var size = 0;
-				m.addListener ('data', function (d) {
-					m.body += d;
-				});
-
-				m.addListener ('end', function () {
-
-					try {
-						m.command = JSON.parse (m.body);
-					} catch (e) {
-						self.emit ('undefined', e, m);
-						m.acknowledge ();
-						return;
-					}
-
-					self.emit ('detected', m);
-					
-					var workflow = new Workflow (
-						common.extend (true, {}, workflowParams),
-						{request: m.command}
-					);
-
-					workflow.run();
-					
-//					console.log ('<<<<<<<<<< message, workflowParams', m, workflowParams, '>>>>>>>>>>>');
-					
-					
-				});
+			if (exchangeParams.length) {
 				
+				exchangeName = exchangeParams;
+				exchangeParams = {type: 'topic'};
+			
+			} else {
+			
+				exchangeName = exchangeParams.name;
+			
+			}
+			
+			var exchange = self.connection.exchange (exchangeName, exchangeParams, function(exchange) {
 				
-			})
-			.addCallback (function () {
-				self.emit ('ready');
+				console.log("Exchange " + exchange.name + " is open");
+				
+				var queueParams = {autoDelete: false, durable: true};
+				
+				var q = self.connection.queue (workflowParams.queue, queueParams, function (queue, messageCount, consumerCount) {
+				
+					messageCount = (messageCount)?messageCount:0;
+					consumerCount = (consumerCount)?consumerCount:0;
+					
+					console.log ("there are " + messageCount + " messages awaits processing for " + queue.name + ", consumers: " + consumerCount);
+					
+					if (workflowParams.routingKey) q.bind (exchange, workflowParams.routingKey);
+					
+					q.subscribe({ack: true}, function (message, headers, deliveryInfo) {
+						
+//						console.log ("--- message", message, headers, deliveryInfo);
+						
+						self.emit ('detected', message);
+						
+						message.acknowledge = function() {
+							
+							q.shift();
+						
+						};
+						
+						var workflow = new Workflow (
+							util.extend (true, {}, workflowParams),
+							{request: message}
+						);
+
+						workflow.run();						
+							
+					}).addCallback(function () {
+						self.emit ('ready');
+					});
+				
 			});
+				
+			});
+			
 			
 		});
 		
@@ -129,7 +137,7 @@ util.extend (amqpi.prototype, {
 		this.connection = amqp.createConnection (this.currentConfig);
 			
 		this.connection.on ('error', function (e) {
-			console.log ('connection.error' + e);
+			console.log ('connection.error ' + e, e.stack);
 			
 			if (e.errno == 4)
 			{

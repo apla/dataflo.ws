@@ -32,7 +32,7 @@ util.extend (cacheTask.prototype, {
 	}
 });
 
-common.extend (cacheTask.prototype, {
+util.extend (cacheTask.prototype, {
 	
 	run: function () {
 
