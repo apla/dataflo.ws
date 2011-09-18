@@ -66,69 +66,69 @@ airline tickets, taxi receipt and so on)
 
 then tasks looks like:
 
-conferenceRequest   (
-	conferenceInfo
-) -> approve
+	conferenceRequest   (
+		conferenceInfo
+	) -> approve
 
 after approve we can book a hotel
 
-hotelBookingRequest (
-	approve
-) -> hotelBooking
+	hotelBookingRequest (
+		approve
+	) -> hotelBooking
 
 documents for visa must already contain conference info and booking
 
-visaRequest (
-	approve, conferenceInfo, hotelBooking
-) -> visa
+	visaRequest (
+		approve, conferenceInfo, hotelBooking
+	) -> visa
 
 we pay for conference and tickets after visa has done
 
-conferenceFeePay (
-	approve, visa
-) -> conferenceFee
+	conferenceFeePay (
+		approve, visa
+	) -> conferenceFee
 
-ticketsPay (
-	approve, visa
-) -> tickets
+	ticketsPay (
+		approve, visa
+	) -> tickets
 
 
 
 synopsis
 -------------------------------
 
-`
-var httpdi  = require ('RIA/Initiator/HTTPD');
 
-var httpdiConfig = {
-	"workflows": [{
-		"url": "/save",
-		"tasks": [{
-			"className": "postTask",
-			"request": "{$request}",
-			"produce": "data.body"
+	var httpdi  = require ('RIA/Initiator/HTTPD');
+
+	var httpdiConfig = {
+		"workflows": [{
+			"url": "/save",
+			"tasks": [{
+				"className": "postTask",
+				"request": "{$request}",
+				"produce": "data.body"
+			}, {
+				"className": "renderTask",
+				"type": "json",
+				"data": "{$data.body}",
+				"output": "{$response}"
+			}]		
 		}, {
-			"className": "renderTask",
-			"type": "json",
-			"data": "{$data.body}",
-			"output": "{$response}"
-		}]		
-	}, {
-		"url": "/entity/tickets/list.json",
-		"tasks": [{
-			"className":  "mongoRequestTask",
-			"connector":  "mongo",
-			"collection": "messages",
-			"produce":    "data.filter"
-		}, {
-			"className": "renderTask",
-			"type": "json",
-			"data": "{$data.filter}",
-			"output": "{$response}"
+			"url": "/entity/tickets/list.json",
+			"tasks": [{
+				"className":  "mongoRequestTask",
+				"connector":  "mongo",
+				"collection": "messages",
+				"produce":    "data.filter"
+			}, {
+				"className": "renderTask",
+				"type": "json",
+				"data": "{$data.filter}",
+				"output": "{$response}"
+			}]
 		}]
-	}]
-};
+	};
 
-var initiator = new httpdi (httpdiConfig);
-`
+	var initiator = new httpdi (httpdiConfig);
+
 
