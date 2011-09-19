@@ -132,3 +132,30 @@ synopsis
 	var initiator = new httpdi (httpdiConfig);
 
 
+implementation details
+-----------------------
+
+### initiator ###
+
+initiator make an request object, which contains all basic info about request. basic info means you didn't receive all the data, but you get everything to fetch complete request data.
+
+example: using httpd initiator, you receive all GET data i.e. query string, but in case POST request, you'll need to receive all post data by yourself (using task within workflow)
+
+### task ###
+
+every task has its own state and requirements. all task states:
+* scarce - starting task state
+* ready - task ready to run (when all task requirements satisfied)
+* running - workflow decided to launch this task
+* idle - not implemented
+* completed - task completed without errors
+* error - task completed with errors
+* skipped - task skipped, because other execution branch is selected (see below)
+
+### workflow ### 
+
+workflow check for task requirements and switch task state to ready. if any available running slots available, workflow start to run task.
+
+
+how to write your own task
+--------------------------
