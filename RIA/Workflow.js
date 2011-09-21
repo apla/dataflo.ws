@@ -115,8 +115,12 @@ var Workflow = module.exports = function (config, reqParam) {
 			try {
 				xTaskClass = require ('RIA/Workflow/'+taskParams.className);
 			} catch (e) {
-				console.log (e);
-				xTaskClass = require (taskParams.className);
+				try {
+					xTaskClass = require ('RIA/Workflow/Task/'+taskParams.className);
+				} catch (e) {
+					console.log (e);
+					xTaskClass = require (taskParams.className);
+				}
 			}
 			
 			task = new xTaskClass ({
@@ -328,12 +332,7 @@ util.extend (Workflow.prototype, {
 				+ this.taskStates[taskStateNames.complete] + '/'+ self.tasks.length 
 				+ ', request: ' + requestDump + scarceTaskMessage
 			);
-			
-			if (self.response) {
-				self.response.writeHead (404, {});
-				self.response.end();
-			}
-			
+
 		} else if (self.haveCompletedTasks) {
 			
 			setTimeout (function () {
