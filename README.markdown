@@ -1,7 +1,6 @@
 workflow processing for node.js
 ===============================
 
-
 abstract
 -------------------------------
 
@@ -15,6 +14,26 @@ real life ones.
 
 add DSL by your own taste.
 
+concept
+-------------------------------
+
+this project concept is born combining (flow based paradigm)[http://en.wikipedia.org/wiki/Flow-based_programming] and
+(responsibility driven design)[http://en.wikipedia.org/wiki/Responsibility-driven_design].
+
+typically, workflow.nodejs designed to be used in client-server applications.
+external system (client) make request and initiator receive this request.
+after parsing request, initiator make decision which workflow is responsible by
+this type of request. when decision is made and workflow is found, initiator start
+workflow. workflow is based on series of tasks. tasks have input parameters and
+may have response value. tasks doesn't talk one-to-one; instead, output
+from task delivered to workflow (controlling routine) via event data (message);
+input parameters provided by passing parameters from workflow.
+
+thus, tasks have (loose coupling)[http://en.wikipedia.org/wiki/Coupling_(computer_science)]
+and can be (distributed)[http://en.wikipedia.org/wiki/Distributed_data_flow].
+
+tasks must be designed (functionally cohesed)[http://en.wikipedia.org/wiki/Cohesion_(computer_science)]
+in mind, which leads to a good system design.
 
 terms
 ------------------------------
@@ -131,4 +150,48 @@ synopsis
 
 	var initiator = new httpdi (httpdiConfig);
 
+STUB
+-----------------------
 
+from
+
+	{
+		"url": "/entity/tickets/create.json",
+		"tasks": [{
+			"className": "postTask",
+			"request": "{$request}",
+			"dumpData": true,
+			"jsonEncoded": true,
+			"produce": "data.record"
+		}, {
+			"className":  "mongoRequestTask",
+			"connector":  "mongo",
+			"method":     "insert",
+			"collection": "messages",
+			"data":       "{$data.record}",
+			"produce":    "data.records"
+		}, {
+			"className": "renderTask",
+			"type": "json",
+			"data": "{$data.records}",
+			"output": "{$response}"
+		}]
+	}
+
+to
+
+$messages = {
+	class: 'mongoRequest',
+	connector: 'mongo',
+	collection: 'messages'
+}
+
+$messages->insert (data: data.record) -> data.records
+
+data.records = $messages->insert (data: data.record)
+
+
+see also
+---------------------------
+
+[http://docs.constructibl.es/specs/js/]
