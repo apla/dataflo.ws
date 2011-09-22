@@ -324,8 +324,15 @@ util.extend (Workflow.prototype, {
 				});
 			}
 			
-			var requestDump = 'CIRCULAR';
-			try {requestDump = JSON.stringify (self.request)} catch (e) {};
+			var requestDump = '???';
+			try {
+				requestDump = JSON.stringify (self.request)
+			} catch (e) {
+				if ((""+e).match (/circular/))
+					requestDump = 'CIRCULAR'
+				else
+					requestDump = e
+			};
 
 			
 			self.log ('workflow failed, progress: '
