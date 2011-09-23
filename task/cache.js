@@ -1,9 +1,9 @@
 var EventEmitter = require ('events').EventEmitter,
 	crypto       = require ('crypto'),
-	task         = require ('RIA/Workflow/Task'),
+	task         = require ('task/base'),
 	util         = require ('util'),
 	urlUtil      = require ('url'),
-	urlModel        = require ('RIA/Model/FromURL');
+	urlModel     = require ('model/from-url');
 
 var cachePath = 'var/cache';
 

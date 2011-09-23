@@ -1,7 +1,7 @@
 var EventEmitter = require ('events').EventEmitter,
 	util         = require ('util'),
 	common       = require ('common'),
-	taskClass    = require ('RIA/Workflow/Task');
+	taskClass    = require ('task/base');
 
 var colours = {
   reset: "\x1B[0m",
@@ -112,15 +112,18 @@ var Workflow = module.exports = function (config, reqParam) {
 			var xTaskClass;
 			
 			// TODO: need check all task classes, because some compile errors may be there
+			console.log ('task/'+taskParams.className);
 			try {
-				xTaskClass = require ('RIA/Workflow/'+taskParams.className);
+				xTaskClass = require ('task/' + taskParams.className);
 			} catch (e) {
+				console.log ('!!!!!!!!!', e);
 				try {
-					xTaskClass = require ('RIA/Workflow/Task/'+taskParams.className);
+					xTaskClass = require ('task-'+taskParams.className);
 				} catch (e) {
-					console.log (e);
+					console.log ('!!!!!!!!!2', e);
 					xTaskClass = require (taskParams.className);
 				}
+				
 			}
 			
 			task = new xTaskClass ({

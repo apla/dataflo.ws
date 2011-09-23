@@ -1,10 +1,10 @@
 var EventEmitter = require ('events').EventEmitter,
 	fs           = require ('fs'),
-	task         = require ('RIA/Workflow/Task'),
+	task         = require ('task/base'),
 	util         = require ('util'),
 	urlUtil      = require ('url'),
-	io           = require ('IO/Easy'),
-	urlModel        = require ('RIA/Model/FromURL');
+	io           = require ('io/easy'),
+	urlModel     = require ('model/from-url');
 
 var deliveryTask = module.exports = function (config) {
 	

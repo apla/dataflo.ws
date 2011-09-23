@@ -2,8 +2,8 @@ var EventEmitter = require ('events').EventEmitter,
 	http         = require ('http'),
 	util         = require ('util'),
 	mime         = require ('mime'),
-	Workflow     = require ('RIA/Workflow'),
-	os			 = require('os');
+	Workflow     = require ('workflow'),
+	os			 = require ('os');
 
 var httpdi = module.exports = function (config) {
 	// we need to launch httpd

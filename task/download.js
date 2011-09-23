@@ -1,8 +1,8 @@
 var EventEmitter = require ('events').EventEmitter,
-	task         = require ('RIA/Workflow/Task'),
+	task         = require ('task/base'),
 	util         = require ('util'),
 	urlUtil      = require ('url'),
-	urlModel     = require ('RIA/Model/FromURL');
+	urlModel     = require ('model/from-url');
 
 var downloadTask = module.exports = function (config) {
 	
