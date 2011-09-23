@@ -116,11 +116,12 @@ var Workflow = module.exports = function (config, reqParam) {
 			try {
 				xTaskClass = require ('task/' + taskParams.className);
 			} catch (e) {
-				console.log ('!!!!!!!!!', e);
+				var ee = e;
 				try {
 					xTaskClass = require ('task-'+taskParams.className);
 				} catch (e) {
-					console.log ('!!!!!!!!!2', e);
+					console.log ('require task/'+taskParams.className+':', ee);
+					console.log ('require task-'+taskParams.className+':', e);
 					xTaskClass = require (taskParams.className);
 				}
 				
