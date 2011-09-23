@@ -141,7 +141,7 @@ String.prototype.interpolate = function (dict, marks) {
 
 var path = require ('path');
 
-var io = require (path.join ('IO', 'Easy'));
+var io = require ('io/easy');
 
 var project = function () {
 	// TODO: root directory object

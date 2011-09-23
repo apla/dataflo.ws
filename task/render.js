@@ -1,4 +1,4 @@
-var task         = require ('RIA/Workflow/Task'),
+var task         = require ('task/base'),
 	util         = require ('util'),
 	mime		 = require ('mime');
 
