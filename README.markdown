@@ -17,8 +17,8 @@ add DSL by your own taste.
 concept
 -------------------------------
 
-this project concept is born combining (flow based paradigm)[http://en.wikipedia.org/wiki/Flow-based_programming] and
-(responsibility driven design)[http://en.wikipedia.org/wiki/Responsibility-driven_design].
+this project concept is born combining [flow based paradigm](http://en.wikipedia.org/wiki/Flow-based_programming) and
+[responsibility driven design](http://en.wikipedia.org/wiki/Responsibility-driven_design).
 
 typically, workflow.nodejs designed to be used in client-server applications.
 external system (client) make request and initiator receive this request.
@@ -29,10 +29,10 @@ may have response value. tasks doesn't talk one-to-one; instead, output
 from task delivered to workflow (controlling routine) via event data (message);
 input parameters provided by passing parameters from workflow.
 
-thus, tasks have (loose coupling)[http://en.wikipedia.org/wiki/Coupling_(computer_science)]
-and can be (distributed)[http://en.wikipedia.org/wiki/Distributed_data_flow].
+thus, tasks have [loose coupling](http://en.wikipedia.org/wiki/Coupling_(computer_science))
+and can be [distributed](http://en.wikipedia.org/wiki/Distributed_data_flow).
 
-tasks must be designed (functionally cohesed)[http://en.wikipedia.org/wiki/Cohesion_(computer_science)]
+tasks must be designed [functionally cohesed](http://en.wikipedia.org/wiki/Cohesion_(computer_science))
 in mind, which leads to a good system design.
 
 terms
@@ -75,13 +75,13 @@ real life example
 you want to visit a conference. your company doing all dirty work for you. but,
 you must make some bureocratic things.
 
-1. receive an approve from your boss.
-2. waiting all the needed documents for conference (foreign visa, travel tickets,
+1.   receive an approve from your boss.
+2.   waiting all the needed documents for conference (foreign visa, travel tickets,
 hotel booking, conference fee pay)
-3. get an travel allowance
-4. visit conference and make report for finance department (hotel invoice,
+3.   get an travel allowance
+4.   visit conference and make report for finance department (hotel invoice,
 airline tickets, taxi receipt and so on)
-5. make a presentation about conference
+5.   make a presentation about conference
 
 then tasks looks like:
 
@@ -150,46 +150,37 @@ synopsis
 
 	var initiator = new httpdi (httpdiConfig);
 
-STUB
+
+
+implementation details
 -----------------------
 
-from
+### initiator ###
 
-	{
-		"url": "/entity/tickets/create.json",
-		"tasks": [{
-			"className": "postTask",
-			"request": "{$request}",
-			"dumpData": true,
-			"jsonEncoded": true,
-			"produce": "data.record"
-		}, {
-			"className":  "mongoRequestTask",
-			"connector":  "mongo",
-			"method":     "insert",
-			"collection": "messages",
-			"data":       "{$data.record}",
-			"produce":    "data.records"
-		}, {
-			"className": "renderTask",
-			"type": "json",
-			"data": "{$data.records}",
-			"output": "{$response}"
-		}]
-	}
+initiator make an request object, which contains all basic info about request. basic info means you didn't receive all the data, but you get everything to fetch complete request data.
 
-to
+example: using httpd initiator, you receive all GET data i.e. query string, but in case POST request, you'll need to receive all post data by yourself (using task within workflow)
 
-$messages = {
-	class: 'mongoRequest',
-	connector: 'mongo',
-	collection: 'messages'
-}
+### task ###
 
-$messages->insert (data: data.record) -> data.records
+every task has its own state and requirements. all task states:
+*   scarce - starting task state
+*   ready - task ready to run (when all task requirements satisfied)
+*   running - workflow decided to launch this task
+*   idle - not implemented
+*   completed - task completed without errors
+*   error - task completed with errors
+*   skipped - task skipped, because other execution branch is selected (see below)
 
-data.records = $messages->insert (data: data.record)
+### workflow ### 
 
+workflow check for task requirements and switch task state to ready. if any available running slots available, workflow start to run task.
+
+
+how to write your own task
+--------------------------
+
+TODO
 
 see also
 ---------------------------
