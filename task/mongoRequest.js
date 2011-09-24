@@ -7,7 +7,53 @@ var EventEmitter = require ('events').EventEmitter,
 	mongo        = require ('mongodb');
 
 
-
+/**
+ * @author 
+ * @docauthor
+ * @class task.mongoRequest
+ * @extends task.task
+ * 
+ * A class implement few methods of working with MongoDB. Config parameter "className" must be equal to class name, that is "mongoRequest".
+ *
+ * Example:
+ <pre><code>
+	{
+		workflows: [{
+			url: "/entity/suggest",
+			tasks: [{
+				functionName: 'parseFilter',
+				url: "{$request.url}",
+				produce: "data.suggest"
+			}, {
+				className:  "mongoRequest",
+				connector:  "mongo",
+				collection: "messages",
+				filter:     "{$data.suggest.tag}",
+				produce:    "data.records"
+			}, {
+				className: "renderTask",
+				type: "json",
+				data: "{$data.records}",
+				output: "{$response}"
+			}]
+		}]
+	}
+ </code></pre>
+ *
+ * @cfg {String} connector (Require) config name in project object.
+ *
+ * @cfg {String} collection (Require) collection name from mongodb.
+ *
+ * @cfg {String} method (Optional) method name, wich will be called after task requirements statisfied.
+ * <li>
+ * <ul>run - default value, do selection from db</ul>
+ * <ul>insert - do insertion to db</ul>
+ * <ul>update - do update some records in db</ul>
+ * <li>
+ *
+ * @cfg {String} filter (Require) name of the property in workflow scope or object with filter fields for select | insert | update methods.
+ *
+ */
 var mongoRequestTask = module.exports = function (config) {
 	
 	this.init (config);
@@ -17,15 +63,24 @@ var mongoRequestTask = module.exports = function (config) {
 util.inherits (mongoRequestTask, task);
 
 util.extend (mongoRequestTask.prototype, {
+	
+	// private method get connector
+	
 	_getConnector: function () {
 	
+		// get connector config from project if it created
+		
 		if (project.connectors[this.connector]) {
 			return project.connectors[this.connector];
 		}
 		
+		// otherwise create connector from project config and add to project.connectors
+		
 		var connectorConfig = project.config.db[this.connector];
 		
 		console.log (connectorConfig);
+		
+		// create connector
 		
 		var connector = new mongo.Db (
 			connectorConfig.database,
@@ -38,24 +93,34 @@ util.extend (mongoRequestTask.prototype, {
 		
 		return connector;
 	},
+	
+	// private method to collection open
+	
 	_openCollection: function (cb) {
+		
 		var self = this;
 		
-		var client = this._getConnector ();
+		// get db client
+		var client = self._getConnector ();
 		
 		console.log ('cheking project.connections', self.connector, self.collection);
 		
+		// check collection existing in cache
+		// if collection cahed - return through callback this collection
 		if (project.connections[self.connector][self.collection]) {
 			cb.call (self, false, project.connections[self.connector][self.collection]);
 			console.log ('%%%%%%%%%% cached');
 			return;
 		}
 		
+		// otherwise open db connection
 		client.open (function (err, p_client) {
+			// get collection
 			client.collection(self.collection, function (err, collection) {
 				if (err) {
 					console.log (err);
 				} else {
+					// add to collections cache
 					console.log ('storing project.connections', self.connector, self.collection);
 					project.connections[self.connector][self.collection] = collection;
 				}
@@ -63,24 +128,31 @@ util.extend (mongoRequestTask.prototype, {
 				cb.call (self, err, collection);
 			});
 		});
-//	});
-
 	},
+	
+	// private method to create ObjectID
+	
 	_objectId: function (hexString) {
 		var ObjectID = project.connectors[this.connector].bson_serializer.ObjectID;
 		return new ObjectID (hexString);
 	},
+	
 	// actually, it's a fetch function
+	
 	run: function () {
 		var self = this;
 		
-		this.emit ('log', 'run called');
+		self.emit ('log', 'run called');
 		
 		// primary usable by Ext.data.Store
 		// we need to return {data: []}
-		this._openCollection (function (err, collection) {
-			console.log (this.collection);
-			collection.find (this.filter || {}).toArray (function (err, results) {
+		
+		// open collection
+		self._openCollection (function (err, collection) {
+			console.log ("COLLECTION:", self.collection, self.filter);
+			// find by filter or all records
+			collection.find (self.filter || {}).toArray (function (err, results) {
+			
 				if (results) {
 					results.map (function (item) {
 						if (self.mapping) {
@@ -88,7 +160,7 @@ util.extend (mongoRequestTask.prototype, {
 						}
 					});
 				}
-				self.completed ({data: results, filter: this.filter || {}});
+				self.completed (results);
 			});
 		});
 	},
