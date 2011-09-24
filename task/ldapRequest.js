@@ -7,11 +7,10 @@ var EventEmitter = require ('events').EventEmitter,
 
 var command = 'ldapsearch';
 
-/**********************************
- ldap connector
- need connector property and configuration:
- host, base, user, pass
- **********************************/
+
+// ldap connector
+// need connector property and configuration:
+// host, base, user, pass
 
 var ldapRequestTask = module.exports = function (config) {
 	this.init (config);
@@ -104,9 +103,7 @@ util.extend (ldapRequestTask.prototype, {
 //			searchResult = JSON.stringify({records: found});
 //			console.log("result is",  JSON.stringify(searchResult));
 //			self.completed ({records: found});
-			var result = {filter: self.searchString};
-			result[self.keyName || 'data'] = found;
-			self.completed (result);
+			self.completed (found);
 //			{records: found, position: self.position, text: self.searchString, type: self.dataType});
 		
 		});
