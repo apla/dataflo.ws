@@ -20,7 +20,7 @@ for (var stateNum = 0; stateNum < taskStateList.length; stateNum++) {
 /**
  * @author 
  * @docauthor
- * @class RIA.Workflow.Task
+ * @class task.task
  * @extends Object 
  * 
  * A class implement a running of atomic asynchrone/synchrone task within RIA.Workflow conception.
@@ -52,13 +52,14 @@ for (var stateNum = 0; stateNum < taskStateList.length; stateNum++) {
  *
  * @cfg {String} className (Require) name of node-module for asynchrone running of task.
  * <b>Warning:</b> Params className and functionName are incompatible.
+ *
  * @cfg {String} functionName (Require) name of node-exported function for synchrone running of some actions.
  * <b>Warning:</b> Params className and functionName are incompatible.
  *
+ * @cfg {String} method (Optional) entry point to task running. Default value is "run". This method will be called after requirements statisfied.
+ *
  * @cfg {String} produce (Require) name of the property, receiving the result of the task.
  * <b>Note:</b> Param is't require only for renderTask, because it send self result by response marked in output property.
- *
- * @cfg {Mixed} config (Optional) is any internal param for each individual task.
  */
  
 var task = module.exports = function (config) {
@@ -70,11 +71,12 @@ util.inherits (task, EventEmitter);
 util.extend (task.prototype, taskStateMethods, {
 	
 	init: function (config) {
+		
 		this.require      = config.require || null;
  		this.mustProduce  = config.mustProduce;
 		this.cb           = config.cb;
 		this.cbScope      = config.cbScope;
-	this.className    = config.className;
+		this.className    = config.className;
 		this.functionName = config.functionName;
 		
 		if (!this.logTitle) {
