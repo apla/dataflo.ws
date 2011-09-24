@@ -1,11 +1,3 @@
-/**
- * Adopted from jquery's extend method. Under the terms of MIT License.
- *
- * http://code.jquery.com/jquery-1.4.2.js
- *
- * Modified by Brian White to use Array.isArray instead of the custom isArray method
- */
-
 var util = require ('util');
 
 util.extend = function extend () {
