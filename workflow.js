@@ -1,7 +1,7 @@
 var EventEmitter = require ('events').EventEmitter,
 	util         = require ('util'),
 	common       = require ('common'),
-	taskClass    = require ('RIA/Workflow/Task');
+	taskClass    = require ('task/base');
 
 var colours = {
   reset: "\x1B[0m",
@@ -112,11 +112,19 @@ var Workflow = module.exports = function (config, reqParam) {
 			var xTaskClass;
 			
 			// TODO: need check all task classes, because some compile errors may be there
+			console.log ('task/'+taskParams.className);
 			try {
-				xTaskClass = require ('RIA/Workflow/'+taskParams.className);
+				xTaskClass = require ('task/' + taskParams.className);
 			} catch (e) {
-				console.log (e);
-				xTaskClass = require (taskParams.className);
+				var ee = e;
+				try {
+					xTaskClass = require ('task-'+taskParams.className);
+				} catch (e) {
+					console.log ('require task/'+taskParams.className+':', ee);
+					console.log ('require task-'+taskParams.className+':', e);
+					xTaskClass = require (taskParams.className);
+				}
+				
 			}
 			
 			task = new xTaskClass ({
@@ -235,6 +243,10 @@ util.extend (Workflow.prototype, {
 				task.on ('log', function (message) {
 					self.logTask (task, message); 
 				});
+
+				task.on ('warn', function (message) {
+					self.logTaskError (task, message); 
+				});
 				
 				task.on ('error', function () {
 					self.logTaskError (task, 'error ' + arguments[0]);// + '\n' + arguments[0].stack);
@@ -320,20 +332,22 @@ util.extend (Workflow.prototype, {
 				});
 			}
 			
-			var requestDump = 'CIRCULAR';
-			try {requestDump = JSON.stringify (self.request)} catch (e) {};
+			var requestDump = '???';
+			try {
+				requestDump = JSON.stringify (self.request)
+			} catch (e) {
+				if ((""+e).match (/circular/))
+					requestDump = 'CIRCULAR'
+				else
+					requestDump = e
+			};
 
 			
 			self.log ('workflow failed, progress: '
 				+ this.taskStates[taskStateNames.complete] + '/'+ self.tasks.length 
 				+ ', request: ' + requestDump + scarceTaskMessage
 			);
-			
-			if (self.response) {
-				self.response.writeHead (404, {});
-				self.response.end();
-			}
-			
+
 		} else if (self.haveCompletedTasks) {
 			
 			setTimeout (function () {

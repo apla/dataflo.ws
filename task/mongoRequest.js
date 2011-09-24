@@ -1,6 +1,6 @@
 var EventEmitter = require ('events').EventEmitter,
 	crypto       = require ('crypto'),
-	task         = require ('RIA/Workflow/Task'),
+	task         = require ('task/base'),
 	util         = require ('util'),
 	urlUtil      = require ('url'),
 	spawn        = require ('child_process').spawn,

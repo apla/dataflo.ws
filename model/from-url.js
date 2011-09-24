@@ -24,7 +24,7 @@ var model = module.exports = function (url) {
 	this.modelName = this.url.protocol.substr (0, this.url.protocol.length - 1);
 	
 //	console.log (this.modelName);
-	var requiredModel = require ('./'+this.modelName);
+	var requiredModel = require ('model/'+this.modelName);
 	this.dataSource = new  requiredModel (this);
 	
 	// fetch method

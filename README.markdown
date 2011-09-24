@@ -1,0 +1,197 @@
+workflow processing for node.js
+===============================
+
+abstract
+-------------------------------
+
+every application is based on series of workflows. if your workflow is written
+in a program code, you have a problem. people don't want to screw up, but
+they do. `workflow.nodejs` is an abstract async processing framework for
+describing workflows in simple configuration.
+
+you can use workflow for description of programmatic workflows. or
+real life ones.
+
+add DSL by your own taste.
+
+concept
+-------------------------------
+
+this project concept is born combining (flow based paradigm)[http://en.wikipedia.org/wiki/Flow-based_programming] and
+(responsibility driven design)[http://en.wikipedia.org/wiki/Responsibility-driven_design].
+
+typically, workflow.nodejs designed to be used in client-server applications.
+external system (client) make request and initiator receive this request.
+after parsing request, initiator make decision which workflow is responsible by
+this type of request. when decision is made and workflow is found, initiator start
+workflow. workflow is based on series of tasks. tasks have input parameters and
+may have response value. tasks doesn't talk one-to-one; instead, output
+from task delivered to workflow (controlling routine) via event data (message);
+input parameters provided by passing parameters from workflow.
+
+thus, tasks have (loose coupling)[http://en.wikipedia.org/wiki/Coupling_(computer_science)]
+and can be (distributed)[http://en.wikipedia.org/wiki/Distributed_data_flow].
+
+tasks must be designed (functionally cohesed)[http://en.wikipedia.org/wiki/Cohesion_(computer_science)]
+in mind, which leads to a good system design.
+
+terms
+------------------------------
+
+### initiator ###
+
+it's an entry point generator. every workflow has one entry point
+from one initiator.
+
+for example, initiator can be a http daemon, an amqp listener,
+a file system event (file changed), a process signal handler,
+a timer or any other external thing.
+
+### entry point ###
+
+it's a trigger for specific workflow. each initiator has its own entry point
+description.
+
+for example, entry point for a httpd daemon is an url. httpd may have a simple
+url match config or a complex route configuration — you decide which initiator
+does handling requests.
+
+### workflow ###
+
+a set of tasks, which leads workflow to success or fail
+
+### task ###
+
+a black processing cube.
+
+every `task` has its own requirements. requirements can be `entry point` data (for
+example, query string in case of httpd `initiator`) or another `task` data.
+if requirements satisfied, `task` start to execute. after execution `task`
+produce dataset.
+
+real life example
+-------------------------------
+
+you want to visit a conference. your company doing all dirty work for you. but,
+you must make some bureocratic things.
+
+1. receive an approve from your boss.
+2. waiting all the needed documents for conference (foreign visa, travel tickets,
+hotel booking, conference fee pay)
+3. get an travel allowance
+4. visit conference and make report for finance department (hotel invoice,
+airline tickets, taxi receipt and so on)
+5. make a presentation about conference
+
+then tasks looks like:
+
+	conferenceRequest   (
+		conferenceInfo
+	) -> approve
+
+after approve we can book a hotel
+
+	hotelBookingRequest (
+		approve
+	) -> hotelBooking
+
+documents for visa must already contain conference info and booking
+
+	visaRequest (
+		approve, conferenceInfo, hotelBooking
+	) -> visa
+
+we pay for conference and tickets after visa has done
+
+	conferenceFeePay (
+		approve, visa
+	) -> conferenceFee
+
+	ticketsPay (
+		approve, visa
+	) -> tickets
+
+
+
+synopsis
+-------------------------------
+
+
+	var httpdi  = require ('RIA/Initiator/HTTPD');
+
+	var httpdiConfig = {
+		"workflows": [{
+			"url": "/save",
+			"tasks": [{
+				"className": "postTask",
+				"request": "{$request}",
+				"produce": "data.body"
+			}, {
+				"className": "renderTask",
+				"type": "json",
+				"data": "{$data.body}",
+				"output": "{$response}"
+			}]		
+		}, {
+			"url": "/entity/tickets/list.json",
+			"tasks": [{
+				"className":  "mongoRequestTask",
+				"connector":  "mongo",
+				"collection": "messages",
+				"produce":    "data.filter"
+			}, {
+				"className": "renderTask",
+				"type": "json",
+				"data": "{$data.filter}",
+				"output": "{$response}"
+			}]
+		}]
+	};
+
+	var initiator = new httpdi (httpdiConfig);
+
+STUB
+-----------------------
+
+from
+
+	{
+		"url": "/entity/tickets/create.json",
+		"tasks": [{
+			"className": "postTask",
+			"request": "{$request}",
+			"dumpData": true,
+			"jsonEncoded": true,
+			"produce": "data.record"
+		}, {
+			"className":  "mongoRequestTask",
+			"connector":  "mongo",
+			"method":     "insert",
+			"collection": "messages",
+			"data":       "{$data.record}",
+			"produce":    "data.records"
+		}, {
+			"className": "renderTask",
+			"type": "json",
+			"data": "{$data.records}",
+			"output": "{$response}"
+		}]
+	}
+
+to
+
+$messages = {
+	class: 'mongoRequest',
+	connector: 'mongo',
+	collection: 'messages'
+}
+
+$messages->insert (data: data.record) -> data.records
+
+data.records = $messages->insert (data: data.record)
+
+
+see also
+---------------------------
+
+[http://docs.constructibl.es/specs/js/]

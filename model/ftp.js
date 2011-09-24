@@ -1,7 +1,7 @@
 var FTPClient         = require ('node-ftp/ftp'),
 	common            = require ('common'),
 	fs                = require ('fs'),
-	ftpManager        = require ('RIA/Model/FtpModelManager');
+	ftpManager        = require ('model/ftp/model-manager');
 
 var pipeProgress = function (config) {
 	this.bytesTotal = 0;
