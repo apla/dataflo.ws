@@ -7,11 +7,10 @@ var EventEmitter = require ('events').EventEmitter,
 
 var command = 'ldapsearch';
 
-/**********************************
- ldap connector
- need connector property and configuration:
- host, base, user, pass
- **********************************/
+
+// ldap connector
+// need connector property and configuration:
+// host, base, user, pass
 
 var ldapRequestTask = module.exports = function (config) {
 	this.init (config);
