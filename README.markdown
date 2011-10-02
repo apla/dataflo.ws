@@ -117,17 +117,17 @@ synopsis
 -------------------------------
 
 
-	var httpdi  = require ('RIA/Initiator/HTTPD');
+	var httpd  = require ('initiator/http');
 
-	var httpdiConfig = {
+	var httpdConfig = {
 		"workflows": [{
 			"url": "/save",
 			"tasks": [{
-				"className": "postTask",
+				"className": "post",
 				"request": "{$request}",
 				"produce": "data.body"
 			}, {
-				"className": "renderTask",
+				"className": "render",
 				"type": "json",
 				"data": "{$data.body}",
 				"output": "{$response}"
@@ -135,12 +135,12 @@ synopsis
 		}, {
 			"url": "/entity/tickets/list.json",
 			"tasks": [{
-				"className":  "mongoRequestTask",
+				"className":  "mongoRequest",
 				"connector":  "mongo",
 				"collection": "messages",
 				"produce":    "data.filter"
 			}, {
-				"className": "renderTask",
+				"className": "render",
 				"type": "json",
 				"data": "{$data.filter}",
 				"output": "{$response}"
@@ -148,7 +148,7 @@ synopsis
 		}]
 	};
 
-	var initiator = new httpdi (httpdiConfig);
+	var initiator = new httpd (httpdConfig);
 
 
 
@@ -164,6 +164,7 @@ example: using httpd initiator, you receive all GET data i.e. query string, but 
 ### task ###
 
 every task has its own state and requirements. all task states:
+
 *   scarce - starting task state
 *   ready - task ready to run (when all task requirements satisfied)
 *   running - workflow decided to launch this task
@@ -172,7 +173,8 @@ every task has its own state and requirements. all task states:
 *   error - task completed with errors
 *   skipped - task skipped, because other execution branch is selected (see below)
 
-### workflow ### 
+
+### workflow ###
 
 workflow check for task requirements and switch task state to ready. if any available running slots available, workflow start to run task.
 
@@ -180,7 +182,49 @@ workflow check for task requirements and switch task state to ready. if any avai
 how to write your own task
 --------------------------
 
-TODO
+assume we have task for checking file stats
+
+first of all, we need to load task base class along with fs node module:
+
+	var task         = require ('task/base'),
+		fs           = require ('fs');
+
+next, we need to write constructor of our class. constructor receive all of task parameters and must call this.init (config) after all preparations.
+
+	var statTask = module.exports = function (config) {
+		this.path = config.path;
+		this.init (config);
+	};
+
+next, we inherit task base class and add some methods to our stat class:
+
+	util.inherits (statTask, task);
+
+	util.extend (statTask.prototype, {
+		
+		run: function () {
+
+			var self = this;
+			
+			fs.stat (self.path, function (err, stats) {
+				if (err) {
+					self.emit ('warn', 'stat error for: ' + self.path);
+					self.failed (err);
+					return;
+				}
+				
+				self.emit ('log', 'stat done for: ' + self.path);
+				self.completed (stats);
+			})
+		}
+		
+	});
+
+in code above i've used this methods:
+
+*   emit - emit message to subscriber
+*   failed - method for indication of failed task
+*   completed - mark task as completed successfully
 
 see also
 ---------------------------
