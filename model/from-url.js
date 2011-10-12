@@ -1,4 +1,4 @@
-// Require RIA.Initiator.Listener
+// Require initiator.listener
 
 var events  = require ('events'),
 	http    = require ('http'),
