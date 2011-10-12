@@ -1,7 +1,7 @@
 
 var spawn = require('child_process').spawn;
 
-RIA.Initiator.Listener = function (config) {
+initiator.Listener = function (config) {
 
 	var self = this;
 	

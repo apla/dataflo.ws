@@ -1,5 +1,5 @@
 var EventEmitter   = require ('events').EventEmitter,
-	Workflow       = require ('RIA/Workflow');
+	Workflow       = require ('workflow');
 
 var timeri = module.exports = function (config) {
 	var self = this;
