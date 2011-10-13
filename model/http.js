@@ -34,7 +34,7 @@ var httpModel = module.exports = function (modelBase) {
 		
 	this.fetch = function (target) {
 		
-		console.log (modelBase.url);
+		// console.log (modelBase.url);
 	
 		var isStream = target.to instanceof fs.WriteStream;
 		if (!isStream) target.to.data = '';
@@ -42,7 +42,9 @@ var httpModel = module.exports = function (modelBase) {
 		var progress = new pipeProgress ({
 			writer: target.to
 		});
-				
+	  self.headers = {
+   		'Authorization': 'Basic ' + new Buffer(self.auth).toString('base64')
+ 		};
 		var req = self.req = HTTPClient.request(this, function (res) {
 						
 			self.res = res;

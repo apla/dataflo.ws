@@ -1,5 +1,6 @@
 var EventEmitter   = require ('events').EventEmitter,
 	Workflow       = require ('workflow');
+var util = require('util');
 
 var timeri = module.exports = function (config) {
 	var self = this;
@@ -30,7 +31,7 @@ util.extend (amqpi.prototype, {
 			// TODO: workflow manager for workflows running more time than interval
 
 			var workflow = new Workflow (
-				common.extend (true, {}, workflowParams),
+				util.extend (true, {}, workflowParams),
 				{request: {time: new Date()}}
 			);
 			

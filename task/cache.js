@@ -9,6 +9,7 @@ var cachePath = 'var/cache';
 
 var cacheTask = module.exports = function (config) {
 	
+	// console.log("config.url -> ", config.url);
 	this.url = config.url;
 	
 	this.init (config);
