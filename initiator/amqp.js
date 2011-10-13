@@ -92,7 +92,6 @@ util.extend (amqpi.prototype, {
 							util.extend (true, {}, workflowParams),
 							{request: message}
 						);
-						console.log("workflow.url -> ", workflow.url);
 
 						workflow.run();						
 							
