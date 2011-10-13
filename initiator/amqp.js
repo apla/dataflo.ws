@@ -39,7 +39,7 @@ util.extend (amqpi.prototype, {
 		// when connection ready we call this method
 		
 		var self = this;
-		console.log ("connected to " + this.connection.serverProperties.product);
+		// console.log ("connected to " + this.connection.serverProperties.product);
 				
 		// TODO : get every workflow and subscribeRaw on queue for this config
 		
@@ -65,9 +65,9 @@ util.extend (amqpi.prototype, {
 				
 				console.log("Exchange " + exchange.name + " is open");
 				
-				var queueParams = {autoDelete: false, durable: true};
+				var queueParams = {autoDelete: false, durable: workflowParams.queue.durable};
 				
-				var q = self.connection.queue (workflowParams.queue, queueParams, function (queue, messageCount, consumerCount) {
+				var q = self.connection.queue (workflowParams.queue.name, queueParams, function (queue, messageCount, consumerCount) {
 				
 					messageCount = (messageCount)?messageCount:0;
 					consumerCount = (consumerCount)?consumerCount:0;
@@ -116,7 +116,7 @@ util.extend (amqpi.prototype, {
 		
 		this.currentConfig = this.getConfig();
 		
-		console.log ('currentConfig', this.currentConfig.host);
+		// console.log ('currentConfig', this.currentConfig.host);
 		
 		this.setCancelTimeout(function () {
 			
@@ -137,13 +137,13 @@ util.extend (amqpi.prototype, {
 		this.connection = amqp.createConnection (this.currentConfig);
 			
 		this.connection.on ('error', function (e) {
-			console.log ('connection.error ' + e, e.stack);
+			// console.log ('connection.error ' + e, e.stack);
 			
 			if (e.errno == 4)
 			{
 				self.currentConfig.failTime = new Date().getTime();
 				self.currentConfig.failed = 1;
-				console.log ('current host ' + self.currentConfig.host + ' is failed (' + self.currentConfig.failTime + ')');
+				// console.log ('current host ' + self.currentConfig.host + ' is failed (' + self.currentConfig.failTime + ')');
 						
 				if (self.tries % self.config.length) {
 					
