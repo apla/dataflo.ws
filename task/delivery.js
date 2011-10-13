@@ -9,7 +9,6 @@ var EventEmitter = require ('events').EventEmitter,
 var deliveryTask = module.exports = function (config) {
 	
 	this.init (config);
-	console.log("config -> ", config);
 	
 };
 
@@ -30,7 +29,6 @@ util.extend (deliveryTask.prototype, {
 		if (!self.model) {
 			
 			try {
-				console.log("self.model -> ", self.url);
 				self.model = new urlModel (self.url);
 				self.url = self.model.url;
 				self.model.url.protocol.length;
