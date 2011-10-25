@@ -109,7 +109,7 @@ util.extend (mongoRequestTask.prototype, {
 		// if collection cahed - return through callback this collection
 		if (project.connections[self.connector][self.collection]) {
 			cb.call (self, false, project.connections[self.connector][self.collection]);
-			console.log ('%%%%%%%%%% cached');
+			// console.log ('%%%%%%%%%% cached');
 			return;
 		}
 		
@@ -124,7 +124,7 @@ util.extend (mongoRequestTask.prototype, {
 					console.log ('storing project.connections', self.connector, self.collection);
 					project.connections[self.connector][self.collection] = collection;
 				}
-				console.log ('%%%%%%%%%% not cached');
+				// console.log ('%%%%%%%%%% not cached');
 				cb.call (self, err, collection);
 			});
 		});
