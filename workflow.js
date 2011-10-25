@@ -320,6 +320,8 @@ util.extend (Workflow.prototype, {
 			+ this.taskStates[taskStateNames.scarce]
 			== self.tasks.length
 		) {
+			// console.log("taskStateNames.failed -> ", taskStateNames.failed);
+			// console.log("taskStateNames.scarce -> ", taskStateNames.scarce);
 		
 			var scarceTaskMessage = ', unsatisfied requirements: ';
 		
@@ -345,7 +347,7 @@ util.extend (Workflow.prototype, {
 			
 			self.log ('workflow failed, progress: '
 				+ this.taskStates[taskStateNames.complete] + '/'+ self.tasks.length 
-				+ ', request: ' + requestDump + scarceTaskMessage
+				+ ', request: ' /*+ requestDump*/ + scarceTaskMessage
 			);
 
 		} else if (self.haveCompletedTasks) {

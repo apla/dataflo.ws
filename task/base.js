@@ -227,6 +227,9 @@ util.extend (task.prototype, taskStateMethods, {
 	
 	activityCheck: function (place, breakOnly) {
 		
+		if (place!=="model.fetch data") {
+			// console.log("%%%%%%%%%%%%%place -> ", place);
+		}
 		var self = this;
 		
 		if (breakOnly === void (0)) {

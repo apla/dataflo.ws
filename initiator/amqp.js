@@ -78,7 +78,8 @@ util.extend (amqpi.prototype, {
 					
 					q.subscribe({ack: true}, function (message, headers, deliveryInfo) {
 						
-//						console.log ("--- message", message, headers, deliveryInfo);
+						// console.log ("--- message", message, headers, deliveryInfo);
+
 						
 						self.emit ('detected', message);
 						
@@ -88,10 +89,12 @@ util.extend (amqpi.prototype, {
 						
 						};
 						
+						//message.fetch.uri+="type/4/"
 						var workflow = new Workflow (
 							util.extend (true, {}, workflowParams),
 							{request: message}
 						);
+
 
 						workflow.run();						
 							
