@@ -2,9 +2,9 @@ var EventEmitter = require ('events').EventEmitter;
 var util         = require ('util');
 
 var barrier = module.exports = function (config) {
-	
+
 	var self = this;
-	
+
 	config.breakWhen.map (function (item) {
 		self.waitingItems++;
 		item.o.on (item.emitted, function (result) {
@@ -12,7 +12,7 @@ var barrier = module.exports = function (config) {
 			self.checkBroken ();
 		});
 	});
-	
+
 	this.brokenDown = config.brokenDown;
 }
 
