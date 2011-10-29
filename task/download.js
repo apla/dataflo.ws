@@ -5,7 +5,7 @@ var EventEmitter = require ('events').EventEmitter,
 	urlModel     = require ('model/from-url');
 
 var downloadTask = module.exports = function (config) {
-	
+
 	this.url = config.url;
 	this.init (config);
 };
@@ -13,18 +13,18 @@ var downloadTask = module.exports = function (config) {
 util.inherits (downloadTask, task);
 
 util.extend (downloadTask.prototype, {
-	
+
 	run: function () {
 
 		var self = this;
-		
+
 		self.download = {};
 		self.activityCheck ('task run');
-				
+
 		// create model and listen
-		
+
 		if (!self.model) {
-			
+
 			try {
 				self.model = new urlModel (self.url);
 				self.url = self.model.url;
@@ -33,27 +33,27 @@ util.extend (downloadTask.prototype, {
 				self.emitError(e);
 				return;
 			}
-			
+
 			self.model.on ('data', function (chunks) {
 				self.activityCheck ('model.fetch data');
 			});
-			
+
 			self.model.on ('error', function (e) {
 				self.emitError(e);
 			});
-			
+
 			self.model.on ('end', function () {
 				self.clearOperationTimeout();
-				self.completed (self.download.data);				
+				self.completed (self.download.data);
 			});
-			
+
 		}
-		
+
 		self.emit ('log', 'start downloading from ' + self.url.href);
 		self.activityCheck ('model.fetch start');
 		self.model.fetch ({to: self.download});
 	},
-	
+
 	emitError: function (e) {
 		if (e) {
 			this.state = 5;

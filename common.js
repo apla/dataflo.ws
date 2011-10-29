@@ -89,18 +89,18 @@ String.prototype.interpolate = function (dict, marks) {
 		marks = {
 			start: '{$', end: '}', path: '.'
 		};
-	
+
 	var result;
-	
+
 	var template = this;
-	
+
 	var pos = this.indexOf (marks.start);
 	while (pos > -1) {
 		var end = (result || this).indexOf (marks.end, pos);
 		var str = (result || this).substr (pos + 2, end - pos - 2);
-		
+
 		// console.log ("found replacement: key => ???, requires => $"+this+"\n");
-		
+
 		var fix;
 		if (str.indexOf (marks.path) > -1) { //  treat as path
 			//  warn join ', ', keys %{$self->var};
@@ -108,25 +108,25 @@ String.prototype.interpolate = function (dict, marks) {
 		} else { // scalar
 			fix = dict[str];
 		}
-		
+
 		if (fix === void(0))
 			throw (result || this);
-		
+
 		// warn "value for replace is: $fix\n";
-		
+
 		if (pos == 0 && end == ((result || this).length - 1)) {
 			result = fix;
 		} else {
 			result = (result || this).substr (0, pos) + fix + (result || this).substr (end + 1);
 //			console.log ('!!!', (result || this).toString(), fix.toString(), pos, end, end - pos + 1);
 		}
-		
+
 		if ((result || this).indexOf)
 			pos = (result || this).indexOf (marks.start, end);
 		else
 			break;
 	}
-	
+
 	return result;
 
 };
@@ -139,39 +139,39 @@ var project = function () {
 	// TODO: root directory object
 	var script = process.argv[1];
 	var rootPath = script.match (/(.*)\/(bin|t|lib)\//);
-	
+
 	if (!rootPath) {//win
 		rootPath = script.match (/(.*)\\(bin|t|lib)\\/)
 	}
-	
+
 	var root = new io (rootPath[1]);
-	
+
 	this.root = root;
 	var self = this;
-	
+
 	root.fileIO ('etc/project').readFile (function (err, data) {
 		if (err) {
 			console.error ("can't access etc/project file. create one and define project id");
 			process.kill ();
 			return;
 		}
-		
+
 		var configData = (""+data).match (/(\w+)(\W[^]*)/);
 		configData.shift ();
 		var parser = configData.shift ();
 
 		// console.log ('parsing etc/project using "' + parser + '" parser');
-		
+
 		if (parser == 'json') {
 
 			// TODO: error handling
 
 			var config = JSON.parse (configData[0]);
-			
+
 			self.id     = config.id;
 			self.config = config;
-			
-			
+
+
 			// TODO: read config fixup
 		} else {
 			console.error ('parser ' + parser + ' unknown');
@@ -180,19 +180,19 @@ var project = function () {
 
 
 		root.fileIO ('var/instance').readFile (function (err, data) {
-			
+
 			if (err) {
 				console.error ("PROBABLY HARMFUL: can't access var/instance: "+err);
 				self.emit ('ready');
 				return;
 			}
-			
+
 			var instance = (""+data).split (/\n/)[0];
-			
+
 			self.instance = instance;
-			
+
 			console.log ('instance is: ', instance);
-		
+
 			root.fileIO ('etc/' + instance + '/fixup').readFile (function (err, data) {
 				if (err) {
 					console.error ("PROBABLY HARMFUL: can't access "+'etc/' + instance + '/fixup'+" file. "
@@ -202,7 +202,7 @@ var project = function () {
 					return;
 					// process.kill ();
 				}
-				
+
 				var fixupData = (""+data).match (/(\w+)(\W[^]*)/);
 				fixupData.shift ();
 				var fixupParser = fixupData.shift ();
@@ -216,24 +216,24 @@ var project = function () {
 
 				if (fixupParser == 'json') {
 					var config = JSON.parse (configData[0]);
-					
+
 					util.extend (true, self.config, config);
 				} else {
 					console.log ('parser ' + fixupParser + ' unknown');
 					process.kill ();
 				}
-				
+
 				console.log ('project ready');
-				
+
 				self.emit ('ready');
 			});
 		});
 	});
-	
+
 	// TODO: walk filetree to find directory root if script located in
 	// subdir of bin or t
 //	console.log (root);
-	
+
 }
 
 var EventEmitter = require ('events').EventEmitter;

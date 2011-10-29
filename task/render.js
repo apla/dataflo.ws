@@ -3,19 +3,19 @@ var task         = require ('task/base'),
 	mime		 = require ('mime');
 
 var renderTask = module.exports = function (config) {
-	
+
 	this.init (config);
-	
+
 };
 
 util.inherits (renderTask, task);
 
 util.extend (renderTask.prototype, {
-	
+
 	run: function () {
 
 		var self = this;
-		
+
 		if (this.type == 'json') {
 			self.output.setHeader("Content-Type", mime.lookup(this.type) + '; charset=utf-8');
 			self.output.end (JSON.stringify(self.data));
@@ -24,6 +24,6 @@ util.extend (renderTask.prototype, {
 			self.output.setHeader ("Content-Type", self.contentType);
 			self.output.end (self.data);
 			self.completed ();
-		}		
+		}
 	}
 });

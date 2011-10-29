@@ -24,82 +24,82 @@ pipeProgress.prototype.watch = function () {
 }
 
 var httpModel = module.exports = function (modelBase) {
-		
+
 	var self = this;
-	
+
 	modelBase.url.host = modelBase.url.hostname;
 	modelBase.url.path = modelBase.url.pathname;
-	
+
 	util.extend (this, modelBase.url);
-		
+
 	this.fetch = function (target) {
-		
+
 		console.log (modelBase.url);
-	
+
 		var isStream = target.to instanceof fs.WriteStream;
 		if (!isStream) target.to.data = '';
-		
+
 		var progress = new pipeProgress ({
 			writer: target.to
 		});
-				
+
 		var req = self.req = HTTPClient.request(this, function (res) {
-						
+
 			self.res = res;
-			
+
 			if (res.statusCode != 200) {
 				modelBase.emit ('error', 'statusCode = '+res.statusCode);
 				return;
 			}
-			
+
 			if (!isStream) res.setEncoding('utf8');
-			
+
 			util.extend (progress, {
 				bytesTotal: res.headers['content-length'],
 				reader: res,
 				readerWatch: "data"
 			});
-			
+
 			progress.watch ();
-		
+
 			if (isStream) {
 				self.writeStream = target.to;
 				res.pipe(self.writeStream);
 			}
-			
+
 			res.on ('error', function (exception) {
 				modelBase.emit ('error', 'res : '+exception);
 			});
-			
+
 			res.on ('data', function (chunk) {
 				if (!isStream) target.to.data += chunk;
 				modelBase.emit ('data', chunk);
 			});
-			
+
 			res.on ('end', function () {
 				modelBase.emit ('end');
 			});
 		});
-		
+
 		req.on('error', function(e) {
 			modelBase.emit ('error', 'req : '+e);
 		});
-				
+
 		req.end();
-		
+
 		return progress;
 	}
-	
+
 	this.stop = function () {
 		if (this.req) this.req.abort();
 		if (this.res) this.res.destroy();
 	}
-	
+
 }
 
 httpModel.prototype = {
-	
+
 	method: 'GET',
 	port: 80
-	
+
 };

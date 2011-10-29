@@ -130,7 +130,7 @@ synopsis
 				"type": "json",
 				"data": "{$data.body}",
 				"output": "{$response}"
-			}]		
+			}]
 		}, {
 			"url": "/entity/tickets/list.json",
 			"tasks": [{
@@ -200,23 +200,23 @@ next, we inherit task base class and add some methods to our stat class:
 	util.inherits (statTask, task);
 
 	util.extend (statTask.prototype, {
-		
+
 		run: function () {
 
 			var self = this;
-			
+
 			fs.stat (self.path, function (err, stats) {
 				if (err) {
 					self.emit ('warn', 'stat error for: ' + self.path);
 					self.failed (err);
 					return;
 				}
-				
+
 				self.emit ('log', 'stat done for: ' + self.path);
 				self.completed (stats);
 			})
 		}
-		
+
 	});
 
 in code above i've used these methods:
