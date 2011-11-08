@@ -56,6 +56,9 @@ var EventEmitter = require ('events').EventEmitter,
  */
 var mongoRequestTask = module.exports = function (config) {
 	
+	this.timestamp = true;
+	this.insertingSafe = false;
+	
 	this.init (config);
 	
 };
@@ -149,56 +152,140 @@ util.extend (mongoRequestTask.prototype, {
 		
 		// open collection
 		self._openCollection (function (err, collection) {
-			console.log ("COLLECTION:", self.collection, self.filter);
-			// find by filter or all records
-			collection.find (self.filter || {}).toArray (function (err, results) {
 			
-				if (results) {
-					results.map (function (item) {
+			console.log ("collection.find", self.collection, self.filter);
+			// find by filter or all records
+			collection.find (self.filter || {}).toArray (function (err, docs) {
+			
+				console.log ("findResult", docs);
+				
+				if (docs) {
+					docs.map (function (item) {
 						if (self.mapping) {
 							self.mapFields (item);
 						}
 					});
 				}
-				self.completed (results);
+				
+				self.completed ({
+					success:	(err == null),
+					total:		(docs && docs.length) || 0,
+					err:		err,
+					data:		docs
+				});
 			});
 		});
 	},
+	
 	insert: function () {
+		
 		var self = this;
 		
 		this.emit ('log', 'insert called ' + self.data);
 		
 		this._openCollection (function (err, collection) {
+			
 			if (self.data.constructor != Array) {
 				self.data = [self.data];
 			}
 			
-			self.data.map (function (item) {
-				// 
-				if (item._id && item._id != "") {
-					// probably things goes bad. we don't want to insert items
-					// with _id field defined
-				}
+			var docsId = [];
+			
+			self.data.map(function(item) {
+				
+				if (self.timestamp) item.created = item.updated = new Date().getTime();
+				
+				docsId.push(item._id);
+				
 			});
 			
-			collection.insert (self.data, {safe: true}, function (err, docs) {
+			if (self.insertingSafe) {
+			
+				// find any records alredy stored in db
 				
-//				console.log (docs);
-				// TODO: check two parallels tasks: if one from its completed, then workflow must be completed (for exaple mongo & ldap tasks)
-				if (docs) docs.map (function (item) {
-					if (self.mapping) {
-						self.mapFields (item);
+				collection.find({_id: {$in: docsId}}).toArray(function(err, alreadyStoredDocs) {
+					
+					//console.log("alreadyStoredDocs", alreadyStoredDocs);
+					var alreadyStoredDocsObj = {};
+					
+					alreadyStoredDocs.map (function(item) {
+						alreadyStoredDocsObj[item._id] = true;
+					});
+					
+					// build list of new records
+					var dataToInsert = [];
+					
+					self.data.map(function(item) {
+					
+						if (!alreadyStoredDocsObj[item._id]) dataToInsert.push(item);
+						
+					});
+					
+					//console.log ("dataToInsert", dataToInsert);
+										
+					if (dataToInsert.length == 0) {
+						
+						self.completed ({
+							success:	(err == null),
+							total:		alreadyStoredDocs.length,
+							err:		err || null,
+							data:		alreadyStoredDocs
+						});
+						
+						return;
 					}
-				});
-
+					
+					collection.insert (dataToInsert, {safe: true}, function (err, docs) {
+						
+						//console.log ('collection.insert', docs, err);
+						
+						if (docs) docs.map (function (item) {
+							if (self.mapping) {
+								self.mapFields (item);
+							}
+						});
+						
+						var insertedRecords = alreadyStoredDocs.concat(docs);
+						
+						self.completed ({
+							success:	(err == null),
+							total:		(insertedRecords && insertedRecords.length) || 0,
+							err:		err || null,
+							data:		insertedRecords
+						});
+						
+					});
 				
-				self.completed ({data: docs, success: true, error: null, errors: []});
-				// {"data": {"username":"xyz","email":"z@x.com","password":"abcd","id":"1"},"success":true,"error":null,"errors":[]}
-			});
+				});
+			} else {
+				
+				collection.insert (self.data, {safe: true}, function (err, docs) {
+					
+					// TODO: check two parallels tasks: if one from its completed, then workflow must be completed (for exaple mongo & ldap tasks)
+					console.log ('collection.insert', docs, err);
+					
+					if (docs) docs.map (function (item) {
+						if (self.mapping) {
+							self.mapFields (item);
+						}
+					});
+					
+					self.completed ({
+						success:	(err == null),
+						total:		(docs && docs.length) || 0,
+						err:		err || null,
+						data:		docs
+					});
+					
+				});
+			
+			}
+			
 		});
 	},
+	
 	update: function () {
+		
 		var self = this;
 		
 		this.emit ('log', 'update called ' + self.data);
@@ -212,19 +299,22 @@ util.extend (mongoRequestTask.prototype, {
 			console.log ('data for update', self.data);
 			
 			var idList = self.data.map (function (item) {
+				
 				if (item._id && item._id != "") {
+					
 					var id = self._objectId (item._id);
+					
 					var set = {};
+					
 					for (var k in item) {
 						if (k != '_id')
 							set[k] = item[k];
 					}
-					collection.update ({_id: id}, {$set: set}); //, {safe: true}, function (err) {
-//						console.log (docs);
+					
+					if (self.timestamp) set.updated = new Date().getTime();
+					
+					collection.update ({_id: id}, {$set: set});
 						
-						
-						// {"data": {"username":"xyz","email":"z@x.com","password":"abcd","id":"1"},"success":true,"error":null,"errors":[]}
-					//});
 					return id;
 					
 				} else {
@@ -236,6 +326,7 @@ util.extend (mongoRequestTask.prototype, {
 			self.completed ({_id: {$in: idList}});
 		});
 	},
+	
 	emitError: function (e) {
 		if (e) {
 			this.state = 5;
