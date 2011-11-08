@@ -45,15 +45,13 @@ util.extend (amqpi.prototype, {
 		
 		self.workflows.map(function (workflowParams) {
 
-//			console.log ("--- workflowParams: ", workflowParams);
-			
 			var exchangeParams = workflowParams.exchange;
 			var exchangeName;
 			
 			if (exchangeParams.length) {
 				
 				exchangeName = exchangeParams;
-				exchangeParams = {type: 'topic'};
+				exchangeParams = {};
 			
 			} else {
 			
@@ -61,13 +59,29 @@ util.extend (amqpi.prototype, {
 			
 			}
 			
-			var exchange = self.connection.exchange (exchangeName, exchangeParams, function(exchange) {
+			console.log("Try connect to " + exchangeName + " exchange");
+			
+			var exchange = self.connection.exchange (exchangeName, exchangeParams);
+			
+			exchange.on('open', function() {
 				
 				console.log("Exchange " + exchange.name + " is open");
 				
-				var queueParams = {autoDelete: false, durable: workflowParams.queue.durable};
+				var queueParams = workflowParams.queue;
+				var queueName;
 				
-				var q = self.connection.queue (workflowParams.queue.name, queueParams, function (queue, messageCount, consumerCount) {
+				if (queueParams.length) {
+					
+					queueName = queueParams;
+					queueParams = {};
+				
+				} else {
+				
+					queueName = queueParams.name;
+				
+				}
+				
+				var q = self.connection.queue (queueName, queueParams, function (queue, messageCount, consumerCount) {
 				
 					messageCount = (messageCount)?messageCount:0;
 					consumerCount = (consumerCount)?consumerCount:0;
@@ -76,10 +90,9 @@ util.extend (amqpi.prototype, {
 					
 					if (workflowParams.routingKey) q.bind (exchange, workflowParams.routingKey);
 					
-					q.subscribe({ack: true}, function (message, headers, deliveryInfo) {
+					q.subscribe({ack: workflowParams.ack}, function (message, headers, deliveryInfo) {
 						
 						// console.log ("--- message", message, headers, deliveryInfo);
-
 						
 						self.emit ('detected', message);
 						
@@ -102,7 +115,13 @@ util.extend (amqpi.prototype, {
 						self.emit ('ready');
 					});
 				
+				});
+				
 			});
+			
+			exchange.on('error', function(e) {
+				
+				self.emit('error', e);
 				
 			});
 			

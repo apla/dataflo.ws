@@ -27,9 +27,6 @@ var httpModel = module.exports = function (modelBase) {
 		
 	var self = this;
 	
-	modelBase.url.host = modelBase.url.hostname;
-	modelBase.url.path = modelBase.url.pathname;
-	
 	util.extend (this, modelBase.url);
 		
 	this.fetch = function (target) {
@@ -40,9 +37,12 @@ var httpModel = module.exports = function (modelBase) {
 		var progress = new pipeProgress ({
 			writer: target.to
 		});
-	  	self.headers = {
-   			'Authorization': 'Basic ' + new Buffer(self.auth).toString('base64')
- 		};
+	  	
+		if (self.auth) {
+			self.headers = {
+				'Authorization': 'Basic ' + new Buffer(self.auth).toString('base64')
+			};
+		}
 		var req = self.req = HTTPClient.request(this, function (res) {
 						
 			self.res = res;
