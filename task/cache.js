@@ -44,6 +44,7 @@ util.extend (cacheTask.prototype, {
 		
 		if (!self.model) {
 			
+			// console.log("self.model.url -> ", self.url.fetch.uri);
 			try {
 				self.model = new urlModel (self.url);
 				self.url = self.model.url;
@@ -52,20 +53,26 @@ util.extend (cacheTask.prototype, {
 				self.emitError(e);
 				return;
 			}
-			
 			self.model.on ('data', function (chunks) {
 				self.activityCheck ('model.fetch data');
 			});
 			
 			self.model.on ('error', function (e) {
+				// console.log("%%%%%%%%%%cache failed");
 				self.emitError(e);
 			});
 			
 			self.model.on ('end', function () {
+				/*var srcName = self.model.dataSource.res.headers['content-disposition'].match(/filename=\"([^"]+)/)[1];
+				self.res = {};
+				self.res.srcName = srcName ? srcName : "";
+				console.log("self.res -> ", self.res);*/
 				self.clearOperationTimeout();
 				self.cacheFile.chmod (0640, function (err) {
 					// TODO: check for exception (and what's next?)
 					delete project.caching[self.cacheFileName];
+					// self.res.cacheFileName = self.cacheFileName
+					// self.completed (self.res);
 					self.completed (self.cacheFileName);
 				});
 			});
