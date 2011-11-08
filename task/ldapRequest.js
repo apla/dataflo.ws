@@ -60,11 +60,13 @@ util.extend (ldapRequestTask.prototype, {
 
 		fork.on('exit', function (code) {
 
-			var found = [];
+			var docs = [];
 			var records = stdout.split ("\n\n");
 		
 			records.map (function (item) {
+				
 				var account;
+				
 				item.split (/\n\s+/).join ('').split ("\n").map (function (item) {
 					if (!item || item.charAt (0) == '#')
 						return
@@ -95,16 +97,18 @@ util.extend (ldapRequestTask.prototype, {
 					if (self.mapping) {
 						self.mapFields (account);
 					}
-					found.push (account);
+					
+					docs.push (account);
 				}
 				
 			});
 		
-//			searchResult = JSON.stringify({records: found});
-//			console.log("result is",  JSON.stringify(searchResult));
-//			self.completed ({records: found});
-			self.completed (found);
-//			{records: found, position: self.position, text: self.searchString, type: self.dataType});
+			self.completed ({
+				success: (docs.length > 0),
+				total: docs.length || 0,
+				err: null,
+				data: docs
+			});
 		
 		});
 	
