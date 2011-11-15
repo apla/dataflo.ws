@@ -20,9 +20,10 @@ util.extend (deliveryTask.prototype, {
 		
 		var self = this;
 		
-		self.activityCheck ('task run');
+		self.activityCheck ('delivery.task run');
 		
 		this.originalFileName = this.originUrl.substr (this.originUrl.lastIndexOf ('/') + 1);
+		if (!this.originalFileName) {this.originalFileName = this.srcName;}
 		
 		// create model
 		
@@ -65,7 +66,6 @@ util.extend (deliveryTask.prototype, {
 			}
 			
 			self.activityCheck ('ftp.store start');
-			
 			self.model.store ({
 				from: readStream,
 				originalFileName: self.originalFileName,

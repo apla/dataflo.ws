@@ -1,7 +1,7 @@
 var EventEmitter   = require ('events').EventEmitter,
 	http           = require ('http'),
 	util           = require ('util'),
-	Workflow       = require ('RIA/Workflow');
+	Workflow       = require ('workflow');
 
 var amqp = require ('node-amqp/amqp.js');
 
@@ -39,21 +39,19 @@ util.extend (amqpi.prototype, {
 		// when connection ready we call this method
 		
 		var self = this;
-		console.log ("connected to " + this.connection.serverProperties.product);
+		// console.log ("connected to " + this.connection.serverProperties.product);
 				
 		// TODO : get every workflow and subscribeRaw on queue for this config
 		
 		self.workflows.map(function (workflowParams) {
 
-//			console.log ("--- workflowParams: ", workflowParams);
-			
 			var exchangeParams = workflowParams.exchange;
 			var exchangeName;
 			
 			if (exchangeParams.length) {
 				
 				exchangeName = exchangeParams;
-				exchangeParams = {type: 'topic'};
+				exchangeParams = {};
 			
 			} else {
 			
@@ -61,13 +59,29 @@ util.extend (amqpi.prototype, {
 			
 			}
 			
-			var exchange = self.connection.exchange (exchangeName, exchangeParams, function(exchange) {
+			console.log("Try connect to " + exchangeName + " exchange");
+			
+			var exchange = self.connection.exchange (exchangeName, exchangeParams);
+			
+			exchange.on('open', function() {
 				
 				console.log("Exchange " + exchange.name + " is open");
 				
-				var queueParams = {autoDelete: false, durable: true};
+				var queueParams = workflowParams.queue;
+				var queueName;
 				
-				var q = self.connection.queue (workflowParams.queue, queueParams, function (queue, messageCount, consumerCount) {
+				if (queueParams.length) {
+					
+					queueName = queueParams;
+					queueParams = {};
+				
+				} else {
+				
+					queueName = queueParams.name;
+				
+				}
+				
+				var q = self.connection.queue (queueName, queueParams, function (queue, messageCount, consumerCount) {
 				
 					messageCount = (messageCount)?messageCount:0;
 					consumerCount = (consumerCount)?consumerCount:0;
@@ -76,9 +90,9 @@ util.extend (amqpi.prototype, {
 					
 					if (workflowParams.routingKey) q.bind (exchange, workflowParams.routingKey);
 					
-					q.subscribe({ack: true}, function (message, headers, deliveryInfo) {
+					q.subscribe({ack: workflowParams.ack}, function (message, headers, deliveryInfo) {
 						
-//						console.log ("--- message", message, headers, deliveryInfo);
+						// console.log ("--- message", message, headers, deliveryInfo);
 						
 						self.emit ('detected', message);
 						
@@ -88,10 +102,12 @@ util.extend (amqpi.prototype, {
 						
 						};
 						
+						//message.fetch.uri+="type/4/"
 						var workflow = new Workflow (
 							util.extend (true, {}, workflowParams),
 							{request: message}
 						);
+
 
 						workflow.run();						
 							
@@ -99,7 +115,13 @@ util.extend (amqpi.prototype, {
 						self.emit ('ready');
 					});
 				
+				});
+				
 			});
+			
+			exchange.on('error', function(e) {
+				
+				self.emit('error', e);
 				
 			});
 			
@@ -116,7 +138,7 @@ util.extend (amqpi.prototype, {
 		
 		this.currentConfig = this.getConfig();
 		
-		console.log ('currentConfig', this.currentConfig.host);
+		// console.log ('currentConfig', this.currentConfig.host);
 		
 		this.setCancelTimeout(function () {
 			
@@ -137,13 +159,13 @@ util.extend (amqpi.prototype, {
 		this.connection = amqp.createConnection (this.currentConfig);
 			
 		this.connection.on ('error', function (e) {
-			console.log ('connection.error ' + e, e.stack);
+			// console.log ('connection.error ' + e, e.stack);
 			
 			if (e.errno == 4)
 			{
 				self.currentConfig.failTime = new Date().getTime();
 				self.currentConfig.failed = 1;
-				console.log ('current host ' + self.currentConfig.host + ' is failed (' + self.currentConfig.failTime + ')');
+				// console.log ('current host ' + self.currentConfig.host + ' is failed (' + self.currentConfig.failTime + ')');
 						
 				if (self.tries % self.config.length) {
 					

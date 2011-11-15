@@ -1,4 +1,4 @@
-var common     = require ('common')
+var util     = require ('util')
 	urlUtil    = require ('url');
 
 //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -25,7 +25,7 @@ var FtpModelManager = function () {
 	this.ftps = {}
 }
 
-common.extend(FtpModelManager.prototype, {
+util.extend(FtpModelManager.prototype, {
 
 	add: function (ftp, source) {
 		

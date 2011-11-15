@@ -1,5 +1,5 @@
 var FTPClient         = require ('node-ftp/ftp'),
-	common            = require ('common'),
+	util            = require ('util'),
 	fs                = require ('fs'),
 	ftpManager        = require ('model/ftp/model-manager');
 
@@ -7,7 +7,7 @@ var pipeProgress = function (config) {
 	this.bytesTotal = 0;
 	this.bytesPass  = 0; // because bytes can be read and written
 	this.lastLogged = 0;
-	common.extend (this, config);
+	util.extend (this, config);
 }
 
 pipeProgress.prototype.watch = function () {
@@ -30,7 +30,7 @@ var ftpModel = module.exports = function (modelBase) {
 	
 }
 
-common.extend(ftpModel.prototype, {
+util.extend(ftpModel.prototype, {
 
 	store: function (source) {
 		
@@ -79,7 +79,9 @@ common.extend(ftpModel.prototype, {
 		self.ftp.on('connect', function() {
 			
 			var auth = self.url.auth.split (':');
+			//console.log("!#!#!#!#!#!#!#!#!#!#!#!#!#!!#ftp before auth -> ");
 			self.ftp.auth(auth[0], auth[1], function(e) {
+				// console.log("!#!#!#!#!#!#!#!#!#!#!#!#!#!!# ftp after auth -> ");
 				
 				if (self.emitError(e)) {
 					self.ftp.end();
@@ -95,7 +97,9 @@ common.extend(ftpModel.prototype, {
 						return;
 					}
 					
-					progress.watch ();
+					if (self.progress) {
+							self.progress.watch ();
+					}
 					
 					self.readStream.resume ();
 										

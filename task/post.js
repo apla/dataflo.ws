@@ -33,7 +33,9 @@ util.extend (postTask.prototype, {
 		// TODO: file uploads
 		
 		self.request.on("end", function () {
+			
 			var parsedData;
+			
 			if (self.dumpData) {
 				self.emit ('log', self.data);
 			}
@@ -43,6 +45,8 @@ util.extend (postTask.prototype, {
 			} else {
 				parsedData = qs.parse (self.data);
 			}
+			
+			//console.log (parsedData);
 			
 			self.completed (parsedData);
 		});

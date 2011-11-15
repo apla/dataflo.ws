@@ -27,22 +27,22 @@ var httpModel = module.exports = function (modelBase) {
 		
 	var self = this;
 	
-	modelBase.url.host = modelBase.url.hostname;
-	modelBase.url.path = modelBase.url.pathname;
-	
 	util.extend (this, modelBase.url);
 		
 	this.fetch = function (target) {
 		
-		console.log (modelBase.url);
-	
 		var isStream = target.to instanceof fs.WriteStream;
 		if (!isStream) target.to.data = '';
 		
 		var progress = new pipeProgress ({
 			writer: target.to
 		});
-				
+	  	
+		if (self.auth) {
+			self.headers = {
+				'Authorization': 'Basic ' + new Buffer(self.auth).toString('base64')
+			};
+		}
 		var req = self.req = HTTPClient.request(this, function (res) {
 						
 			self.res = res;
