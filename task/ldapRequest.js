@@ -7,6 +7,7 @@ var EventEmitter = require ('events').EventEmitter,
 
 var command = 'ldapsearch';
 
+// TODO: docs
 
 // ldap connector
 // need connector property and configuration:
