@@ -194,8 +194,8 @@ util.extend (mongoRequestTask.prototype, {
 			self.data.map(function(item) {
 				
 				if (self.timestamp) item.created = item.updated = new Date().getTime();
-				
-				docsId.push(item._id);
+				console.log ('item._id', item._id);
+				if (item._id && item._id != '') docsId.push(item._id);
 				
 			});
 			
