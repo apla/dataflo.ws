@@ -252,7 +252,7 @@ util.extend (task.prototype, taskStateMethods, {
 	
 	stateNames: taskStateNames,
 	
-	emitError: function (e) {
+	failed: function (e) {
 		if (e) {
 			this.state = 5;
 			this.emit('error', e);
@@ -265,3 +265,5 @@ util.extend (task.prototype, taskStateMethods, {
 
 
 });
+
+task.prototype.EmitError = task.prototype.failed;

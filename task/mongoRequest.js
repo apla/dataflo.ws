@@ -6,7 +6,6 @@ var EventEmitter = require ('events').EventEmitter,
 	spawn        = require ('child_process').spawn,
 	mongo        = require ('mongodb');
 
-
 /**
  * @author 
  * @docauthor
