@@ -4,6 +4,7 @@
 		<script src="require-browser.js"></script>
 		<script src="common.js" onload="applyExports (this);"></script>
 		<script src="task/base.js" onload="applyExports (this);"></script>
+		<script src="task/sleep.js" onload="applyExports (this);"></script>
 		<script src="workflow.js" onload="applyExports (this);"></script>
 		<script src="initiator/callback.js" onload="applyExports (this);"></script>
 		<script type="text/javascript">
@@ -14,21 +15,31 @@
 					tasks: [{
 						functionName: "parseJSON",
 						from: "{$request.json}",
-						produce: "jsonData"
+						produce: "data.jsonData"
+					}, {
+						className: "sleep",
+						amount: 3000,
+						temp: "{$data.jsonData}",
+						produce: "data.awaken"
+					}, {
+						functionName: "logData",
+						data: "{$data.jsonData}",
+						ready: "{$data.awaken}"
+//						produce: "jsonData"
 					}]
 				}]
 			});
-			
-			okWorkflow.process ("ok", {json: '{"a": "b"}'});
-			
+
 			function parseJSON (config) {
-				
-//				console.log (config);
-				
-//				console.log (JSON.parse (config.from));
-				
 				return JSON.parse (config.from);
 			}
+
+			function logData (config) {
+				return console.log (config.data);
+			}
+
+			
+			okWorkflow.process ("ok", {json: '{"a": "b"}'});
 			
 			okWorkflow.process ("ok", {json: '{"c": "d"}'});
 			

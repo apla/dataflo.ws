@@ -94,7 +94,7 @@ var workflow = module.exports = function (config, reqParam) {
 			var xTaskClass;
 			
 			// TODO: need check all task classes, because some compile errors may be there
-			console.log ('task/'+taskParams.className);
+//			console.log ('task/'+taskParams.className);
 			try {
 				xTaskClass = require ('task/' + taskParams.className);
 			} catch (e) {
