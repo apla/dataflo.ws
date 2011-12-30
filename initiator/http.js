@@ -3,6 +3,7 @@ var EventEmitter = require ('events').EventEmitter,
 	util         = require ('util'),
 	mime         = require ('mime'),
 	Workflow     = require ('workflow'),
+	url          = require ('url'),
 	os			 = require ('os');
 
 var httpdi = module.exports = function (config) {
@@ -52,7 +53,7 @@ util.extend (httpdi.prototype, {
 			// here we need to find matching workflows
 			// for received request
 			
-			req.url = require('url').parse(req.url, true);
+			req.url = url.parse(req.url, true);
 			
 			var workflow;
 			
