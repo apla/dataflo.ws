@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<script src="require-browser.js"></script>
+		<script src="common.js" onload="applyExports (this);"></script>
+		<script src="task/base.js" onload="applyExports (this);"></script>
+		<script src="workflow.js" onload="applyExports (this);"></script>
+		<script src="initiator/callback.js" onload="applyExports (this);"></script>
+		<script type="text/javascript">
+			var cbi = require ('initiator/callback');
+			var okWorkflow = new cbi ({
+				workflows: [{
+					token: "ok",
+					tasks: [{
+						functionName: "parseJSON",
+						from: "{$request.json}",
+						produce: "jsonData"
+					}]
+				}]
+			});
+			
+			okWorkflow.process ("ok", {json: '{"a": "b"}'});
+			
+			function parseJSON (config) {
+				
+//				console.log (config);
+				
+//				console.log (JSON.parse (config.from));
+				
+				return JSON.parse (config.from);
+			}
+			
+			okWorkflow.process ("ok", {json: '{"c": "d"}'});
+			
+		</script>
+		
+		
+	</head>
+	<body>
+		<h1></h1>
+	</body>
+</html>
