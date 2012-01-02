@@ -230,3 +230,25 @@ see also
 ---------------------------
 
 [http://docs.constructibl.es/specs/js/]
+
+
+open source licensing
+---------------------------
+
+you can use workflow framework if your application is compatible with
+GPLv3 licensing terms. most important thing about this license is that
+you must provide source code of your application for your users so they can
+modify contents of your application for their own needs.
+
+commercial licensing
+---------------------------
+
+there is no fixed commercial licensing for this framework, it depends on
+ projects where this framework is to be used. please contact us for customised 
+ commercial license. we provide free licensing for major contributors.
+
+
+contacts
+---------------------------
+
+[dot.and.thing @ gmail.com]
