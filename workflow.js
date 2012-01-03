@@ -3,30 +3,6 @@ var EventEmitter = require ('events').EventEmitter,
 	common       = require ('common'),
 	taskClass    = require ('task/base');
 
-var colours = {
-  reset: "\x1B[0m",
-
-  grey:    "\x1B[0;30m",
-  red:     "\x1B[0;31m",
-  green:   "\x1B[0;32m",
-  yellow:  "\x1B[0;33m",
-  blue:    "\x1B[0;34m",
-  magenta: "\x1B[0;35m",
-  cyan:    "\x1B[0;36m",
-  white:   "\x1B[0;37m",
-
-  bold: {
-    grey:    "\x1B[1;30m",
-    red:     "\x1B[1;31m",
-    green:   "\x1B[1;32m",
-    yellow:  "\x1B[1;33m",
-    blue:    "\x1B[1;34m",
-    magenta: "\x1B[1;35m",
-    cyan:    "\x1B[1;36m",
-    white:   "\x1B[1;37m",
-  }
-};
-
 var taskStateNames = taskClass.prototype.stateNames;
 
 function checkTaskParams (taskParams, dict) {
@@ -66,8 +42,8 @@ function checkTaskParams (taskParams, dict) {
 	return modifiedParams;
 }
 
-var Workflow = module.exports = function (config, reqParam) {
-		
+var workflow = module.exports = function (config, reqParam) {
+	
 	var self = this;
 	util.extend (true, this, config);
 	util.extend (true, this, reqParam);
@@ -82,7 +58,13 @@ var Workflow = module.exports = function (config, reqParam) {
 		"" + idString[2] + idString[3],
 		"" + idString[4] + idString[5]
 	].map (function (item) {
-		return "\x1B[0;3" + (parseInt(item) % 8)  + "m" + item + "\x1B[0m";
+		try {
+			var _p = process;
+			return "\x1B[0;3" + (parseInt(item) % 8)  + "m" + item + "\x1B[0m";
+		} catch (e) {
+			return item;
+		}
+		
 	}).join ('');
 
 	this.data = {};
@@ -112,7 +94,7 @@ var Workflow = module.exports = function (config, reqParam) {
 			var xTaskClass;
 			
 			// TODO: need check all task classes, because some compile errors may be there
-			console.log ('task/'+taskParams.className);
+//			console.log ('task/'+taskParams.className);
 			try {
 				xTaskClass = require ('task/' + taskParams.className);
 			} catch (e) {
@@ -147,14 +129,25 @@ var Workflow = module.exports = function (config, reqParam) {
 			util.extend (xTaskClass.prototype, {
 				run: function () {
 					if (taskParams.functionName) {
-						if (process.mainModule.exports[taskParams.functionName]) {
-							this.completed (process.mainModule.exports[taskParams.functionName] (this));
-						} else {
-							var err = "you defined functionName as " + taskParams.functionName
+						var failed = false;
+						try {
+							if (process.mainModule.exports[taskParams.functionName]) {
+								this.completed (process.mainModule.exports[taskParams.functionName] (this));
+							} else {
+								failed = "you defined functionName as " + taskParams.functionName
 								+ " but we cannot find this name in current scope.\nplease add 'module.exports = {"
 								+ taskParams.functionName + ": function (params) {...}}' in your main module";
-							throw err;
+							}
+						} catch (e) {
+							if (window[taskParams.functionName]) {
+								this.completed (window[taskParams.functionName] (this));
+							} else {
+								failed = "you defined functionName as " + taskParams.functionName
+								+ " but we cannot find this name in current scope.\nplease add 'window["
+								+ taskParams.functionName + "] = function (params) {...}}' in your main module";
+							}
 						}
+						if (failed) throw failed;
 					} else {
 						this.completed (taskParams.coderef (this));
 					}
@@ -175,7 +168,7 @@ var Workflow = module.exports = function (config, reqParam) {
 	});
 };
 
-util.inherits (Workflow, EventEmitter);
+util.inherits (workflow, EventEmitter);
 
 function pad(n) {
 	return n < 10 ? '0' + n.toString(10) : n.toString(10);
@@ -202,11 +195,13 @@ function timestamp () {
 }
 
 
-util.extend (Workflow.prototype, {
+util.extend (workflow.prototype, {
+	
+	initializeTasks: function () {},
 	
 	isIdle: 1,
 	log: function (msg) {
-		if (process.quiet || this.quiet) return;
+//		if (this.quiet || process.quiet) return;
 		var toLog = [
 			timestamp (),
 			"[" + this.coloredId + "]"

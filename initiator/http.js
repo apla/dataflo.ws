@@ -2,7 +2,8 @@ var EventEmitter = require ('events').EventEmitter,
 	http         = require ('http'),
 	util         = require ('util'),
 	mime         = require ('mime'),
-	Workflow     = require ('workflow'),
+	workflow     = require ('workflow'),
+	url          = require ('url'),
 	os			 = require ('os');
 
 var httpdi = module.exports = function (config) {
@@ -52,9 +53,9 @@ util.extend (httpdi.prototype, {
 			// here we need to find matching workflows
 			// for received request
 			
-			req.url = require('url').parse(req.url, true);
+			req.url = url.parse(req.url, true);
 			
-			var workflow;
+			var wf;
 			
 			self.workflows.map (function (item) {
 				
@@ -66,11 +67,11 @@ util.extend (httpdi.prototype, {
 					console.log ('match');
 					self.emit ("detected", req, res, item);
 
-					workflow = new Workflow (
+					wf = new workflow (
 						util.extend (true, {}, item),
 						{request: req, response: res}
 					);
-					workflow.run();
+					wf.run();
 					
 					return;
 
@@ -79,18 +80,18 @@ util.extend (httpdi.prototype, {
 					req.pathInfo = req.url.pathname.substr (item.urlBeginsWith.length);
 					self.emit ("detected", req, res, item);
 					
-					workflow = new Workflow (
+					wf = new workflow (
 						util.extend (true, {}, item),
 						{request: req, response: res}
 					);
-					workflow.run();
+					wf.run();
 					
 					return;
 
 				}
 			});
 			
-			if (!workflow) {
+			if (!wf) {
 				if (self.static) {
 					
 					var pathName = req.url.pathname;
@@ -138,3 +139,4 @@ util.extend (httpdi.prototype, {
 	}
 
 });
+	

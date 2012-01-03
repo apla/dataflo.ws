@@ -166,10 +166,14 @@ util.extend (task.prototype, taskStateMethods, {
 		}
 		
 		// coroutine call
-		if (this.cb) {
+		if (typeof this.cb == 'function') {
 //			console.log ('cb defined', this.cb, this.cbScope);
 			
-			this.cb.call (this.cbScope || this, this);
+			if (this.cbScope) {
+				this.cb.call (this.cbScope, this);
+			} else {
+				this.cb (this);
+			}
 		}
 		
 		this.emit ("complete", this, result);

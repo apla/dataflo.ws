@@ -1,5 +1,18 @@
 var util = require ('util');
 
+if (!util.inherits) {
+	util.inherits = function (ctor, superCtor) {
+		ctor.super_ = superCtor;
+		ctor.prototype = Object.create (superCtor.prototype, {
+			constructor: {
+			value: ctor,
+			enumerable: false,
+			writable: true,
+			configurable: true
+		}});
+	};
+}
+
 util.extend = function extend () {
 	// copy reference to target object
 	var target = arguments[0] || {}, i = 1, length = arguments.length, deep = false, options, name, src, copy;
@@ -131,120 +144,124 @@ String.prototype.interpolate = function (dict, marks) {
 
 };
 
-var path = require ('path');
+try {
+	var _p = window;
+} catch (e) { if (process) {
 
-var io = require ('io/easy');
+	var path = require ('path');
 
-var project = function () {
-	// TODO: root directory object
-	var script = process.argv[1];
-	var rootPath = script.match (/(.*)\/(bin|t|lib)\//);
-	
-	if (!rootPath) {//win
-		rootPath = script.match (/(.*)\\(bin|t|lib)\\/)
-	}
-	
-	var root = new io (rootPath[1]);
-	
-	this.root = root;
-	var self = this;
-	
-	root.fileIO ('etc/project').readFile (function (err, data) {
-		if (err) {
-			console.error ("can't access etc/project file. create one and define project id");
-			process.kill ();
-			return;
+	var io = require ('io/easy');
+
+	var project = function () {
+		// TODO: root directory object
+		var script = process.argv[1];
+		var rootPath = script.match (/(.*)\/(bin|t|lib)\//);
+		
+		if (!rootPath) {//win
+			rootPath = script.match (/(.*)\\(bin|t|lib)\\/)
 		}
 		
-		var configData = (""+data).match (/(\w+)(\W[^]*)/);
-		configData.shift ();
-		var parser = configData.shift ();
-
-		// console.log ('parsing etc/project using "' + parser + '" parser');
+		var root = new io (rootPath[1]);
 		
-		if (parser == 'json') {
-
-			// TODO: error handling
-
-			var config = JSON.parse (configData[0]);
-			
-			self.id     = config.id;
-			self.config = config;
-			
-			
-			// TODO: read config fixup
-		} else {
-			console.error ('parser ' + parser + ' unknown');
-			process.kill ();
-		}
-
-
-		root.fileIO ('var/instance').readFile (function (err, data) {
-			
+		this.root = root;
+		var self = this;
+		
+		root.fileIO ('etc/project').readFile (function (err, data) {
 			if (err) {
-				console.error ("PROBABLY HARMFUL: can't access var/instance: "+err);
-				self.emit ('ready');
+				console.error ("can't access etc/project file. create one and define project id");
+				process.kill ();
 				return;
 			}
 			
-			var instance = (""+data).split (/\n/)[0];
-			
-			self.instance = instance;
-			
-			console.log ('instance is: ', instance);
-		
-			root.fileIO ('etc/' + instance + '/fixup').readFile (function (err, data) {
-				if (err) {
-					console.error ("PROBABLY HARMFUL: can't access "+'etc/' + instance + '/fixup'+" file. "
-						+ "create one and define local configuration fixup. "
-					);
-					self.emit ('ready');
-					return;
-					// process.kill ();
-				}
-				
-				var fixupData = (""+data).match (/(\w+)(\W[^]*)/);
-				fixupData.shift ();
-				var fixupParser = fixupData.shift ();
+			var configData = (""+data).match (/(\w+)(\W[^]*)/);
+			configData.shift ();
+			var parser = configData.shift ();
 
-				var fixupData = (""+data).match (/(\w+)(\W[^]*)/);
-				fixupData.shift ();
-				var fixupParser = fixupData.shift ();
+			// console.log ('parsing etc/project using "' + parser + '" parser');
+			
+			if (parser == 'json') {
 
-				// console.log ('parsing etc/' + instance + '/fixup using "' + fixupParser + '" parser');
 				// TODO: error handling
 
-				if (fixupParser == 'json') {
-					var config = JSON.parse (configData[0]);
-					
-					util.extend (true, self.config, config);
-				} else {
-					console.log ('parser ' + fixupParser + ' unknown');
-					process.kill ();
+				var config = JSON.parse (configData[0]);
+				
+				self.id     = config.id;
+				self.config = config;
+				
+				
+				// TODO: read config fixup
+			} else {
+				console.error ('parser ' + parser + ' unknown');
+				process.kill ();
+			}
+
+
+			root.fileIO ('var/instance').readFile (function (err, data) {
+				
+				if (err) {
+					console.error ("PROBABLY HARMFUL: can't access var/instance: "+err);
+					self.emit ('ready');
+					return;
 				}
 				
-				console.log ('project ready');
+				var instance = (""+data).split (/\n/)[0];
 				
-				self.emit ('ready');
+				self.instance = instance;
+				
+				console.log ('instance is: ', instance);
+			
+				root.fileIO ('etc/' + instance + '/fixup').readFile (function (err, data) {
+					if (err) {
+						console.error ("PROBABLY HARMFUL: can't access "+'etc/' + instance + '/fixup'+" file. "
+							+ "create one and define local configuration fixup. "
+						);
+						self.emit ('ready');
+						return;
+						// process.kill ();
+					}
+					
+					var fixupData = (""+data).match (/(\w+)(\W[^]*)/);
+					fixupData.shift ();
+					var fixupParser = fixupData.shift ();
+
+					var fixupData = (""+data).match (/(\w+)(\W[^]*)/);
+					fixupData.shift ();
+					var fixupParser = fixupData.shift ();
+
+					// console.log ('parsing etc/' + instance + '/fixup using "' + fixupParser + '" parser');
+					// TODO: error handling
+
+					if (fixupParser == 'json') {
+						var config = JSON.parse (configData[0]);
+						
+						util.extend (true, self.config, config);
+					} else {
+						console.log ('parser ' + fixupParser + ' unknown');
+						process.kill ();
+					}
+					
+					console.log ('project ready');
+					
+					self.emit ('ready');
+				});
 			});
 		});
+		
+		// TODO: walk filetree to find directory root if script located in
+		// subdir of bin or t
+	//	console.log (root);
+		
+	}
+
+	var EventEmitter = require ('events').EventEmitter;
+
+	util.inherits (project, EventEmitter);
+
+	util.extend (project.prototype, {
+		connectors:  {},
+		connections: {}
 	});
-	
-	// TODO: walk filetree to find directory root if script located in
-	// subdir of bin or t
-//	console.log (root);
-	
-}
 
-var EventEmitter = require ('events').EventEmitter;
+	global.project = new project ();
 
-util.inherits (project, EventEmitter);
-
-util.extend (project.prototype, {
-	connectors:  {},
-	connections: {}
-});
-
-global.project = new project ();
-
-
+}}
