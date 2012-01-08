@@ -7,14 +7,12 @@ var taskStateNames = taskClass.prototype.stateNames;
 
 function checkTaskParams (taskParams, dict) {
 	// parse task params
-		
+	
 	// TODO: modify this function because recursive changes of parameters works dirty (indexOf for value)
 	
 	var modifiedParams = {};
 	
 	var failedParams = [];
-	
-	
 	
 	for (var key in taskParams) {
 		var val = taskParams[key];
@@ -188,7 +186,7 @@ function timestamp () {
 	].join(':');
 	var date = [
 		currentDate.getFullYear(),
-		pad(currentDate.getMonth()),
+		pad(currentDate.getMonth() + 1),
 		pad(currentDate.getDate())
 	].join ('-');
 	return [date, time].join(' ');
@@ -209,12 +207,19 @@ util.extend (workflow.prototype, {
 		for (var i = 0, len = arguments.length; i < len; ++i) {
 			toLog.push (arguments[i]);
 		}
+		
+		try {if (PhoneGap) {
+			toLog.shift();
+			toLog = [toLog.join (' ')];
+		}} catch (e) {};
+		
 		console.log.apply (console, toLog);
 	},
 	logTask: function (task, msg) {
 		this.log (task.logTitle,  "("+task.state+")",  msg);
 	},
 	logTaskError: function (task, msg) {
+		// TODO: fix by using console.error
 		this.log(task.logTitle, "("+task.state+") \x1B[0;31m" + msg + "\x1B[0m");
 	},
 	
@@ -306,7 +311,7 @@ util.extend (workflow.prototype, {
 
 		if (this.taskStates[taskStateNames.complete] == self.tasks.length) {
 			
-//			self.emit ('');
+			self.emit ('complete', self);
 			self.log ('workflow complete');
 		
 		} else if (
@@ -338,7 +343,8 @@ util.extend (workflow.prototype, {
 				else
 					requestDump = e
 			};
-
+			
+			self.emit ('failure', self);
 			
 			self.log ('workflow failed, progress: '
 				+ this.taskStates[taskStateNames.complete] + '/'+ self.tasks.length 

@@ -78,15 +78,22 @@ function require (name) {
 	
 	var currentHtmlDir = document.location.href.match (/(.*)\/.*/)[1];
 	var currentScriptDir = currentHtmlDir;
+	var workflowDir = currentHtmlDir;
 	
 	if (document.scripts[document.scripts.length - 1].src) {
 		var currentScriptDir = document.scripts[document.scripts.length - 1].src.match (/(.*)\/.*/)[1];
 	}
+
+	if (window.workflowRelPath) {
+		workflowDir += '/' + window.workflowRelPath;
+	}
 	
-	if (_required[currentScriptDir + '/' + name]) {
-		return _required[currentScriptDir + '/' + name];
-	} else if (_required[currentHtmlDir + '/' + name]) {
-		return _required[currentHtmlDir + '/' + name];
+	if (_required[encodeURI (currentScriptDir + '/' + name)]) {
+		return _required[encodeURI (currentScriptDir + '/' + name)];
+	} else if (_required[encodeURI (currentHtmlDir + '/' + name)]) {
+		return _required[encodeURI (currentHtmlDir + '/' + name)];
+	} else if (_required[encodeURI (workflowDir + '/' + name)]) {
+		return _required[encodeURI (workflowDir + '/' + name)];
 	} else {
 		console.warn ('module not found and \"' + name + '(' + currentScriptDir + '/' + name + ')\" not loaded at '+ document.scripts[document.scripts.length - 1].src);
 	}
