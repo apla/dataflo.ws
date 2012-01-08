@@ -13,6 +13,7 @@ if (!util.inherits) {
 	};
 }
 
+if (!util.extend) {
 util.extend = function extend () {
 	// copy reference to target object
 	var target = arguments[0] || {}, i = 1, length = arguments.length, deep = false, options, name, src, copy;
@@ -68,6 +69,7 @@ util.extend = function extend () {
 	// Return the modified object
 	return target;
 }
+}
 
 Number.prototype.hours = Number.prototype.hour
 	= function () {return this * 60 * 60 * 1e3}
@@ -96,6 +98,9 @@ var pathToVal = module.exports.pathToVal = function (dict, path, value) {
 	return pathToVal (dict[chunks.shift()], chunks.join('.'), value)
 }
 
+define (function (require, exports, module) {
+	return {pathToVal: pathToVal};
+});
 
 String.prototype.interpolate = function (dict, marks) {
 	if (!marks)

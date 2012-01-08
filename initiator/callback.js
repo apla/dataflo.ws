@@ -1,3 +1,5 @@
+define(function(require, exports, module) {
+
 var EventEmitter = require ('events').EventEmitter,
 	workflow     = require ('workflow');
 
@@ -38,4 +40,8 @@ util.extend (callbacki.prototype, {
 			}
 		});
 	}
+});
+
+return callbacki;
+
 });
