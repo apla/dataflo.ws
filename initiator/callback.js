@@ -20,17 +20,19 @@ util.extend (callbacki.prototype, {
 	process: function (token, request) {
 		
 		var self = this;
-	
+		
+		var wf;
+		
 		self.workflows.map (function (item) {
 			
 			var match = token.match (item.token);
 			
 			if (match) { //exact match
 				
-				console.log ('match');
+//				console.log ('match');
 				self.emit ("detected", request, item);
 
-				var wf = new workflow (
+				wf = new workflow (
 					util.extend (true, {}, item),
 					{request: request}
 				);
@@ -39,6 +41,8 @@ util.extend (callbacki.prototype, {
 				return;
 			}
 		});
+		
+		return wf;
 	}
 });
 
