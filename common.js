@@ -98,6 +98,10 @@ var pathToVal = module.exports.pathToVal = function (dict, path, value) {
 	return pathToVal (dict[chunks.shift()], chunks.join('.'), value)
 }
 
+var define;
+if (typeof define === "undefined")
+	define = function () {}
+
 define (function (require, exports, module) {
 	return {pathToVal: pathToVal};
 });

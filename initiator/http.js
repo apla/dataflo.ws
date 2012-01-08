@@ -2,14 +2,9 @@ var EventEmitter = require ('events').EventEmitter,
 	http         = require ('http'),
 	util         = require ('util'),
 	mime         = require ('mime'),
-	//workflow     = require ('workflow'),
+	workflow     = require ('workflow'),
 	url          = require ('url'),
 	os			 = require ('os');
-
-require("amd-loader");
-var workflow = require("workflow");
-
-console.log (workflow);
 
 var httpdi = module.exports = function (config) {
 	// we need to launch httpd

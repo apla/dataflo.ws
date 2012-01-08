@@ -3,23 +3,19 @@
 	<head>
 		<script src="require-all.js"></script>
 		<script src="require-browser.js"></script>
-		<!--script src="require-browser.js"></script>
-		<script src="common.js" onload="applyExports (this);"></script>
-		<script src="task/base.js" onload="applyExports (this);"></script>
-		<script src="task/sleep.js" onload="applyExports (this);"></script>
-		<script src="workflow.js" onload="applyExports (this);"></script>
-		<script src="initiator/callback.js" onload="applyExports (this);"></script-->
 		<script type="text/javascript">
 			var requireQueue = "common task/base task/sleep workflow initiator/callback".split (' ');
 			
 			var requirement;
 			
 			function loadNext () {
-				if (requirement && !require (requirement))
-					console.log (require (requirement));
+//				if (requirement && !require (requirement))
+//					console.log (require (requirement));
+				if (requirement)	
+					require (requirement)
 				if (requireQueue.length) {
 					requirement = requireQueue.shift ();
-					console.log ("require " + requirement);
+//					console.log ("require " + requirement);
 					require ([requirement], loadNext);
 				} else {
 					// everything loaded
