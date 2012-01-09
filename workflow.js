@@ -134,8 +134,21 @@ var workflow = module.exports = function (config, reqParam) {
 
 			util.extend (xTaskClass.prototype, {
 				run: function () {
-					if (taskParams.functionName) {
-						var failed = false;
+					var failed = false;
+					if (taskParams.bind && taskParams.functionName) {
+						try {
+							var functionRef = taskParams.bind;
+							var fSplit = taskParams.functionName.split (".");
+							while (fSplit.length) {
+								var fChunk = fSplit.shift();
+								functionRef = functionRef[fChunk];
+							}
+							
+							this.completed (functionRef.call (taskParams.bind, this));
+						} catch (e) {
+							failed = 'failed call function "'+taskParams.functionName+'" from ' + taskParams.bind + ' with ' + e;
+						}
+					} else if (taskParams.functionName) {
 						try {
 							if (process.mainModule.exports[taskParams.functionName]) {
 								this.completed (process.mainModule.exports[taskParams.functionName] (this));
@@ -153,10 +166,12 @@ var workflow = module.exports = function (config, reqParam) {
 								+ taskParams.functionName + "] = function (params) {...}}' in your main module";
 							}
 						}
-						if (failed) throw failed;
 					} else {
+						// TODO: detailed error description
+//						if (taskParams.bind)
 						this.completed (taskParams.coderef (this));
 					}
+					if (failed) throw failed;
 				}
 			});
 			
