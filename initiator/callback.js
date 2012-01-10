@@ -25,7 +25,7 @@ util.extend (callbacki.prototype, {
 		
 		self.workflows.map (function (item) {
 			
-			var match = token.match (item.token);
+			var match = (token == item.token);
 			
 			if (match) { //exact match
 				
