@@ -65,26 +65,33 @@ util.extend (httpdi.prototype, {
 				if (match && match[0] == req.url.pathname) { //exact match
 					
 					console.log ('match');
-					self.emit ("detected", req, res, item);
+					
 
 					wf = new workflow (
 						util.extend (true, {}, item),
 						{request: req, response: res}
 					);
-					wf.run();
+					
+					
+					self.emit ("detected", req, res, wf);
+					// true or undefined
+					if (item.autoRun || item.autoRun == void 0)
+						wf.run();
 					
 					return;
 
 				} else if (req.url.pathname.indexOf(item.urlBeginsWith) == 0) {
 					console.log ('begins match');
 					req.pathInfo = req.url.pathname.substr (item.urlBeginsWith.length);
-					self.emit ("detected", req, res, item);
 					
 					wf = new workflow (
 						util.extend (true, {}, item),
 						{request: req, response: res}
 					);
-					wf.run();
+					
+					self.emit ("detected", req, res, wf);
+					if (item.autoRun || item.autoRun == void 0)
+						wf.run();
 					
 					return;
 
@@ -123,7 +130,7 @@ util.extend (httpdi.prototype, {
 				}
 				
 				console.log ('not detected');
-				self.emit ("undefined", req, res);
+				self.emit ("unknown", req, res);
 			}
 			
 		});
