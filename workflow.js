@@ -33,6 +33,11 @@ function checkTaskParams (taskParams, dict) {
 		
 //		console.log (key, val, val.interpolate (dict));
 		
+		if (!val.interpolate) {
+			modifiedParams[key] = val;
+			continue;
+		}
+		
 		try {
 			modifiedParams[key] = val.interpolate (dict) || val;
 		} catch (e) {

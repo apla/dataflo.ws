@@ -121,7 +121,7 @@ String.prototype.interpolate = function (dict, marks) {
 		var end = (result || this).indexOf (marks.end, pos);
 		var str = (result || this).substr (pos + 2, end - pos - 2);
 		
-		// console.log ("found replacement: key => ???, requires => $"+this+"\n");
+//		console.log ("found replacement: key => ???, requires => $"+this+"\n");
 		
 		var fix;
 		if (str.indexOf (marks.path) > -1) { //  treat as path

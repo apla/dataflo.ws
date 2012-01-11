@@ -54,7 +54,7 @@ fi
 
 NODE_PATH=$NODE_PATH$NODE_PATH_DELIMITER${PROJECT_DIR}lib$NODE_PATH_DELIMITER${PROJECT_DIR}lib/workflow.nodejs
 
-# echo $NODE_PATH
+echo $NODE_PATH
 
 if [ "x$1" == "x" ] ; then
 	NODE_PATH=$NODE_PATH /usr/bin/env node ${PROJECT_DIR}lib/workflow.nodejs/repl.js
