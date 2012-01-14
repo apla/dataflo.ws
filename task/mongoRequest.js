@@ -105,7 +105,8 @@ util.extend (mongoRequestTask.prototype, {
 		// get db client
 		var client = self._getConnector ();
 		
-		console.log ('cheking project.connections', self.connector, self.collection);
+		if (this.verbose)
+			console.log ('checking project.connections', self.connector, self.collection);
 		
 		// check collection existing in cache
 		// if collection cahed - return through callback this collection
@@ -123,7 +124,8 @@ util.extend (mongoRequestTask.prototype, {
 					console.log (err);
 				} else {
 					// add to collections cache
-					console.log ('storing project.connections', self.connector, self.collection);
+					if (this.verbose)
+						console.log ('storing project.connections', self.connector, self.collection);
 					project.connections[self.connector][self.collection] = collection;
 				}
 				// console.log ('%%%%%%%%%% not cached');
@@ -144,7 +146,8 @@ util.extend (mongoRequestTask.prototype, {
 	run: function () {
 		var self = this;
 		
-		self.emit ('log', 'run called');
+		if (this.verbose)
+			self.emit ('log', 'run called');
 		
 		// primary usable by Ext.data.Store
 		// we need to return {data: []}
@@ -152,11 +155,13 @@ util.extend (mongoRequestTask.prototype, {
 		// open collection
 		self._openCollection (function (err, collection) {
 			
-			console.log ("collection.find", self.collection, self.filter);
+			if (this.verbose)
+				console.log ("collection.find", self.collection, self.filter);
 			// find by filter or all records
 			collection.find (self.filter || {}).toArray (function (err, docs) {
 			
-				console.log ("findResult", docs);
+				if (this.verbose)
+					console.log ("findResult", docs);
 				
 				if (docs) {
 					docs.map (function (item) {
@@ -180,7 +185,8 @@ util.extend (mongoRequestTask.prototype, {
 		
 		var self = this;
 		
-		this.emit ('log', 'insert called ' + self.data);
+		if (this.verbose)
+			this.emit ('log', 'insert called ' + self.data);
 		
 		this._openCollection (function (err, collection) {
 			
@@ -261,7 +267,8 @@ util.extend (mongoRequestTask.prototype, {
 				collection.insert (self.data, {safe: true}, function (err, docs) {
 					
 					// TODO: check two parallels tasks: if one from its completed, then workflow must be completed (for exaple mongo & ldap tasks)
-					console.log ('collection.insert', docs, err);
+					if (this.verbose)
+						console.log ('collection.insert', docs, err);
 					
 					if (docs) docs.map (function (item) {
 						if (self.mapping) {
@@ -287,7 +294,8 @@ util.extend (mongoRequestTask.prototype, {
 		
 		var self = this;
 		
-		this.emit ('log', 'update called ' + self.data);
+		if (this.verbose)
+			this.emit ('log', 'update called ' + self.data);
 		
 		this._openCollection (function (err, collection) {
 			
@@ -295,7 +303,8 @@ util.extend (mongoRequestTask.prototype, {
 				self.data = [self.data];
 			}
 			
-			console.log ('data for update', self.data);
+			if (this.verbose)
+				console.log ('data for update', self.data);
 			
 			var idList = self.data.map (function (item) {
 				
