@@ -2,6 +2,8 @@ var task         = require ('task/base'),
 	util         = require ('util'),
 	mime		 = require ('mime');
 
+var jade         = require ('jade');
+
 var renderTask = module.exports = function (config) {
 	
 	this.init (config);
@@ -10,13 +12,39 @@ var renderTask = module.exports = function (config) {
 
 util.inherits (renderTask, task);
 
+var cache = {};
+
 util.extend (renderTask.prototype, {
+	readTemplate: function (templateIO, cb) {
+		templateIO.readFile (function (err, data) {
+			cb.call (this, err, data);
+		});
 	
+	},
 	run: function () {
 
 		var self = this;
 		
-		if (this.type == 'json') {
+		if (this.type == 'jade') {
+			self.output.setHeader("Content-Type", (this.type || 'text/html') + '; charset=utf-8');
+			var templateIO = project.root.fileIO (this.template);
+			// TODO
+			//if (cache {this.template}) {
+			//	templateIO.stat
+			//}
+			self.readTemplate (templateIO, function (err, data) {
+				if (err) {
+					console.error ("can't access " + this.template + " file. create one and define project id");
+					process.kill ();
+					return;
+				};
+				var fn = jade.compile(data, {});
+				self.output.end (fn ({test: 2, pageTitle: 3, youAreUsingJade: false}));
+				self.completed ();
+
+			});
+
+		} else if (this.type == 'json') {
 			self.output.setHeader("Content-Type", mime.lookup(this.type) + '; charset=utf-8');
 			self.output.end (JSON.stringify(self.data));
 			self.completed ();
