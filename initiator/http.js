@@ -41,7 +41,15 @@ util.extend (httpdi.prototype, {
 		this.emit ('ready', this.server);
 		
 	},
-	
+	runPresenter: function () {
+		// presenter can be:
+		// {success: ..., failed: ..., failedRequire: ...} — succeeded or failed tasks in workflow or failed require step
+		// "template.name" — template file for presenter
+		// {"type": "json"} — presenter config
+		// TODO: [{...}, {...}] — presentation workflow
+
+
+	},
 	listen: function () {
 		
 		var self = this;
