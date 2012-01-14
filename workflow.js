@@ -40,10 +40,14 @@ function checkTaskParams (taskParams, dict) {
 		
 		try {
 			modifiedParams[key] = val.interpolate (dict) || val;
+			if (modifiedParams[key].constructor == Array && modifiedParams[key].length == 0) {
+				// empty arrays not allowed as valid values
+				throw "SOMETHING";
+			}
 		} catch (e) {
 			failedParams.push (key);
 		}
-			
+	
 	}
 	
 	if (failedParams.length > 0) {
@@ -60,8 +64,13 @@ var workflow = module.exports = function (config, reqParam) {
 	util.extend (true, this, reqParam);
 	
 	this.started = new Date().getTime();
-	this.id      = this.started % 1e6;
+	this.id      = this.id || this.started % 1e6;
 	
+	if (!this.stage) this.stage = 'process';
+
+	//if (!this.stageMarkers[this.stage])
+	//	console.error ('there is no such stage marker: ' + this.stage);
+
 	var idString = ""+this.id;
 	while (idString.length < 6) {idString = '0' + idString};
 	this.coloredId = [
@@ -224,13 +233,13 @@ function timestamp () {
 util.extend (workflow.prototype, {
 	
 	initializeTasks: function () {},
-	
+	stageMarker: {prepare: "()", process: "[]", presentation: "<>"},
 	isIdle: 1,
 	log: function (msg) {
 //		if (this.quiet || process.quiet) return;
 		var toLog = [
 			timestamp (),
-			"[" + this.coloredId + "]"
+			this.stageMarker[this.stage][0] + this.coloredId + this.stageMarker[this.stage][1]
 		];
 		for (var i = 0, len = arguments.length; i < len; ++i) {
 			toLog.push (arguments[i]);
@@ -339,7 +348,7 @@ util.extend (workflow.prototype, {
 
 		if (this.taskStates[taskStateNames.complete] == self.tasks.length) {
 			
-			self.emit ('complete', self);
+			self.emit ('completed', self);
 			self.log ('workflow complete');
 		
 		} else if (
@@ -372,7 +381,7 @@ util.extend (workflow.prototype, {
 					requestDump = e
 			};
 			
-			self.emit ('failure', self);
+			self.emit ('failed', self);
 			
 			self.log ('workflow failed, progress: '
 				+ this.taskStates[taskStateNames.complete] + '/'+ self.tasks.length 

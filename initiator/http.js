@@ -41,14 +41,66 @@ util.extend (httpdi.prototype, {
 		this.emit ('ready', this.server);
 		
 	},
-	runPresenter: function () {
+	runPresenter: function (wf, state, res) {
+		var self = this;
 		// presenter can be:
 		// {success: ..., failed: ..., failedRequire: ...} — succeeded or failed tasks in workflow or failed require step
 		// "template.name" — template file for presenter
 		// {"type": "json"} — presenter config
 		// TODO: [{...}, {...}] — presentation workflow
 
+		if (!wf.presenter) return;
+		// TODO: emit SOMETHING
 
+		// self.log ('running presenter');
+		
+		var presenter = wf.presenter;
+
+		// {success: ..., failed: ..., failedRequire: ...}
+		if (presenter[state])
+			presenter = presenter[state];
+		
+		var tasks = [];
+
+		if (presenter.substring) {
+			// "template.name"
+			tasks.push ({
+				file:      presenter,
+				vars:      "{$vars}",
+				response:  "{$response}",
+				className: "presenter"
+			});
+		} else if (presenter.constructor == Array) {
+			// TODO: [{...}, {...}]
+			presenter.map (function (item) {
+				var task = {};
+				util.extend (true, task, item);
+				task.response  = "{$response}";
+				task.vars      = task.vars || "{$vars}";
+				task.className = task.className || "presenter";
+				tasks.push (task);
+			});
+		} else {
+			// {"type": "json"}
+			presenter.response  = "{$response}";
+			presenter.vars      = presenter.vars || "{$vars}";
+			presenter.className = presenter.className || "presenter";
+			tasks.push (presenter);
+		}
+
+		var presenterWf = new workflow ({
+			id:    wf.id,
+			vars:  wf,
+			tasks: tasks,
+			stage: 'presentation',
+			response: res
+		});
+
+		presenterWf.on ('complete', function () {
+			//self.log ('presenter done');
+		});
+
+		presenterWf.run ();
 	},
 	listen: function () {
 		
@@ -67,40 +119,45 @@ util.extend (httpdi.prototype, {
 			
 			self.workflows.map (function (item) {
 				
+				if (wf) return;
+
 				// TODO: make real work
 				var match = req.url.pathname.match(item.url);
 				
 				if (match && match[0] == req.url.pathname) { //exact match
 					
 					console.log ('match');
-					
-
-					wf = new workflow (
-						util.extend (true, {}, item),
-						{request: req, response: res}
-					);
-										
-					self.emit ("detected", req, res, wf);
-
-					if (!item.auth) wf.run();
-					
-					return;
+					wf = true;
 
 				} else if (req.url.pathname.indexOf(item.urlBeginsWith) == 0) {
 					console.log ('begins match');
+					
 					req.pathInfo = req.url.pathname.substr (item.urlBeginsWith.length);
 					
-					wf = new workflow (
-						util.extend (true, {}, item),
-						{request: req, response: res}
-					);
-					
-					self.emit ("detected", req, res, wf);
-					if (!item.auth) wf.run();
-					
-					return;
-
+					wf = true;
 				}
+				
+				if (!wf) return;
+
+				wf = new workflow (
+					util.extend (true, {}, item),
+					{request: req, response: res}
+				);
+				
+				wf.on ('completed', function (wf) {
+					self.runPresenter (wf, 'completed', res);
+				});
+
+				wf.on ('failed', function (wf) {
+					self.runPresenter (wf, 'failed', res);
+				});
+
+				self.emit ("detected", req, res, wf);
+				
+				if (!item.auth) wf.run();
+				
+				return;
+
 			});
 			
 			if (!wf) {
