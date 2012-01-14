@@ -25,22 +25,25 @@ util.extend (callbacki.prototype, {
 		
 		self.workflows.map (function (item) {
 			
-			var match = token.match (item.token);
+			var match = (token == item.token);
 			
 			if (match) { //exact match
 				
-//				console.log ('match');
-				self.emit ("detected", request, item);
-
 				wf = new workflow (
 					util.extend (true, {}, item),
 					{request: request}
 				);
-				wf.run();
+
+				self.emit ("detected", request, wf);
+				if (item.autoRun || item.autoRun == void 0)
+					wf.run();
 				
 				return;
 			}
 		});
+		
+		if (!wf)
+			self.emit ("unknown", request, wf);
 		
 		return wf;
 	}
