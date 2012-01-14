@@ -79,12 +79,10 @@ util.extend (httpdi.prototype, {
 						util.extend (true, {}, item),
 						{request: req, response: res}
 					);
-					
-					
+										
 					self.emit ("detected", req, res, wf);
-					// true or undefined
-					if (item.autoRun || item.autoRun == void 0)
-						wf.run();
+
+					if (!item.auth) wf.run();
 					
 					return;
 
@@ -98,8 +96,7 @@ util.extend (httpdi.prototype, {
 					);
 					
 					self.emit ("detected", req, res, wf);
-					if (item.autoRun || item.autoRun == void 0)
-						wf.run();
+					if (!item.auth) wf.run();
 					
 					return;
 
