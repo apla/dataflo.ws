@@ -87,7 +87,7 @@ var workflow = module.exports = function (config, reqParam) {
 		
 	}).join ('');
 
-	this.data = {};
+	this.data = this.data || {};
 	
 //	console.log ('!!!!!!!!!!!!!!!!!!!' + this.data.keys.length);
 	

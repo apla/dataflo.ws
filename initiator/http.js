@@ -90,6 +90,7 @@ util.extend (httpdi.prototype, {
 
 		var presenterWf = new workflow ({
 			id:    wf.id,
+			data:  wf.data,
 			vars:  wf,
 			tasks: tasks,
 			stage: 'presentation',
