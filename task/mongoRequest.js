@@ -155,12 +155,30 @@ util.extend (mongoRequestTask.prototype, {
 		// open collection
 		self._openCollection (function (err, collection) {
 			
-			if (this.verbose)
+			if (self.verbose)
 				console.log ("collection.find", self.collection, self.filter);
-			// find by filter or all records
-			collection.find (self.filter || {}).toArray (function (err, docs) {
 			
-				if (this.verbose)
+			var filter = self.filter;
+			
+			var windowBegin, windowWidth;
+			var findArgs = [];
+
+			if (self.pager && self.pager.page && self.pager.limit && self.pager.limit < 100) {
+				windowBegin = self.pager.start;
+				windowWidth = self.pager.limit;
+				filter = self.pager.filter;
+				findArgs.push ({}, windowBegin, windowWidth);
+			}
+
+			// find by filter or all records
+			if (filter.substring)
+				filter = {_id: self._objectId (filter)};
+			
+			findArgs.unshift (filter || {});
+
+			collection.find.apply (collection, findArgs).toArray (function (err, docs) {
+			
+				if (self.verbose)
 					console.log ("findResult", docs);
 				
 				if (docs) {
