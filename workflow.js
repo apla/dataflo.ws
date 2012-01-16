@@ -28,46 +28,67 @@ function isEmpty(obj) {
     return true;
 }
 
-function checkTaskParams (taskParams, dict) {
-	// parse task params
+function checkTaskParams (params, dict, prefix) {
 	
+	// parse task params
 	// TODO: modify this function because recursive changes of parameters works dirty (indexOf for value)
 	
-	var modifiedParams = {};
+	if (prefix == void 0) prefix = '';
 	
+	var modifiedParams;
 	var failedParams = [];
 	
-	for (var key in taskParams) {
-		var val = taskParams[key];
-		var valCheck = val;
+	if (params.join) { // params is array
 		
-		if (!val.indexOf) {
-			modifiedParams[key] = val;
-			continue;
-		}
+		modifiedParams = [];
 		
-//		console.log (key, val, val.interpolate (dict));
+		params.forEach(function (val, index, arr) {
+			
+			if (val.indexOf || val.interpolate) { // number || string				
+				modifiedParams.push(val.interpolate (dict) || val);
+			} else {
+				var result = checkTaskParams(val, dict, prefix+'['+index+']');
+				modifiedParams.push(result.modified);
+				failedParams = failedParams.concat (result.failed);
+			}
+		});
 		
-		if (!val.interpolate) {
-			modifiedParams[key] = val;
-			continue;
-		}
-		
-		try {
-			modifiedParams[key] = val.interpolate (dict) || val;
-			if (isEmpty (modifiedParams[key]))
-				throw "EMPTY VALUE"
-		} catch (e) {
-			failedParams.push (key);
-		}
+	} else { // params is hash
 	
+		modifiedParams = {};
+		
+		for (var key in params) {
+			var val = params[key];
+			var valCheck = val;
+			
+			if (val.interpolate) { // val is string || number
+				
+				try {
+					
+					modifiedParams[key] = val.interpolate (dict) || val;
+					if (isEmpty (modifiedParams[key])) throw "EMPTY VALUE";
+					
+				} catch (e) {
+					
+					failedParams.push (prefix+'.'+key);
+				
+				}
+				
+			} else { // val is hash || array
+				
+				var result = checkTaskParams(val, dict, prefix+key);
+				if (prefix) prefix += '.';
+				
+				modifiedParams[key] = result.modified;
+				failedParams = failedParams.concat (result.failed);
+			}		
+		}
 	}
 	
-	if (failedParams.length > 0) {
-		return failedParams;
-	}
-	
-	return modifiedParams;
+	return {
+		modified: modifiedParams,
+		failed: failedParams
+	};
 }
 
 var workflow = module.exports = function (config, reqParam) {
@@ -110,12 +131,14 @@ var workflow = module.exports = function (config, reqParam) {
 		var task;
 
 		var checkRequirements = function () {
-			var modifiedParams = checkTaskParams (taskParams, self);
-			if (modifiedParams instanceof Array) {
-				this.unsatisfiedRequirements = modifiedParams;
+			
+			var result = checkTaskParams (taskParams, self);
+			
+			if (result.failed && result.failed.length > 0) {
+				this.unsatisfiedRequirements = result.failed;
 				return false;
-			} else if (modifiedParams) {
-				util.extend (this, modifiedParams);
+			} else if (result.modified) {
+				util.extend (this, result.modified);
 				return true;
 			}
 		}

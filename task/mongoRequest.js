@@ -80,7 +80,7 @@ util.extend (mongoRequestTask.prototype, {
 		
 		var connectorConfig = project.config.db[this.connector];
 		
-		console.log (connectorConfig);
+		//console.log (connectorConfig);
 		
 		// create connector
 		
