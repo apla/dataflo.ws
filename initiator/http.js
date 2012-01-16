@@ -134,7 +134,11 @@ util.extend (httpdi.prototype, {
 					console.log ('begins match');
 					
 					req.pathInfo = req.url.pathname.substr (item.urlBeginsWith.length);
-					
+					if (req.pathInfo == '/')
+						delete (req.pathInfo);
+
+					if (req.pathInfo && req.pathInfo[0] == '/')
+						req.pathInfo = req.pathInfo.substr (1);
 					wf = true;
 				}
 				
