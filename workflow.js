@@ -13,6 +13,21 @@ var EventEmitter = require ('events').EventEmitter,
 
 var taskStateNames = taskClass.prototype.stateNames;
 
+var hasOwnProperty = Object.prototype.hasOwnProperty;
+
+function isEmpty(obj) {
+
+    // Assume if it has a length property with a non-zero value
+    // that that property is correct.
+    if (obj.length && obj.length > 0)    return false;
+
+    for (var key in obj) {
+        if (hasOwnProperty.call(obj, key))    return false;
+    }
+
+    return true;
+}
+
 function checkTaskParams (taskParams, dict) {
 	// parse task params
 	
@@ -40,10 +55,8 @@ function checkTaskParams (taskParams, dict) {
 		
 		try {
 			modifiedParams[key] = val.interpolate (dict) || val;
-			if (modifiedParams[key].constructor == Array && modifiedParams[key].length == 0) {
-				// empty arrays not allowed as valid values
-				throw "SOMETHING";
-			}
+			if (isEmpty (modifiedParams[key]))
+				throw "EMPTY VALUE"
 		} catch (e) {
 			failedParams.push (key);
 		}
