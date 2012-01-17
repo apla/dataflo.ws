@@ -97,7 +97,7 @@ util.extend (httpdi.prototype, {
 			response: res
 		});
 
-		presenterWf.on ('complete', function () {
+		presenterWf.on ('completed', function () {
 			//self.log ('presenter done');
 		});
 
