@@ -1,10 +1,15 @@
 var EventEmitter = require ('events').EventEmitter,
 	http         = require ('http'),
 	util         = require ('util'),
-	mime         = require ('mime'),
 	workflow     = require ('workflow'),
 	url          = require ('url'),
 	os			 = require ('os');
+
+try {
+	var mime     = require ('mime');
+} catch (e) {
+	console.error ('cannot find mime module');
+};
 
 var httpdi = module.exports = function (config) {
 	// we need to launch httpd
@@ -97,7 +102,7 @@ util.extend (httpdi.prototype, {
 			response: res
 		});
 
-		presenterWf.on ('complete', function () {
+		presenterWf.on ('completed', function () {
 			//self.log ('presenter done');
 		});
 
@@ -177,7 +182,17 @@ util.extend (httpdi.prototype, {
 					if (pathName.match (/\/$/)) {
 						pathName += self.static.index;
 					}
-					var contentType = mime.lookup (pathName);
+					
+					var contentType;
+					if (pathName.match (/\.html$/)) {
+						contentType = 'text/html';
+					}
+					
+					if (mime && mime.lookup) {
+						contentType = mime.lookup (pathName);
+					} else if (!contentType) {
+						console.error ('sorry, there is no content type for ' + pathName);
+					}
 
 					self.static.root.fileIO (pathName).readStream (function (readStream, stats) {
 						

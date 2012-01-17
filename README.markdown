@@ -1,6 +1,14 @@
 workflow processing for node.js
 ===============================
 
+example
+-------------------------------
+
+you can see example by running
+
+	./node example/bin/httpd.js
+
+
 abstract
 -------------------------------
 
