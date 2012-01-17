@@ -8,8 +8,8 @@ define (function (require, exports, module) {
 
 var EventEmitter = require ('events').EventEmitter,
 	util         = require ('util'),
-	common       = require ('common'),
-	taskClass    = require ('task/base');
+	common       = require ('./common'),
+	taskClass    = require ('./task/base');
 
 var taskStateNames = taskClass.prototype.stateNames;
 
