@@ -1,7 +1,7 @@
 var EventEmitter = require ('events').EventEmitter,
 	http         = require ('http'),
 	util         = require ('util'),
-	workflow     = require ('workflow'),
+	workflow     = require ('../workflow'),
 	url          = require ('url'),
 	os			 = require ('os');
 
