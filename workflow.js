@@ -267,7 +267,7 @@ function timestamp () {
 
 
 util.extend (workflow.prototype, {
-	
+	checkTaskParams: checkTaskParams,
 	initializeTasks: function () {},
 	stageMarker: {prepare: "()", process: "[]", presentation: "<>"},
 	isIdle: 1,
