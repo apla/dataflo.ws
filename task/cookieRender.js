@@ -25,6 +25,7 @@ util.extend (cookieRender.prototype, {
 		});
 		
 		self.output.setHeader ("Set-Cookie", cookies);
+		
 		self.completed (cookies);
 	},
 	
