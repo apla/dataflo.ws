@@ -1,8 +1,11 @@
 var task         = require ('task/base'),
-	util         = require ('util'),
-	mime		 = require ('mime');
+	util         = require ('util');
 
-var jade         = require ('jade');
+try {
+	var jade         = require ('jade');
+} catch (e) {
+	// console.log ('jade not available');
+}
 
 var presenterTask = module.exports = function (config) {
 	
@@ -32,7 +35,7 @@ util.extend (presenterTask.prototype, {
 		}
 
 		if (this.type == 'jade') {
-			self.response.setHeader("Content-Type", (this.type || 'text/html') + '; charset=utf-8');
+			self.response.setHeader("Content-Type", (this.contentType || 'text/html') + '; charset=utf-8');
 			var templateIO = project.root.fileIO (this.file);
 			// TODO
 			//if (cache {this.template}) {
@@ -51,7 +54,7 @@ util.extend (presenterTask.prototype, {
 			});
 
 		} else if (this.type == 'json') {
-			self.response.setHeader("Content-Type", mime.lookup(this.type) + '; charset=utf-8');
+			self.response.setHeader("Content-Type", 'application/json; charset=utf-8');
 			self.response.end (JSON.stringify (self.vars));
 			self.completed ();
 		} else  if (this.type == 'asis') {
