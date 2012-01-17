@@ -34,18 +34,21 @@ function checkTaskParams (params, dict, prefix) {
 	// TODO: modify this function because recursive changes of parameters works dirty (indexOf for value)
 	
 	if (prefix == void 0) prefix = '';
+	if (prefix) prefix += '.';
 	
 	var modifiedParams;
 	var failedParams = [];
 	
-	if (params.join) { // params is array
+	if (params.constructor == Array) { // params is array
 		
 		modifiedParams = [];
 		
 		params.forEach(function (val, index, arr) {
 			
-			if (val.indexOf || val.interpolate) { // number || string				
+			if (val.indexOf || val.interpolate) { // string				
 				modifiedParams.push(val.interpolate (dict) || val);
+			} else if (val.toFixed) {
+				modifiedParams.push(val);
 			} else {
 				var result = checkTaskParams(val, dict, prefix+'['+index+']');
 				modifiedParams.push(result.modified);
@@ -70,14 +73,16 @@ function checkTaskParams (params, dict, prefix) {
 					
 				} catch (e) {
 					
-					failedParams.push (prefix+'.'+key);
+					failedParams.push (prefix+key);
 				
 				}
 				
+			} else if (val.toFixed) {
+				modifiedParams[key] = val;
 			} else { // val is hash || array
 				
+				
 				var result = checkTaskParams(val, dict, prefix+key);
-				if (prefix) prefix += '.';
 				
 				modifiedParams[key] = result.modified;
 				failedParams = failedParams.concat (result.failed);
