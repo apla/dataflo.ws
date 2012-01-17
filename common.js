@@ -134,6 +134,9 @@ String.prototype.interpolate = function (dict, marks) {
 		if (fix === void(0))
 			throw (result || this);
 		
+		if (fix.indexOf && fix.indexOf (marks.start) > -1)
+			throw 'interpolation mark "' + marks.start + '" within interpolation string (' + fix + ') is denied';
+		
 		// warn "value for replace is: $fix\n";
 		
 		if (pos == 0 && end == ((result || this).length - 1)) {
@@ -144,7 +147,7 @@ String.prototype.interpolate = function (dict, marks) {
 		}
 		
 		if ((result || this).indexOf)
-			pos = (result || this).indexOf (marks.start, end);
+			pos = (result || this).indexOf (marks.start);
 		else
 			break;
 	}
