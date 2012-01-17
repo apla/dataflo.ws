@@ -162,7 +162,7 @@ try {
 
 	var path = require ('path');
 
-	var io = require ('io/easy');
+	var io = require ('./io/easy');
 
 	var project = function () {
 		// TODO: root directory object
@@ -173,6 +173,9 @@ try {
 			rootPath = script.match (/(.*)\\(bin|t|lib)\\/)
 		}
 		
+		if (!rootPath)
+			return;
+		
 		var root = new io (rootPath[1]);
 		
 		this.root = root;
@@ -181,7 +184,7 @@ try {
 		root.fileIO ('etc/project').readFile (function (err, data) {
 			if (err) {
 				console.error ("can't access etc/project file. create one and define project id");
-				process.kill ();
+				// process.kill ();
 				return;
 			}
 			
@@ -204,7 +207,8 @@ try {
 				// TODO: read config fixup
 			} else {
 				console.error ('parser ' + parser + ' unknown');
-				process.kill ();
+				// process.kill ();
+				return;
 			}
 
 
@@ -228,8 +232,9 @@ try {
 							+ "create one and define local configuration fixup. "
 						);
 						self.emit ('ready');
-						return;
 						// process.kill ();
+						return;
+						
 					}
 					
 					var fixupData = (""+data).match (/(\w+)(\W[^]*)/);
@@ -249,7 +254,8 @@ try {
 						util.extend (true, self.config, config);
 					} else {
 						console.log ('parser ' + fixupParser + ' unknown');
-						process.kill ();
+						// process.kill ();
+						return;
 					}
 					
 					console.log ('project ready');
