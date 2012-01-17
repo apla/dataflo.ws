@@ -1,11 +1,7 @@
 #!/usr/bin/env node
 
-var common  = require ('common');
-var httpdi  = require ('initiator/http');
-var util    = require ('util');
-var barrier = require ('barrier');
-var urlUtil = require ('url');
-var workflow = require ('workflow');
+var common   = require ('common');
+var httpdi   = require ('initiator/http');
 
 module.exports = {
 	generateSomething: function (params) {
