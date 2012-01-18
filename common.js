@@ -125,7 +125,6 @@ String.prototype.interpolate = function (dict, marks) {
 		
 		var fix;
 		if (str.indexOf (marks.path) > -1) { //  treat as path
-			//  warn join ', ', keys %{$self->var};
 			fix = pathToVal (dict, str);
 		} else { // scalar
 			fix = dict[str];
@@ -136,8 +135,6 @@ String.prototype.interpolate = function (dict, marks) {
 		
 		if (fix.indexOf && fix.indexOf (marks.start) > -1)
 			throw 'interpolation mark "' + marks.start + '" within interpolation string (' + fix + ') is denied';
-		
-		// warn "value for replace is: $fix\n";
 		
 		if (pos == 0 && end == ((result || this).length - 1)) {
 			result = fix;
