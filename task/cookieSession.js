@@ -18,6 +18,7 @@ util.extend (sessionGenerator.prototype, {
 		var stoken;
 		
 		var cookies = self.cookies;
+		delete cookies.length;
 		
 		if (cookies.stoken) { // if stoken exist
 			
@@ -26,21 +27,22 @@ util.extend (sessionGenerator.prototype, {
 		} else { // generate
 		
 			var secret = self.secret;
+			
 			var ip = self.request.connection.remoteAddress;
 			var port = self.request.connection.remotePort;
 			
-			var date = new Date();
-			var rnd = ~~(10e+9*Math.random());
+			var date = self.request.connection._idleStart;
+			var rnd = ~~(10e+6*Math.random());
 			
-			var stokenStr = secret + ':' + ip + ':' + '.' + date.getTime() + '.' + rnd;
+			var stokenStr = secret + ':' + ip + ':' + port + '.' + date.getTime() + '.' + rnd.toString(2);
+			
 			stoken = new Buffer(stokenStr).toString('base64').replace(/=+$/, '');
+			
+			console.log ('Stoken (' + stokenStr + ') = ' + stoken);
 		}
 		
-		// ---
-		
+		// add to request session object
 		self.request.session = {stoken: stoken};
-		
-		// ---
 		
 		self.completed (stoken);
 	}

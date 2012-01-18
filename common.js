@@ -190,9 +190,11 @@ try {
 			
 			if (parser == 'json') {
 
-				// TODO: error handling
-
-				var config = JSON.parse (configData[0]);
+				try {
+					var config = JSON.parse (configData[0]);
+				} catch (e) {
+					throw new Error('http config cannon parsed');
+				}
 				
 				self.id     = config.id;
 				self.config = config;

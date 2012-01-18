@@ -15,15 +15,20 @@ util.extend (cookieParser.prototype, {
 
 		var self = this;
 		
-		var cookies = self.cookies;
-		var cookiesObj = {};
+		var cookies = self.headers.cookies ? self.headers.cookies : null;
+		var cookiesObj = {length:0};
 		
-		cookies.split('; ').map (function(item) {
+		if (cookies) cookies.split('; ').map (function(item) {
 			
 			var s = item.split('=');
-			cookiesObj[s[0]] = s[1];
+			if (s[0] && s[1]) {
+				cookiesObj[s[0]] = s[1];
+				cookiesObj.length++;
+			}
 		
 		});
+		
+		console.log (cookiesObj);
 		
 		self.completed (cookiesObj);
 	}

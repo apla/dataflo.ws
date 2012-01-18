@@ -197,12 +197,24 @@ util.extend (httpdi.prototype, {
 					self.static.root.fileIO (pathName).readStream (function (readStream, stats) {
 						
 						if (stats) {
-							res.writeHead (200, {
-								'Content-Type': contentType + '; charset=utf-8'
-							});
-							readStream.pipe (res);
-							readStream.resume ();
-						} else {
+							
+							if (stats.isDirectory() && !readStream) {
+								
+								res.statusCode = 303;
+								res.setHeader('Location', pathName +'/');
+								res.end('Redirecting to ' + pathName +'/');
+								return;
+						
+							} else if (stats.isFile() && readStream) {
+
+								res.writeHead (200, {
+									'Content-Type': contentType + '; charset=utf-8'
+								});
+								readStream.pipe (res);
+								readStream.resume ();
+								return;
+							}
+						
 							res.writeHead (404, {});
 							res.end();
 						}
