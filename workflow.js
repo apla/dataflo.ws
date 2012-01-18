@@ -329,6 +329,9 @@ util.extend (workflow.prototype, {
 		
 		var self = this;
 		
+		if (self.stopped)
+			return;
+		
 		self.isIdle = 0;
 		self.haveCompletedTasks = false;
 				
@@ -412,6 +415,8 @@ util.extend (workflow.prototype, {
 
 		if (this.taskStates[taskStateNames.complete] == self.tasks.length) {
 			
+			self.stopped = true;
+			
 			self.emit ('completed', self);
 			self.log ('workflow complete');
 		
@@ -444,6 +449,8 @@ util.extend (workflow.prototype, {
 				else
 					requestDump = e
 			};
+			
+			self.stopped = true;
 			
 			self.emit ('failed', self);
 			
