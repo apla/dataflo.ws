@@ -18,6 +18,8 @@ util.extend (cookieRender.prototype, {
 		
 		var cookies = [];
 		
+		console.log ('>>>>>>>>>', self.cookies);
+		
 		self.cookies.map(function(cookie) {
 		
 			cookies.push(self.serializeCookie(cookie));

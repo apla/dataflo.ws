@@ -3,6 +3,13 @@ var task         = require ('task/base'),
 
 var sessionGenerator = module.exports = function (config) {
 	
+	this.cookieTpl = { // default tpl
+		name: "connect.sid",
+		domain: "127.0.0.1",
+		path: "/",
+		expirePeriod: "0"
+	};
+	
 	this.init (config);
 	
 };
@@ -15,14 +22,20 @@ util.extend (sessionGenerator.prototype, {
 		
 		var self = this;
 		
-		var stoken;
+		var value;
 		
-		var cookies = self.cookies;
-		delete cookies.length;
+		var reqCookies = self.reqCookies;
+		delete reqCookies.length;
 		
-		if (cookies.stoken) { // if stoken exist
+		//cookie template
+		var cookieTpl = self.cookieTpl;
+		
+		// name of session cookie
+		var name = cookieTpl.name;
+		
+		if (reqCookies[name]) { // if stoken exist
 			
-			stoken = cookies.stoken;
+			value = reqCookies[name];
 		
 		} else { // generate
 		
@@ -31,19 +44,29 @@ util.extend (sessionGenerator.prototype, {
 			var ip = self.request.connection.remoteAddress;
 			var port = self.request.connection.remotePort;
 			
-			var date = self.request.connection._idleStart;
-			var rnd = ~~(10e+6*Math.random());
+			var date = self.request.connection._idleStart.getTime();
+			var timestamp = date.toString(16);
+			var rnd = (~~(10e+6*Math.random())).toString(16);
 			
-			var stokenStr = secret + ':' + ip + ':' + port + '.' + date.getTime() + '.' + rnd.toString(2);
+			var str =  ip + ':' + port + '.' + timestamp + '.' + rnd;
+			str =  (port % 2 == 0) ? (str + '.' + secret) : (secret + '.' + str);
 			
-			stoken = new Buffer(stokenStr).toString('base64').replace(/=+$/, '');
+			value = new Buffer(str).toString('base64').replace(/=+$/, '');
 			
-			console.log ('Stoken (' + stokenStr + ') = ' + stoken);
+			self.emit('log', 'Generated SessionID\n\t source = ' + str + '\n\t base64 = ' + value);
 		}
 		
 		// add to request session object
-		self.request.session = {stoken: stoken};
+		self.request.session = {
+			sessionUID: value
+		};
 		
-		self.completed (stoken);
+		var newCookie = {value: value}
+		
+		for (var key in cookieTpl) {
+			newCookie[key] = cookieTpl[key];
+		}
+		
+		self.completed (newCookie);
 	}
 });

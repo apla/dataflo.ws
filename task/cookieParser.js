@@ -15,7 +15,7 @@ util.extend (cookieParser.prototype, {
 
 		var self = this;
 		
-		var cookies = self.headers.cookies ? self.headers.cookies : null;
+		var cookies = self.headers.cookie ? self.headers.cookie : null;
 		var cookiesObj = {length:0};
 		
 		if (cookies) cookies.split('; ').map (function(item) {
@@ -27,8 +27,6 @@ util.extend (cookieParser.prototype, {
 			}
 		
 		});
-		
-		console.log (cookiesObj);
 		
 		self.completed (cookiesObj);
 	}
