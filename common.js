@@ -143,8 +143,8 @@ String.prototype.interpolate = function (dict, marks) {
 //			console.log ('!!!', (result || this).toString(), fix.toString(), pos, end, end - pos + 1);
 		}
 		
-		if ((result || this).indexOf)
-			pos = (result || this).indexOf (marks.start);
+		if ((((result === false || result === 0 || result === "") ? true : result) || this).indexOf)
+			pos = (((result === false || result === 0 || result === "") ? true : result) || this).indexOf (marks.start);
 		else
 			break;
 	}

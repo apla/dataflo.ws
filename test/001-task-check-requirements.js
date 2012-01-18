@@ -4,17 +4,29 @@ var assert   = require('assert');
 var common   = require ('../common');
 var workflow = require ('../workflow');
 
+clearInterval (global.currentDateInterval);
+
 var checkTaskParams = workflow.prototype.checkTaskParams;
 
 var data = {
 	boolExp: "{$data.bool}",
+	checkFalse: {
+		falseExp: "{$data.no}",
+		zeroExp: "{$data.zero}",
+		emptyExp: "{$data.empty}",
+		emptyArr: "{$data.emptyArr}",
+		emptyObj: "{$data.emptyObj}"
+	},
+	exception: {
+		stringExp2: "{$badString}",
+		nothing: "{$erlkjgnwlekrjgn}"
+	},
 	stringExp: "{$data.string}",
-	stringExp2: "{$badString}",
 	stringExp3: "{$okString}",
 	numberExp: "{$data.number}",
 	inlineExp: "{$data.string}-{$data.number}",
 	arrayExp: "{$arr}",
-	objectExp: "{$data}",
+	objectExp: "{$data}"
 
 };
 
@@ -22,17 +34,31 @@ var dict = {
 	data: {
 		bool: true,
 		string: "string",
-		number: 123
+		number: 123,
+		zero: 0,
+		no: false,
+		empty: "",
+		emptyArr: [],
+		emptyObj: {}
 	},
 	badString: "{$",
 	okString: "}",
-	arr: ['a', 'b']
+	arr: ['a', 'b'],
 };
 
 test('check task requirements', {
 	'expandFailNoThrow': function() {
 		var result = checkTaskParams (data, dict);
-		assert.deepEqual (result.failed, ['stringExp2']);
+		assert.deepEqual (result.failed, [
+			"checkFalse.falseExp",
+			"checkFalse.zeroExp",
+			"checkFalse.emptyExp",
+			"checkFalse.emptyArr",
+			"checkFalse.emptyObj",
+			
+			"exception.stringExp2",
+			"exception.nothing"
+		]);
 	},
 
 //	'expandString': function() {

@@ -23,7 +23,7 @@ var dict = {
 	},
 	badString: "{$",
 	okString: "}",
-	arr: ['a', 'b']
+	arr: ['a', 'b'],
 };
 
 test('interpolate', {
