@@ -125,7 +125,6 @@ String.prototype.interpolate = function (dict, marks) {
 		
 		var fix;
 		if (str.indexOf (marks.path) > -1) { //  treat as path
-			//  warn join ', ', keys %{$self->var};
 			fix = pathToVal (dict, str);
 		} else { // scalar
 			fix = dict[str];
@@ -134,7 +133,8 @@ String.prototype.interpolate = function (dict, marks) {
 		if (fix === void(0))
 			throw (result || this);
 		
-		// warn "value for replace is: $fix\n";
+		if (fix.indexOf && fix.indexOf (marks.start) > -1)
+			throw 'interpolation mark "' + marks.start + '" within interpolation string (' + fix + ') is denied';
 		
 		if (pos == 0 && end == ((result || this).length - 1)) {
 			result = fix;
@@ -143,8 +143,8 @@ String.prototype.interpolate = function (dict, marks) {
 //			console.log ('!!!', (result || this).toString(), fix.toString(), pos, end, end - pos + 1);
 		}
 		
-		if ((result || this).indexOf)
-			pos = (result || this).indexOf (marks.start, end);
+		if ((((result === false || result === 0 || result === "") ? true : result) || this).indexOf)
+			pos = (((result === false || result === 0 || result === "") ? true : result) || this).indexOf (marks.start);
 		else
 			break;
 	}
@@ -159,7 +159,7 @@ try {
 
 	var path = require ('path');
 
-	var io = require ('io/easy');
+	var io = require ('./io/easy');
 
 	var project = function () {
 		// TODO: root directory object
@@ -170,6 +170,9 @@ try {
 			rootPath = script.match (/(.*)\\(bin|t|lib)\\/)
 		}
 		
+		if (!rootPath)
+			return;
+		
 		var root = new io (rootPath[1]);
 		
 		this.root = root;
@@ -178,7 +181,7 @@ try {
 		root.fileIO ('etc/project').readFile (function (err, data) {
 			if (err) {
 				console.error ("can't access etc/project file. create one and define project id");
-				process.kill ();
+				// process.kill ();
 				return;
 			}
 			
@@ -203,7 +206,8 @@ try {
 				// TODO: read config fixup
 			} else {
 				console.error ('parser ' + parser + ' unknown');
-				process.kill ();
+				// process.kill ();
+				return;
 			}
 
 
@@ -227,8 +231,9 @@ try {
 							+ "create one and define local configuration fixup. "
 						);
 						self.emit ('ready');
-						return;
 						// process.kill ();
+						return;
+						
 					}
 					
 					var fixupData = (""+data).match (/(\w+)(\W[^]*)/);
@@ -248,7 +253,8 @@ try {
 						util.extend (true, self.config, config);
 					} else {
 						console.log ('parser ' + fixupParser + ' unknown');
-						process.kill ();
+						// process.kill ();
+						return;
 					}
 					
 					console.log ('project ready');

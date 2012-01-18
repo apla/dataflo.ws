@@ -1,7 +1,7 @@
 var EventEmitter = require ('events').EventEmitter,
 	http         = require ('http'),
 	util         = require ('util'),
-	workflow     = require ('workflow'),
+	workflow     = require ('../workflow'),
 	url          = require ('url'),
 	os			 = require ('os');
 
@@ -119,8 +119,10 @@ util.extend (httpdi.prototype, {
 			// here we need to find matching workflows
 			// for received request
 			
-			req.url = url.parse(req.url, true);
-			
+			req.url = url.parse (req.url, true);
+			// use for workflow match
+			req[req.method] = true;
+
 			var wf;
 			
 			self.workflows.map (function (item) {

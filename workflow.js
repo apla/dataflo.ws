@@ -8,8 +8,8 @@ define (function (require, exports, module) {
 
 var EventEmitter = require ('events').EventEmitter,
 	util         = require ('util'),
-	common       = require ('common'),
-	taskClass    = require ('task/base');
+	common       = require ('./common'),
+	taskClass    = require ('./task/base');
 
 var taskStateNames = taskClass.prototype.stateNames;
 
@@ -19,12 +19,20 @@ function isEmpty(obj) {
 
     // Assume if it has a length property with a non-zero value
     // that that property is correct.
-    if (obj.length && obj.length > 0)    return false;
+    if (obj === true)
+		return !obj;
+	
+	if (obj.toFixed && obj !== 0)
+		return false;
+	
+	if (obj.length && obj.length > 0)
+		return false;
 
     for (var key in obj) {
-        if (hasOwnProperty.call(obj, key))    return false;
+        if (hasOwnProperty.call(obj, key))
+			return false;
     }
-
+	
     return true;
 }
 
@@ -46,7 +54,19 @@ function checkTaskParams (params, dict, prefix) {
 		params.forEach(function (val, index, arr) {
 			
 			if (val.indexOf || val.interpolate) { // string				
-				modifiedParams.push(val.interpolate (dict) || val);
+				try {
+					var tmp = modifiedParams[key] = val.interpolate (dict);
+					if (tmp === void 0)
+						modifiedParams[key] = val;
+//					if (tmp === false || tmp === 0 || tmp === "")
+						
+//					console.log (val, ' interpolated to the "', modifiedParams[key], '" and ', isEmpty (modifiedParams[key]) ? ' is empty' : 'is not empty');
+					if (isEmpty (modifiedParams[key]))
+						throw "EMPTY VALUE";
+				} catch (e) {
+					failedParams.push (prefix+key);
+				}
+
 			} else if (val.toFixed) {
 				modifiedParams.push(val);
 			} else {
@@ -63,13 +83,17 @@ function checkTaskParams (params, dict, prefix) {
 		for (var key in params) {
 			var val = params[key];
 			var valCheck = val;
-			
 			if (val.interpolate) { // val is string || number
 				
 				try {
-					
-					modifiedParams[key] = val.interpolate (dict) || val;
-					if (isEmpty (modifiedParams[key])) throw "EMPTY VALUE";
+					var tmp = modifiedParams[key] = val.interpolate (dict);
+					if (tmp === void 0)
+						modifiedParams[key] = val;
+//					if (tmp === false || tmp === 0 || tmp === "")
+						
+//					console.log (val, ' interpolated to the "', modifiedParams[key], '" and ', isEmpty (modifiedParams[key]) ? ' is empty' : 'is not empty');
+					if (isEmpty (modifiedParams[key]))
+						throw "EMPTY VALUE";
 					
 				} catch (e) {
 					
@@ -81,12 +105,11 @@ function checkTaskParams (params, dict, prefix) {
 				modifiedParams[key] = val;
 			} else { // val is hash || array
 				
-				
 				var result = checkTaskParams(val, dict, prefix+key);
 				
 				modifiedParams[key] = result.modified;
 				failedParams = failedParams.concat (result.failed);
-			}		
+			}
 		}
 	}
 	
@@ -251,9 +274,9 @@ function pad(n) {
 }
 
 // one second low resolution timer
-var currentDate = new Date ();
-setInterval (function () {
-	currentDate = new Date ();
+global.currentDate = new Date ();
+global.currentDateInterval = setInterval (function () {
+	global.currentDate = new Date ();
 }, 1000);
 
 function timestamp () {
@@ -272,7 +295,7 @@ function timestamp () {
 
 
 util.extend (workflow.prototype, {
-	
+	checkTaskParams: checkTaskParams,
 	initializeTasks: function () {},
 	stageMarker: {prepare: "()", process: "[]", presentation: "<>"},
 	isIdle: 1,
@@ -305,6 +328,9 @@ util.extend (workflow.prototype, {
 	run: function () {
 		
 		var self = this;
+		
+		if (self.stopped)
+			return;
 		
 		self.isIdle = 0;
 		self.haveCompletedTasks = false;
@@ -389,6 +415,8 @@ util.extend (workflow.prototype, {
 
 		if (this.taskStates[taskStateNames.complete] == self.tasks.length) {
 			
+			self.stopped = true;
+			
 			self.emit ('completed', self);
 			self.log ('workflow complete');
 		
@@ -421,6 +449,8 @@ util.extend (workflow.prototype, {
 				else
 					requestDump = e
 			};
+			
+			self.stopped = true;
 			
 			self.emit ('failed', self);
 			

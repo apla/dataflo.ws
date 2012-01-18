@@ -1,7 +1,7 @@
 var EventEmitter   = require ('events').EventEmitter,
 	http           = require ('http'),
 	util           = require ('util'),
-	Workflow       = require ('workflow');
+	Workflow       = require ('../workflow');
 
 var amqp = require ('node-amqp/amqp.js');
 
