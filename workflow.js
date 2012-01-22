@@ -155,6 +155,8 @@ var workflow = module.exports = function (config, reqParam) {
 	
 //	console.log ('config, reqParam', config, reqParam);
 	
+	self.ready = true;
+	
 	this.tasks = config.tasks.map (function (taskParams) {
 		var task;
 
@@ -180,23 +182,18 @@ var workflow = module.exports = function (config, reqParam) {
 			// TODO: need check all task classes, because some compile errors may be there
 //			console.log ('task/'+taskParams.className);
 			try {
-				xTaskClass = require ('task/' + taskParams.className);
+				xTaskClass = require (taskParams.className);
 			} catch (e) {
-				var ee = e;
-				try {
-					xTaskClass = require ('task-'+taskParams.className);
-				} catch (e) {
-					console.log ('require task/'+taskParams.className+':', ee);
-					console.log ('require task-'+taskParams.className+':', e);
-					xTaskClass = require (taskParams.className);
-				}
-				
+				console.log ('require '+taskParams.className+':', e);
+				self.ready = false;
+				return;
 			}
 			
 			task = new xTaskClass ({
 				className: taskParams.className,
 				method:    taskParams.method,
-				require:   checkRequirements
+				require:   checkRequirements,
+				important: taskParams.important
 			});
 		} else if (taskParams.coderef || taskParams.functionName) {
 		
@@ -216,6 +213,7 @@ var workflow = module.exports = function (config, reqParam) {
 					if (taskParams.bind && taskParams.functionName) {
 						try {
 							var functionRef = taskParams.bind;
+							// TODO: use pathToVal
 							var fSplit = taskParams.functionName.split (".");
 							while (fSplit.length) {
 								var fChunk = fSplit.shift();
@@ -255,8 +253,9 @@ var workflow = module.exports = function (config, reqParam) {
 			
 			task = new xTaskClass ({
 				functionName: taskParams.functionName,
-				logTitle: taskParams.logTitle,
-				require: checkRequirements
+				logTitle:     taskParams.logTitle,
+				require:      checkRequirements,
+				important:    taskParams.important
 			});
 			
 		}
@@ -265,6 +264,7 @@ var workflow = module.exports = function (config, reqParam) {
 		
 		return task;
 	});
+	
 };
 
 util.inherits (workflow, EventEmitter);
@@ -296,9 +296,120 @@ function timestamp () {
 
 util.extend (workflow.prototype, {
 	checkTaskParams: checkTaskParams,
-	initializeTasks: function () {},
-	stageMarker: {prepare: "()", process: "[]", presentation: "<>"},
 	isIdle: 1,
+	haveCompletedTasks: false,
+	run: function () {
+		
+		var self = this;
+		
+		if (self.stopped)
+			return;
+		
+		self.failed = false;
+		self.isIdle = false;
+		self.haveCompletedTasks = false;
+				
+//		self.log ('workflow run');
+		
+		this.taskStates = [0, 0, 0, 0, 0, 0, 0];
+		
+		// check task states
+		
+		this.tasks.map (function (task) {
+			
+			if (task.subscribed === void(0)) {
+				self.addEventListenersToTask (task);
+			}
+			
+			task.checkState ();
+			
+			self.taskStates[task.state]++;
+			
+//			console.log ('task.className, task.state\n', task, task.state, task.isReady ());
+			
+			if (task.isReady ()) {
+				self.logTask (task, 'started');
+				task.run ();
+				
+				// sync task support
+				if (!task.isReady()) {
+					self.taskStates[task.stateNames.ready]--;
+					self.taskStates[task.state]++;
+				}
+			}
+		});
+
+		var taskStateNames = taskClass.prototype.stateNames;
+		
+		if (this.taskStates[taskStateNames.ready] || this.taskStates[taskStateNames.running]) {
+			// it is save to continue, wait for running/ready task
+			console.log ('have running tasks');
+			return;
+		} else if (self.haveCompletedTasks) {
+			console.log ('have completed tasks');
+			// stack will be happy
+			setTimeout (function () {
+				self.run ();
+			}, 0);
+			
+			return;
+		}
+		
+		
+		self.stopped = true;
+		
+		var scarceTaskMessage = 'unsatisfied requirements: ';
+	
+		// TODO: display scarce tasks unsatisfied requirements
+		if (this.taskStates[taskStateNames.scarce]) {
+			self.tasks.map (function (task) {
+				if (task.state != taskStateNames.scarce && task.state != taskStateNames.skipped)
+					return;
+				// funny thing is important not available on scarce tasks
+				// because task params not provided until all requirements
+				// satisfied
+				if (task.important) {
+					task.failed ("important task didn't started");
+					self.taskStates[taskStateNames.scarce]--;
+					self.taskStates[task.state]++;
+					self.failed = true;
+					scarceTaskMessage += '(important)';
+				}
+				scarceTaskMessage += (task.logTitle) + ' => ' + task.unsatisfiedRequirements.join (', ') + '; ';
+			});
+			self.log (scarceTaskMessage);
+		}
+
+		if (self.verbose) {
+			var requestDump = '???';
+			try {
+				requestDump = JSON.stringify (self.request)
+			} catch (e) {
+				if ((""+e).match (/circular/))
+					requestDump = 'CIRCULAR'
+				else
+					requestDump = e
+			};
+		}
+		
+		if (this.failed) {
+			// workflow stopped and failed
+		
+			self.emit ('failed', self);
+			self.log ('workflow failed '+this.taskStates[taskStateNames.failed]+' tasks of ' + self.tasks.length);
+
+		} else {
+			// workflow stopped and not failed
+		
+			self.emit ('completed', self);
+			self.log ('workflow complete');
+
+		}
+		
+		self.isIdle = true;
+		
+	},
+	stageMarker: {prepare: "()", process: "[]", presentation: "<>"},
 	log: function (msg) {
 //		if (this.quiet || process.quiet) return;
 		var toLog = [
@@ -323,149 +434,61 @@ util.extend (workflow.prototype, {
 		// TODO: fix by using console.error
 		this.log(task.logTitle, "("+task.state+") \x1B[0;31m" + msg + "\x1B[0m");
 	},
-	
-	haveCompletedTasks: false,
-	run: function () {
-		
+	addEventListenersToTask: function (task) {
 		var self = this;
 		
-		if (self.stopped)
-			return;
+		task.subscribed = 1;
 		
-		self.isIdle = 0;
-		self.haveCompletedTasks = false;
-				
-//		self.log ('workflow run');
-		
-		this.taskStates = [0, 0, 0, 0, 0, 0];
-		
-		this.tasks.map (function (task) {
-			
-			if (task.subscribed === void(0)) {
-				task.subscribed = 1;
-			
-				task.on ('log', function (message) {
-					self.logTask (task, message); 
-				});
+		// loggers
+		task.on ('log', function (message) {
+			self.logTask (task, message); 
+		});
 
-				task.on ('warn', function (message) {
-					self.logTaskError (task, message); 
-				});
-				
-				task.on ('error', function () {
-					self.logTaskError (task, 'error ' + arguments[0]);// + '\n' + arguments[0].stack);
-				});
-				
-				task.on ('cancel', function () {
-					
-					self.logTaskError (task, 'canceled, retries = ' + task.retries);
-					
-					if (self.isIdle)
-						self.run ();
-				});
-				
-				task.on ('complete', function (t, result) {
-					
-					if (t.produce && result)
-						common.pathToVal (self, t.produce, result);
-					
-					self.logTask (task, 'task completed');
-					
-					if (self.isIdle)
-						self.run ();
-					else
-						self.haveCompletedTasks = true;
-				});
-			}
-			
-			task.checkState ();
-			
-			self.taskStates[task.state]++;
-			
-//			console.log ('task.className, task.state\n', task, task.state, task.isReady ());
-			
-			if (task.isReady ()) {
-				self.logTask (task, 'started');
-				task.run ();
-			}
+		task.on ('warn', function (message) {
+			self.logTaskError (task, message); 
 		});
 		
-		var taskStateNames = taskClass.prototype.stateNames;
-		
-		if (this.taskStates[taskStateNames.ready] || this.taskStates[taskStateNames.running]) {
-			// it is save to continue, wait for running/ready task
-		} else {
-			// here we fail, because no more tasks to complete
-		}
-		
-		self.isIdle = 1;
-		
-		// check workflow
-		
-//		if (this.taskStates[taskStateNames.complete] > 0)
-//			self.log ('progress: ' + this.taskStates[taskStateNames.complete] + '/'+ self.tasks.length);
+		task.on ('error', function () {
+			self.logTaskError (task, 'error: ' + arguments[0]);// + '\n' + arguments[0].stack);
+			
 
-//		console.log (
-//			'%%%%%%%%%%%%%',
-//			this.taskStates[taskStateNames.complete],
-//			this.taskStates[taskStateNames.failed],
-//			this.taskStates[taskStateNames.scarce],
-//			self.tasks.length
-//		);
+		});
 
-		if (this.taskStates[taskStateNames.complete] == self.tasks.length) {
+		// states
+		task.on ('skip', function () {
+//			if (task.important) {
+//				self.failed = true;
+//				return self.logTaskError (task, 'error ' + arguments[0]);// + '\n' + arguments[0].stack);
+//			}
+			self.logTask (task, 'task skipped');
 			
-			self.stopped = true;
-			
-			self.emit ('completed', self);
-			self.log ('workflow complete');
-		
-		} else if (
-			this.taskStates[taskStateNames.complete]
-			+ this.taskStates[taskStateNames.failed]
-			+ this.taskStates[taskStateNames.scarce]
-			== self.tasks.length
-		) {
-			// console.log("taskStateNames.failed -> ", taskStateNames.failed);
-			// console.log("taskStateNames.scarce -> ", taskStateNames.scarce);
-		
-			var scarceTaskMessage = ', unsatisfied requirements: ';
-		
-			// TODO: display scarce tasks unsatisfied requirements
-			if (this.taskStates[taskStateNames.scarce]) {
-				self.tasks.map (function (task) {
-					if (task.state != taskStateNames.scarce)
-						return;
-					scarceTaskMessage += (task.logTitle) + ' => ' + task.unsatisfiedRequirements.join (', ') + '; ';
-				});
-			}
-			
-			var requestDump = '???';
-			try {
-				requestDump = JSON.stringify (self.request)
-			} catch (e) {
-				if ((""+e).match (/circular/))
-					requestDump = 'CIRCULAR'
-				else
-					requestDump = e
-			};
-			
-			self.stopped = true;
-			
-			self.emit ('failed', self);
-			
-			self.log ('workflow failed, progress: '
-				+ this.taskStates[taskStateNames.complete] + '/'+ self.tasks.length 
-				+ ', request: ' /*+ requestDump*/ + scarceTaskMessage
-			);
-
-		} else if (self.haveCompletedTasks) {
-			
-			setTimeout (function () {
+			if (self.isIdle)
 				self.run ();
-			}, 0);
+			
+		});
 		
-		}
+		task.on ('cancel', function () {
+			
+			self.logTaskError (task, 'canceled, retries = ' + task.retries);
+			self.failed = true;
+			
+			if (self.isIdle)
+				self.run ();
+		});
+		
+		task.on ('complete', function (t, result) {
+			
+			if (t.produce && result)
+				common.pathToVal (self, t.produce, result);
+			
+			self.logTask (task, 'task completed');
+			
+			if (self.isIdle)
+				self.run ();
+			else
+				self.haveCompletedTasks = true;
+		});
+
 	}
 });
 
