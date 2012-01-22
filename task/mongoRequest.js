@@ -171,7 +171,7 @@ util.extend (mongoRequestTask.prototype, {
 			}
 
 			// find by filter or all records
-			if (filter.substring)
+			if (filter && filter.substring)
 				filter = {_id: self._objectId (filter)};
 			
 			findArgs.unshift (filter || {});
