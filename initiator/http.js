@@ -174,7 +174,7 @@ util.extend (httpdi.prototype, {
 
 			});
 			
-			if (!wf.ready) {
+			if (wf && !wf.ready) {
 				console.error ("workflow not ready and cannot be started");
 			}
 			
