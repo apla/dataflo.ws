@@ -73,7 +73,7 @@ util.extend (httpdi.prototype, {
 				file:      presenter,
 				vars:      "{$vars}",
 				response:  "{$response}",
-				className: "presenter"
+				className: "task/presenter"
 			});
 		} else if (presenter.constructor == Array) {
 			// TODO: [{...}, {...}]
@@ -83,7 +83,7 @@ util.extend (httpdi.prototype, {
 				task.response  = "{$response}";
 				task.vars      = task.vars || "{$vars}";
 				if (!task.functionName)
-					task.className = task.className || "presenter";
+					task.className = task.className || "task/presenter";
 				tasks.push (task);
 			});
 		} else {
@@ -91,7 +91,7 @@ util.extend (httpdi.prototype, {
 			presenter.response  = "{$response}";
 			presenter.vars      = presenter.vars || "{$vars}";
 			if (!presenter.functionName)
-				presenter.className = presenter.className || "presenter";
+				presenter.className = presenter.className || "task/presenter";
 			tasks.push (presenter);
 		}
 
