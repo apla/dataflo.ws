@@ -296,7 +296,7 @@ function timestamp () {
 
 util.extend (workflow.prototype, {
 	checkTaskParams: checkTaskParams,
-	isIdle: 1,
+	isIdle: true,
 	haveCompletedTasks: false,
 	run: function () {
 		
@@ -344,6 +344,9 @@ util.extend (workflow.prototype, {
 		if (this.taskStates[taskStateNames.ready] || this.taskStates[taskStateNames.running]) {
 			// it is save to continue, wait for running/ready task
 			console.log ('have running tasks');
+			
+			self.isIdle = true;
+			
 			return;
 		} else if (self.haveCompletedTasks) {
 			console.log ('have completed tasks');
@@ -352,9 +355,10 @@ util.extend (workflow.prototype, {
 				self.run ();
 			}, 0);
 			
+			self.isIdle = true;
+			
 			return;
 		}
-		
 		
 		self.stopped = true;
 		
