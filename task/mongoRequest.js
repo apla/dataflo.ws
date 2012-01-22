@@ -313,7 +313,7 @@ util.extend (mongoRequestTask.prototype, {
 		var self = this;
 		
 		if (this.verbose)
-			this.emit ('log', 'update called ' + self.data);
+			this.emit ('log', 'update called ', self.data);
 		
 		this._openCollection (function (err, collection) {
 			
@@ -321,7 +321,7 @@ util.extend (mongoRequestTask.prototype, {
 				self.data = [self.data];
 			}
 			
-			if (this.verbose)
+			if (self.verbose)
 				console.log ('data for update', self.data);
 			
 			var idList = self.data.map (function (item) {
