@@ -168,11 +168,15 @@ util.extend (httpdi.prototype, {
 
 				self.emit ("detected", req, res, wf);
 				
-				if (!item.auth) wf.run();
+				if (!item.auth && wf.ready) wf.run();
 				
 				return;
 
 			});
+			
+			if (!wf.ready) {
+				console.error ("workflow not ready and cannot be started");
+			}
 			
 			if (!wf) {
 				if (self.static) {
