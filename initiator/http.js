@@ -82,14 +82,16 @@ util.extend (httpdi.prototype, {
 				util.extend (true, task, item);
 				task.response  = "{$response}";
 				task.vars      = task.vars || "{$vars}";
-				task.className = task.className || "presenter";
+				if (!task.functionName)
+					task.className = task.className || "presenter";
 				tasks.push (task);
 			});
 		} else {
 			// {"type": "json"}
 			presenter.response  = "{$response}";
 			presenter.vars      = presenter.vars || "{$vars}";
-			presenter.className = presenter.className || "presenter";
+			if (!presenter.functionName)
+				presenter.className = presenter.className || "presenter";
 			tasks.push (presenter);
 		}
 
