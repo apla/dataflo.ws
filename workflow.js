@@ -54,17 +54,20 @@ function checkTaskParams (params, dict, prefix) {
 		params.forEach(function (val, index, arr) {
 			
 			if (val.indexOf || val.interpolate) { // string				
+				
 				try {
-					var tmp = modifiedParams[key] = val.interpolate (dict);
+					var tmp = val.interpolate (dict);
 					if (tmp === void 0)
-						modifiedParams[key] = val;
-//					if (tmp === false || tmp === 0 || tmp === "")
+						modifiedParams.push(val);
+					else
+						modifiedParams.push(tmp);
 						
 //					console.log (val, ' interpolated to the "', modifiedParams[key], '" and ', isEmpty (modifiedParams[key]) ? ' is empty' : 'is not empty');
-					if (isEmpty (modifiedParams[key]))
+
+					if (isEmpty (modifiedParams[modifiedParams.length-1]))
 						throw "EMPTY VALUE";
 				} catch (e) {
-					failedParams.push (prefix+key);
+					failedParams.push (prefix+'['+index+']');
 				}
 
 			} else if (val.toFixed) {

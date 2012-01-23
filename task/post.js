@@ -1,5 +1,6 @@
 var task        = require ('task/base'),
 	util        = require ('util'),
+	qs			= require ('querystring'),
 	formidable  = require ('formidable');
 
 
@@ -20,17 +21,23 @@ util.extend (postTask.prototype, {
 		
 		var self = this;
 		
-		// TODO: emit skipped state
 		if (self.request.method != 'POST' && self.request.method != 'PUT')
-			return self.completed ({});
+			return self.skipped ();
 
 		var form = new formidable.IncomingForm();
 		form.parse(self.request, function(err, fields, files) {
+			
 			if (err) {
 				self.failed (err);
 				return;
 			}
-			self.completed ({fields: fields, files: files});
+			
+			var body = {fields: fields, files: files};
+			self.request.body = body;
+			
+			console.log ('<---------', body);
+			
+			self.completed (body);
 		});
 	}
 });
