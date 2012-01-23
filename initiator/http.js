@@ -134,7 +134,7 @@ util.extend (httpdi.prototype, {
 				
 				if (match && match[0] == req.url.pathname) { //exact match
 					
-					console.log ('match');
+					console.log ('httpdi match: ' + req.method + ' to ' + req.url.pathname);
 					wf = true;
 
 				} else if (req.url.pathname.indexOf(item.urlBeginsWith) == 0) {
@@ -166,7 +166,7 @@ util.extend (httpdi.prototype, {
 
 				self.emit ("detected", req, res, wf);
 				
-				if (!item.auth) wf.run();
+				if (!item.prepare) wf.run();
 				
 				return;
 
@@ -216,19 +216,16 @@ util.extend (httpdi.prototype, {
 								readStream.resume ();
 								return;
 							}
-						
-							res.writeHead (404, {});
-							res.end();
 						}
+						
+						res.statusCode = 404;
+						res.end();
+						
+						console.log ('httpdi not detected: ' + req.method + ' to ' + req.url.pathname);
+						self.emit ("unknown", req, res);
 					});
-					
-					return;
 				}
-				
-				console.log ('not detected');
-				self.emit ("unknown", req, res);
 			}
-			
 		});
 		
 		if (this.host)

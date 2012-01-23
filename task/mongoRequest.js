@@ -203,10 +203,10 @@ util.extend (mongoRequestTask.prototype, {
 		
 		var self = this;
 		
-		if (this.verbose)
-			this.emit ('log', 'insert called ' + self.data);
+		if (self.verbose)
+			self.emit ('log', 'insert called ' + self.data);
 		
-		this._openCollection (function (err, collection) {
+		self._openCollection (function (err, collection) {
 			
 			if (self.data.constructor != Array) {
 				self.data = [self.data];
@@ -221,6 +221,8 @@ util.extend (mongoRequestTask.prototype, {
 				if (item._id && item._id != '') docsId.push(item._id);
 				
 			});
+			
+			console.log ('mongoRequestTask.insert', self.data);
 			
 			if (self.insertingSafe) {
 			

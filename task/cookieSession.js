@@ -1,10 +1,14 @@
+var sessions = {};
+
+// - - -
+
 var task         = require ('task/base'),
 	util         = require ('util');
 
 var sessionGenerator = module.exports = function (config) {
 	
 	this.cookieTpl = { // default tpl
-		name: "connect.sid",
+		name: "stoken",
 		domain: "127.0.0.1",
 		path: "/",
 		expirePeriod: "0"
@@ -22,8 +26,6 @@ util.extend (sessionGenerator.prototype, {
 		
 		var self = this;
 		
-		var value;
-		
 		var reqCookies = self.reqCookies;
 		delete reqCookies.length;
 		
@@ -32,34 +34,22 @@ util.extend (sessionGenerator.prototype, {
 		
 		// name of session cookie
 		var name = cookieTpl.name;
+		var value = (reqCookies[name]) ? reqCookies[name] : self.generate(self.secret);
 		
-		if (reqCookies[name]) { // if stoken exist
-			
-			value = reqCookies[name];
+		// - - -
 		
-		} else { // generate
-		
-			var secret = self.secret;
+		var session = sessions[value];
 			
-			var ip = self.request.connection.remoteAddress;
-			var port = self.request.connection.remotePort;
+		if (session) {
+			self.request.session = session;
+		} else {
 			
-			var date = self.request.connection._idleStart.getTime();
-			var timestamp = date.toString(16);
-			var rnd = (~~(10e+6*Math.random())).toString(16);
-			
-			var str =  ip + ':' + port + '.' + timestamp + '.' + rnd;
-			str =  (port % 2 == 0) ? (str + '.' + secret) : (secret + '.' + str);
-			
-			value = new Buffer(str).toString('base64').replace(/=+$/, '');
-			
-			self.emit('log', 'Generated SessionID\n\t source = ' + str + '\n\t base64 = ' + value);
+			sessions[value] = self.request.session = {
+				sessionUID: value
+			};
 		}
 		
-		// add to request session object
-		self.request.session = {
-			sessionUID: value
-		};
+		// - - -
 		
 		var newCookie = {value: value}
 		
@@ -68,5 +58,25 @@ util.extend (sessionGenerator.prototype, {
 		}
 		
 		self.completed (newCookie);
+	},
+	
+	generate: function(secret) {
+	
+		var self = this;
+		var ip = self.request.connection.remoteAddress;
+		var port = self.request.connection.remotePort;
+		
+		var date = self.request.connection._idleStart.getTime();
+		var timestamp = date.toString(16);
+		var rnd = (~~(10e+6*Math.random())).toString(16);
+		
+		var str =  ip + ':' + port + '.' + timestamp + '.' + rnd;
+		str =  (port % 2 == 0) ? (str + '.' + secret) : (secret + '.' + str);
+		
+		var result = new Buffer(str).toString('base64').replace(/=+$/, '');
+		
+		self.emit('log', 'Generated SessionID\n\t source = ' + str + '\n\t base64 = ' + result);
+		
+		return result;
 	}
 });
