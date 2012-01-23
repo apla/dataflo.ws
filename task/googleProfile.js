@@ -20,13 +20,14 @@ util.extend (googleProfile.prototype, {
 		
 		var self = this;
 		var req = self.req;
+		var tokens = req.user.tokens;
 		
-		var oa = new OAuth(req.session._requestUrl,
+		var oa = new OAuth(tokens._requestUrl,
 			"https://www.google.com/accounts/OAuthGetAccessToken",
 			"anonymous",
 			"anonymous",
 			"1.0",
-			req.session._authorize_callback,
+			tokens._authorize_callback,
 			"HMAC-SHA1");
 		
 		oa._headers['GData-Version'] = '2'; 
@@ -34,8 +35,8 @@ util.extend (googleProfile.prototype, {
 		oa.getProtectedResource(
 			self.source, 
 			"GET", 
-			req.session.oauth_access_token, 
-			req.session.oauth_access_token_secret,
+			tokens.oauth_access_token, 
+			tokens.oauth_access_token_secret,
 			function (error, data, response) {
 				
 				if (error) {

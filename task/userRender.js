@@ -17,23 +17,18 @@ util.extend (userRender.prototype, {
 		
 		var self = this;
 		
-		//self.failed(error);
-		
 		var found = self.found;
 		var data = found.data;
 		
 		if (data && data.length > 0) {
 			
-			var sessionData = data[0];
+			var userData = data[0];
 			
-			self.request.userID = sessionData.userID;
-			self.request.user = sessionData.user;
-			self.request.session = sessionData["session_"+self.request.sessionUID];
+			self.request.user = userData;
 			
-			self.completed(true);
-			
+			self.completed(userData.user);
 		} else {
-			self.completed(true);
+			self.completed({});
 		}
 	}
 });

@@ -73,7 +73,7 @@ util.extend (httpdi.prototype, {
 				file:      presenter,
 				vars:      "{$vars}",
 				response:  "{$response}",
-				className: "presenter"
+				className: "task/presenter"
 			});
 		} else if (presenter.constructor == Array) {
 			// TODO: [{...}, {...}]
@@ -82,14 +82,16 @@ util.extend (httpdi.prototype, {
 				util.extend (true, task, item);
 				task.response  = "{$response}";
 				task.vars      = task.vars || "{$vars}";
-				task.className = task.className || "presenter";
+				if (!task.functionName)
+					task.className = task.className || "task/presenter";
 				tasks.push (task);
 			});
 		} else {
 			// {"type": "json"}
 			presenter.response  = "{$response}";
 			presenter.vars      = presenter.vars || "{$vars}";
-			presenter.className = presenter.className || "presenter";
+			if (!presenter.functionName)
+				presenter.className = presenter.className || "task/presenter";
 			tasks.push (presenter);
 		}
 
@@ -166,11 +168,15 @@ util.extend (httpdi.prototype, {
 
 				self.emit ("detected", req, res, wf);
 				
-				if (!item.prepare) wf.run();
+				if (!item.prepare && wf.ready) wf.run();
 				
 				return;
 
 			});
+			
+			if (wf && !wf.ready) {
+				console.error ("workflow not ready and cannot be started");
+			}
 			
 			if (!wf) {
 				if (self.static) {

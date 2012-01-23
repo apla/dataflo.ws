@@ -16,12 +16,16 @@ util.extend (userParser.prototype, {
 	run: function () {
 		
 		var self = this;
+		var request = self.request;
+		var user = request.user;
 		
-		self.completed({
-			userID: self.userData.email,
+		var authUser = {
 			user: self.userData,
-			sessionUIDs: [self.session.sessionUID]
-		});
+		};
+		
+		util.extend (authUser, user);
+		
+		self.completed(authUser);
 		
 	}
 });

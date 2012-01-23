@@ -58,13 +58,13 @@ util.extend (googleLogin.prototype, {
 				
 				// store the oa config in the session
 				
-				req.session._requestUrl			= oa._requestUrl;
-				req.session._authorize_callback = oa._authorize_callback;
+				req._requestUrl			= oa._requestUrl;
+				req._authorize_callback = oa._authorize_callback;
 				
-				// - - - tokens
+				// - - - and tokens
 				
-				req.session.oauth_token = oauth_token;
-				req.session.oauth_token_secret = oauth_token_secret;
+				req.oauth_token = oauth_token;
+				req.oauth_token_secret = oauth_token_secret;
 				
 				var redirectUrl = "https://www.google.com/accounts/OAuthAuthorizeToken?oauth_token="+oauth_token;
 				

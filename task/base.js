@@ -9,7 +9,7 @@ define (function (require, exports, module) {
 var EventEmitter = require ('events').EventEmitter,
 	util         = require ('util');
 
-var taskStateList = ['scarce', 'ready', 'running', 'idle', 'complete', 'failed'];
+var taskStateList = ['scarce', 'ready', 'running', 'idle', 'complete', 'failed', 'skipped'];
 
 var taskStateNames = {};
 
@@ -99,8 +99,13 @@ util.extend (task.prototype, taskStateMethods, {
 		
 		// default values
 		
-		self.timeout = 5;
-		self.retries = 1;
+		// TODO: this is provided only on run
+		self.timeout = config.timeout || 1;
+		self.retries = config.retries || 0;
+		
+		self.attempts = 0;
+		
+		self.important = config.important || void 0;
 		
 		var state = this.checkState ();
 //		console.log (this.url, 'state is', stateList[state], ' (' + state + ')', (state == 0 ? (this.require instanceof Array ? this.require.join (', ') : this.require) : ''));
@@ -110,11 +115,6 @@ util.extend (task.prototype, taskStateMethods, {
 		this.run = function () {
 			
 			//this.emit ('log', 'RUN RETRIES : ' + this.retries);
-			
-			if (this.retries < 1) {
-				this.cancel();
-				return;
-			}
 			
 			if (this.state != 1) return;
 			
@@ -127,6 +127,8 @@ util.extend (task.prototype, taskStateMethods, {
 		
 		this.cancel = function () {
 			
+			this.attempts ++;
+			
 			if (this.state == 2) return;
 			
 			this.state = 5;
@@ -137,17 +139,12 @@ util.extend (task.prototype, taskStateMethods, {
 			
 			//this.emit ('log', 'CANCEL RETRIES : ' + this.retries);
 			
-			if (this.retries > 0) {
-				
-				this.retries--;
+			if (this.attempts - this.retries - 1 < 0) {
 				
 				this.state = 1;
 				
 				setTimeout(function () {
-					if (self.retries > 0) {
-						//self.retries--;
-						self.run();
-					}
+					self.run();
 				}, this.timeout.seconds());
 			}
 
@@ -185,6 +182,12 @@ util.extend (task.prototype, taskStateMethods, {
 		}
 		
 		this.emit ("complete", this, result);
+	},
+
+	skipped: function (result) {
+		this.state = 6;
+		
+		this.emit ("skip", this, result);
 	},
 	
 	mapFields: function (item) {
@@ -265,14 +268,15 @@ util.extend (task.prototype, taskStateMethods, {
 	stateNames: taskStateNames,
 	
 	failed: function (e) {
-		if (e) {
-			this.state = 5;
-			this.emit('error', e);
-			this.cancel();
-			return true;
-		} else {
-			return false;
-		}
+		var prevState = this.state;
+		this.state = 5;
+		this.emit('error', e);
+		// if task failed at scarce state
+		if (prevState)
+			this.cancel()
+		else
+			this.emit ('cancel');
+		return true;
 	}
 
 

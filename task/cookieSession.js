@@ -1,7 +1,3 @@
-var sessions = {};
-
-// - - -
-
 var task         = require ('task/base'),
 	util         = require ('util');
 
@@ -38,17 +34,8 @@ util.extend (sessionGenerator.prototype, {
 		
 		// - - -
 		
-		var session = sessions[value];
+		self.request.sessionUID = value;
 			
-		if (session) {
-			self.request.session = session;
-		} else {
-			
-			sessions[value] = self.request.session = {
-				sessionUID: value
-			};
-		}
-		
 		// - - -
 		
 		var newCookie = {value: value}
