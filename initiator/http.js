@@ -25,6 +25,18 @@ var httpdi = module.exports = function (config) {
 	this.workflows = config.workflows;
 	this.static    = config.static;
 	
+	this.router    = config.router;
+	// router is function in main module or initiator method
+	if (config.router === void 0) {
+		this.router = this.defaultRouter;
+	} else if (process.mainModule.exports[config.router]) {
+		this.router = process.mainModule.exports[config.router];
+	} else if (this[config.router]) {
+		this.router = this[config.router];
+	} else {
+		throw "we cannot find " + config.router + " router method within initiator or function in main module";
+	}
+	
 	if (this.host  == "auto") {
 		this.detectIP (this.listen);
 	} else {
@@ -110,22 +122,15 @@ util.extend (httpdi.prototype, {
 
 		presenterWf.run ();
 	},
-	listen: function () {
+	initWorkflow: function (wfConfig, req) {
+		
+	},
+	defaultRouter: function (req, res) {
+		var wf;
 		
 		var self = this;
-	
-		this.server = http.createServer (function (req, res) {
-			
-			// console.log ('serving: ' + req.method + ' ' + req.url + ' for ', req.connection.remoteAddress + ':' + req.connection.remotePort);
-			
-			// here we need to find matching workflows
-			// for received request
-			
-			req.url = url.parse (req.url, true);
-			// use for workflow match
-			req[req.method] = true;
-
-			var wf;
+		
+		if (self.workflows.constructor == Array) {
 			
 			self.workflows.map (function (item) {
 				
@@ -173,6 +178,26 @@ util.extend (httpdi.prototype, {
 				return;
 
 			});
+		}
+		
+		return wf;
+	},
+	listen: function () {
+		
+		var self = this;
+	
+		this.server = http.createServer (function (req, res) {
+			
+			// console.log ('serving: ' + req.method + ' ' + req.url + ' for ', req.connection.remoteAddress + ':' + req.connection.remotePort);
+			
+			// here we need to find matching workflows
+			// for received request
+			
+			req.url = url.parse (req.url, true);
+			// use for workflow match
+			req[req.method] = true;
+
+			var wf = self.router (req, res);
 			
 			if (wf && !wf.ready) {
 				console.error ("workflow not ready and cannot be started");
