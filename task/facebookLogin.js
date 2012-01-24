@@ -37,8 +37,6 @@ util.extend (facebookLogin.prototype, {
 			scope: self.scopes.join(','),
 		};
 		
-		if ( query.action && query.action != "")  getParams.action = query.action;
-		
 		var redirectUrl = facebookConfig.requestTokenUrl + "?" + querystring.stringify(getParams);
 		
 		// store the oa config in the session
