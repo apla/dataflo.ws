@@ -41,11 +41,10 @@ util.extend (facebookLogin.prototype, {
 		
 		var redirectUrl = facebookConfig.requestTokenUrl + "?" + querystring.stringify(getParams);
 		
-		,
 		// store the oa config in the session
 				
-				req._requestUrl			= facebookConfig.requestTokenUrl+"?scope="+gdataScopes.join('+');
-				req._authorize_callback = facebookConfig.callbackUrl + ( query.action && query.action != "" ? "?action="+querystring.escape(query.action) : "" );
+		req._requestUrl			= facebookConfig.requestTokenUrl + "?scope=" + self.scopes.join(',');
+		req._authorize_callback = facebookConfig.callbackUrl + ( query.action && query.action != "" ? "?action="+querystring.escape(query.action) : "" );
 			
 		self.completed(redirectUrl);
 	}
