@@ -128,8 +128,8 @@ var workflow = module.exports = function (config, reqParam) {
 	util.extend (true, this, config);
 	util.extend (true, this, reqParam);
 	
-	this.started = new Date().getTime();
-	this.id      = this.id || this.started % 1e6;
+	this.created = new Date().getTime();
+	this.id      = this.id || this.created % 1e6;
 	
 	if (!this.stage) this.stage = 'workflow';
 
@@ -303,6 +303,9 @@ util.extend (workflow.prototype, {
 	haveCompletedTasks: false,
 	run: function () {
 		
+		if (!this.started)
+			this.started = new Date().getTime();
+		
 		var self = this;
 		
 		if (self.stopped)
@@ -363,7 +366,7 @@ util.extend (workflow.prototype, {
 			return;
 		}
 		
-		self.stopped = true;
+		self.stopped = new Date().getTime();
 		
 		var scarceTaskMessage = 'unsatisfied requirements: ';
 	
@@ -402,13 +405,13 @@ util.extend (workflow.prototype, {
 			// workflow stopped and failed
 		
 			self.emit ('failed', self);
-			self.log (this.stage + ' failed '+this.taskStates[taskStateNames.failed]+' tasks of ' + self.tasks.length);
+			self.log (this.stage + ' failed in ' + (self.stopped - self.started) + 'ms; ' + this.taskStates[taskStateNames.failed]+' tasks of ' + self.tasks.length);
 
 		} else {
 			// workflow stopped and not failed
 		
 			self.emit ('completed', self);
-			self.log (this.stage + ' complete');
+			self.log (this.stage + ' complete in ' + (self.stopped - self.started) + 'ms');
 
 		}
 		
