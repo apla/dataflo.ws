@@ -8,7 +8,7 @@ var OAuth = require('oauth').OAuth,
 	task = require('task/base'),
 	util = require('util');
 	
-	console.log ('<------googleConfig', googleConfig);
+	// console.log ('<------googleConfig', googleConfig);
 
 var googleLogin = module.exports = function(config) {
 
@@ -47,7 +47,7 @@ util.extend (googleLogin.prototype, {
 			googleConfig.clientId,
 			googleConfig.clientSecret,
 			"1.0",
-			googleConfig.callbackUrl+( query.action && query.action != "" ? "?action="+querystring.escape(query.action) : "" ),
+			googleConfig.callbackUrl + ( query.action && query.action != "" ? "?action="+querystring.escape(query.action) : "" ),
 			"HMAC-SHA1");
 
 		oa.getOAuthRequestToken(function(error, oauth_token, oauth_token_secret, results){

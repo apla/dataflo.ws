@@ -21,6 +21,15 @@ util.extend (facebookCallback.prototype, {
 		var query = req.url.query;
 		var tokens = req.user.tokens;
 		
+		// req
+		// http://collaboratoria.com/facebook/callback		
+		// error: error_reason=user_denied&error=access_denied&error_description=The+user+denied+your+request.
+		// success: code=AQBOLDV0RI6jHLBRurJ7wuhr3hnlp1Y8hffhGEB87Y6BfAtFZwwvSqUbwd-YjCIz-Yq1rPXWzGBNC9P07Kbf7Ii_QMZws6xFeVvsG8JvIXlNDBC2sg6Z-myaQ154POPTNewwUTiw8_-fWH3ACX7Ee6IFK7spXVrIMn8Sj6IpMO4LxcERDOnGCRJVGfiQdFIFfvI#_=_
+		
+		//GET https://graph.facebook.com/oauth/access_token?
+		// client_id=YOUR_APP_ID&redirect_uri=YOUR_URL&
+		// client_secret=YOUR_APP_SECRET&code=THE_CODE_FROM_ABOVE
+		
 		var oa = new OAuth(tokens._requestUrl,
 			"https://www.google.com/accounts/OAuthGetAccessToken",
 			"anonymous",
