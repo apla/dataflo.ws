@@ -1,24 +1,20 @@
-var googleConfig	= project.config.consumerConfig.google;
-var googleScopes	= googleConfig.scopes;
-
-// - - -
-
 var OAuth = require('oauth').OAuth,
 	task = require('task/base'),
 	util = require('util');
 
 // - - - -
 
-var googleProfile = module.exports = function(config) {
+var facebookProfile = module.exports = function(config) {
 
 	this.source = "https://www.googleapis.com/oauth2/v1/userinfo";
+	
 	this.init (config);		
 
 };
 
-util.inherits (googleProfile, task);
+util.inherits (facebookProfile, task);
 
-util.extend (googleProfile.prototype, {
+util.extend (facebookProfile.prototype, {
 
 	run: function () {
 		
@@ -27,9 +23,9 @@ util.extend (googleProfile.prototype, {
 		var tokens = req.user.tokens;
 		
 		var oa = new OAuth(tokens._requestUrl,
-			googleConfig.accessTokenUrl,
-			googleConfig.clientId,
-			googleConfig.clientSecret,
+			"https://www.google.com/accounts/OAuthGetAccessToken",
+			"anonymous",
+			"anonymous",
 			"1.0",
 			tokens._authorize_callback,
 			"HMAC-SHA1");

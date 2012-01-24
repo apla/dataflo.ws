@@ -1,4 +1,5 @@
-var googleScopes = project.config.google.scopes;
+var googleConfig	= project.config.consumerConfig.google;
+var googleScopes	= googleConfig.scopes;
 	
 // - - -
 
@@ -6,10 +7,11 @@ var OAuth = require('oauth').OAuth,
 	querystring = require('querystring'),
 	task = require('task/base'),
 	util = require('util');
+	
+	console.log ('<------googleConfig', googleConfig);
 
 var googleLogin = module.exports = function(config) {
 
-	this.getRequestTokenUrl = "https://www.google.com/accounts/OAuthGetRequestToken";
 	this.scopes = [
 		"profile",
 		"userinfo"
@@ -29,8 +31,6 @@ util.extend (googleLogin.prototype, {
 		var req = self.req;
 		var res = self.res;
 		
-		var getRequestTokenUrl = self.getRequestTokenUrl
-		
 		var gdataScopes = [];
 		
 		// GData specifid: scopes that wa want access to
@@ -42,18 +42,18 @@ util.extend (googleLogin.prototype, {
 		
 		var query = req.url.query;
 		
-		var oa = new OAuth(getRequestTokenUrl+"?scope="+gdataScopes.join('+'),
-			"https://www.google.com/accounts/OAuthGetAccessToken",
-			"anonymous",
-			"anonymous",
+		var oa = new OAuth(googleConfig.requestTokenUrl+"?scope="+gdataScopes.join('+'),
+			googleConfig.requestTokenUrl,
+			googleConfig.clientId,
+			googleConfig.clientSecret,
 			"1.0",
-			"http://127.0.0.1:50088/google/callback"+( query.action && query.action != "" ? "?action="+querystring.escape(query.action) : "" ),
+			googleConfig.callbackUrl+( query.action && query.action != "" ? "?action="+querystring.escape(query.action) : "" ),
 			"HMAC-SHA1");
 
 		oa.getOAuthRequestToken(function(error, oauth_token, oauth_token_secret, results){
 		  
 			if(error) {
-				self.failed(error);
+				self.failed('Error: statusCode = '+error.statusCode + ', data = ' + error.data);
 			} else { 
 				
 				// store the oa config in the session

@@ -1,23 +1,18 @@
-var googleConfig	= project.config.consumerConfig.google;
-var googleScopes	= googleConfig.scopes;
-
-// - - -
-
 var OAuth = require('oauth').OAuth,
+	querystring = require('querystring'),
 	task = require('task/base'),
 	util = require('util');
 	
-// - - - 
-	
-var googleCallback = module.exports = function(config) {
+			
+var facebookCallback = module.exports = function(config) {
 
 	this.init (config);		
 
 };
 
-util.inherits (googleCallback, task);
+util.inherits (facebookCallback, task);
 
-util.extend (googleCallback.prototype, {
+util.extend (facebookCallback.prototype, {
 
 	run: function () {
 		
@@ -26,12 +21,10 @@ util.extend (googleCallback.prototype, {
 		var query = req.url.query;
 		var tokens = req.user.tokens;
 		
-		console.log ('<-----------tokens', tokens)
-		
 		var oa = new OAuth(tokens._requestUrl,
-			googleConfig.accessTokenUrl,
-			googleConfig.clientId,
-			googleConfig.clientSecret,
+			"https://www.google.com/accounts/OAuthGetAccessToken",
+			"anonymous",
+			"anonymous",
 			"1.0",
 			tokens._authorize_callback,
 			"HMAC-SHA1");
@@ -45,7 +38,7 @@ util.extend (googleCallback.prototype, {
 
 				if (error) {
 					
-					self.failed('Error: statusCode = '+error.statusCode + ', data = ' + error.data);
+					self.failed(error);
 					
 				} else {
 
