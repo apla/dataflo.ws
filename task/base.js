@@ -422,10 +422,9 @@ util.extend (task.prototype, taskStateMethods, {
 	 * Cancels (calls {@link #cancel}) the task if it was ready or running
 	 * or just emits {@link #event-cancel} if not.
 	 *
-	 * When the task fails the whole workflow sequence fails.
-	 *
 	 * Sets the status to `failed`.
-	 * It *doesn't* fail the whole workflow sequence.
+	 *
+	 * When the task fails the whole workflow sequence fails.
 	 *
 	 * @return {Boolean} Always true.
 	 * @param {Error} Error object.
@@ -453,7 +452,7 @@ util.extend (task.prototype, taskStateMethods, {
 
 /**
  * @method EmitError
- * Implementation-specific method.
+ * Implementation-specific.
  * When an unexpected error occurs, the task is automatically {@link #failed}.
  */
 task.prototype.EmitError = task.prototype.failed;
