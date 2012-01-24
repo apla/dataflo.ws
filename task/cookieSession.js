@@ -3,6 +3,13 @@ var task         = require ('task/base'),
 
 var sessionGenerator = module.exports = function (config) {
 	
+	this.cookieTpl = { // default tpl
+		name: "stoken",
+		domain: "127.0.0.1",
+		path: "/",
+		expirePeriod: "0"
+	};
+	
 	this.init (config);
 	
 };
@@ -15,25 +22,48 @@ util.extend (sessionGenerator.prototype, {
 		
 		var self = this;
 		
-		var cookies = self.cookies;
+		var reqCookies = self.reqCookies;
+		delete reqCookies.length;
 		
-		if (cookies.stoken) {
-			self.completed(cookies.stoken);
-			return;
+		//cookie template
+		var cookieTpl = self.cookieTpl;
+		
+		// name of session cookie
+		var name = cookieTpl.name;
+		var value = (reqCookies[name]) ? reqCookies[name] : self.generate(self.secret);
+		
+		// - - -
+		
+		self.request.sessionUID = value;
+			
+		// - - -
+		
+		var newCookie = {value: value}
+		
+		for (var key in cookieTpl) {
+			newCookie[key] = cookieTpl[key];
 		}
 		
-		// - - - - - if no stoken - generate it
-		
-		var secret = self.secret;
+		self.completed (newCookie);
+	},
+	
+	generate: function(secret) {
+	
+		var self = this;
 		var ip = self.request.connection.remoteAddress;
 		var port = self.request.connection.remotePort;
 		
-		var date = new Date();
-		var rnd = ~~(10e+9*Math.random());
+		var date = self.request.connection._idleStart.getTime();
+		var timestamp = date.toString(16);
+		var rnd = (~~(10e+6*Math.random())).toString(16);
 		
-		var stokenStr = secret + ':' + ip + ':' + '.' + date.getTime() + '.' + rnd;
-		var stoken = new Buffer(stokenStr).toString('base64').replace(/=+$/, '');
+		var str =  ip + ':' + port + '.' + timestamp + '.' + rnd;
+		str =  (port % 2 == 0) ? (str + '.' + secret) : (secret + '.' + str);
 		
-		self.completed (stoken)
+		var result = new Buffer(str).toString('base64').replace(/=+$/, '');
+		
+		self.emit('log', 'Generated SessionID\n\t source = ' + str + '\n\t base64 = ' + result);
+		
+		return result;
 	}
 });

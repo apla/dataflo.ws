@@ -206,10 +206,10 @@ util.extend (mongoRequestTask.prototype, {
 		
 		var self = this;
 		
-		if (this.verbose)
-			this.emit ('log', 'insert called ' + self.data);
+		if (self.verbose)
+			self.emit ('log', 'insert called ' + self.data);
 		
-		this._openCollection (function (err, collection) {
+		self._openCollection (function (err, collection) {
 			
 			if (self.data.constructor != Array) {
 				self.data = [self.data];
@@ -224,6 +224,8 @@ util.extend (mongoRequestTask.prototype, {
 				if (item._id && item._id != '') docsId.push(item._id);
 				
 			});
+			
+			console.log ('mongoRequestTask.insert', self.data);
 			
 			if (self.insertingSafe) {
 			
@@ -315,23 +317,23 @@ util.extend (mongoRequestTask.prototype, {
 		
 		var self = this;
 		
-		if (this.verbose)
-			this.emit ('log', 'update called ' + self.data);
+		if (self.verbose)
+			self.emit ('log', 'update called ', self.data);
 		
-		this._openCollection (function (err, collection) {
+		self._openCollection (function (err, collection) {
 			
 			if (self.data.constructor != Array) {
 				self.data = [self.data];
 			}
 			
-			if (this.verbose)
+			if (self.verbose)
 				console.log ('data for update', self.data);
 			
 			var idList = self.data.map (function (item) {
 				
 				if (item._id && item._id != "") {
 					
-					var id = self._objectId (item._id);
+					//var id = self._objectId (item._id);
 					
 					var set = {};
 					
@@ -342,9 +344,9 @@ util.extend (mongoRequestTask.prototype, {
 					
 					if (self.timestamp) set.updated = new Date().getTime();
 					
-					collection.update ({_id: id}, {$set: set});
+					collection.update ({_id: item._id}, {$set: set});
 						
-					return id;
+					return item._id;
 					
 				} else {
 					// something wrong. this couldn't happen

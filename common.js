@@ -193,9 +193,12 @@ try {
 			
 			if (parser == 'json') {
 
-				// TODO: error handling
-
-				var config = JSON.parse (configData[0]);
+				try {
+					var config = JSON.parse (configData[0]);
+				} catch (e) {
+					console.log ('WARNING: http config cannon parsed');
+					throw e;
+				}
 				
 				self.id     = config.id;
 				self.config = config;

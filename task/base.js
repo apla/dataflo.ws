@@ -49,7 +49,8 @@ for (var stateNum = 0; stateNum < taskStateList.length; stateNum++) {
  * (`ready`, `running`, `idle` &c), publishes events (`complete`,
  * `skipped` &c).
  *
- * Example:
+ * Example
+ * =======
  *
  * A sequence of task configs
  * within the *RIA.Workflow* concept. `task` objects are instantiated
@@ -144,8 +145,16 @@ util.extend (task.prototype, taskStateMethods, {
 		this.className    = config.className;
 		this.functionName = config.functionName;
 
+		this.method       = config.method;
+		if (this.className && !this.method)
+			this.method   = 'run';
+
 		if (!this.logTitle) {
-			this.logTitle = this.className || this.functionName;
+			if (this.className) {
+				this.logTitle = this.className + '.' + this.method;
+			} else {
+				this.logTitle = this.functionName;
+			}
 		}
 
 		var stateList = taskStateList;
@@ -167,15 +176,8 @@ util.extend (task.prototype, taskStateMethods, {
 		var state = this.checkState ();
 //		console.log (this.url, 'state is', stateList[state], ' (' + state + ')', (state == 0 ? (this.require instanceof Array ? this.require.join (', ') : this.require) : ''));
 
-		var oldRun = this[config.method || 'run'];
+		var oldRun = this[this.method || 'run'];
 
-		/**
-		 * @method run
-		 * Launches the task execution when it's ready.
-		 *
-		 * Switches the state from `ready` to `running`
-		 * and calls {@link #method} specified in the config.
-		 */
 		this.run = function () {
 
 			//this.emit ('log', 'RUN RETRIES : ' + this.retries);
@@ -274,7 +276,7 @@ util.extend (task.prototype, taskStateMethods, {
 		/**
 		 * @event complete
 		 * Published upon successful task completion.
-		 * 
+		 *
 		 * @param {task} task
 		 * @param {Object} result
 		 */

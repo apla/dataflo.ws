@@ -26,7 +26,8 @@ var data = {
 	numberExp: "{$data.number}",
 	inlineExp: "{$data.string}-{$data.number}",
 	arrayExp: "{$arr}",
-	objectExp: "{$data}"
+	objectExp: "{$data}",
+	arrayExtExp: ["{$data}", "{$data.number}"]
 
 };
 
@@ -49,6 +50,8 @@ var dict = {
 test('check task requirements', {
 	'expandFailNoThrow': function() {
 		var result = checkTaskParams (data, dict);
+		console.log (result);
+		assert.strictEqual (result.modified.arrayExtExp[1], 123);
 		assert.deepEqual (result.failed, [
 			"checkFalse.falseExp",
 			"checkFalse.zeroExp",

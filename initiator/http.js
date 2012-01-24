@@ -25,6 +25,18 @@ var httpdi = module.exports = function (config) {
 	this.workflows = config.workflows;
 	this.static    = config.static;
 	
+	this.router    = config.router;
+	// router is function in main module or initiator method
+	if (config.router === void 0) {
+		this.router = this.defaultRouter;
+	} else if (process.mainModule.exports[config.router]) {
+		this.router = process.mainModule.exports[config.router];
+	} else if (this[config.router]) {
+		this.router = this[config.router];
+	} else {
+		throw "we cannot find " + config.router + " router method within initiator or function in main module";
+	}
+	
 	if (this.host  == "auto") {
 		this.detectIP (this.listen);
 	} else {
@@ -110,22 +122,15 @@ util.extend (httpdi.prototype, {
 
 		presenterWf.run ();
 	},
-	listen: function () {
+	initWorkflow: function (wfConfig, req) {
+		
+	},
+	defaultRouter: function (req, res) {
+		var wf;
 		
 		var self = this;
-	
-		this.server = http.createServer (function (req, res) {
-			
-			// console.log ('serving: ' + req.method + ' ' + req.url + ' for ', req.connection.remoteAddress + ':' + req.connection.remotePort);
-			
-			// here we need to find matching workflows
-			// for received request
-			
-			req.url = url.parse (req.url, true);
-			// use for workflow match
-			req[req.method] = true;
-
-			var wf;
+		
+		if (self.workflows.constructor == Array) {
 			
 			self.workflows.map (function (item) {
 				
@@ -136,7 +141,7 @@ util.extend (httpdi.prototype, {
 				
 				if (match && match[0] == req.url.pathname) { //exact match
 					
-					console.log ('match');
+					console.log ('httpdi match: ' + req.method + ' to ' + req.url.pathname);
 					wf = true;
 
 				} else if (req.url.pathname.indexOf(item.urlBeginsWith) == 0) {
@@ -168,11 +173,31 @@ util.extend (httpdi.prototype, {
 
 				self.emit ("detected", req, res, wf);
 				
-				if (!item.auth && wf.ready) wf.run();
+				if (!item.prepare && wf.ready) wf.run();
 				
 				return;
 
 			});
+		}
+		
+		return wf;
+	},
+	listen: function () {
+		
+		var self = this;
+	
+		this.server = http.createServer (function (req, res) {
+			
+			// console.log ('serving: ' + req.method + ' ' + req.url + ' for ', req.connection.remoteAddress + ':' + req.connection.remotePort);
+			
+			// here we need to find matching workflows
+			// for received request
+			
+			req.url = url.parse (req.url, true);
+			// use for workflow match
+			req[req.method] = true;
+
+			var wf = self.router (req, res);
 			
 			if (wf && !wf.ready) {
 				console.error ("workflow not ready and cannot be started");
@@ -205,24 +230,33 @@ util.extend (httpdi.prototype, {
 					self.static.root.fileIO (pathName).readStream (function (readStream, stats) {
 						
 						if (stats) {
-							res.writeHead (200, {
-								'Content-Type': contentType + '; charset=utf-8'
-							});
-							readStream.pipe (res);
-							readStream.resume ();
-						} else {
-							res.writeHead (404, {});
-							res.end();
+							
+							if (stats.isDirectory() && !readStream) {
+								
+								res.statusCode = 303;
+								res.setHeader('Location', pathName +'/');
+								res.end('Redirecting to ' + pathName +'/');
+								return;
+						
+							} else if (stats.isFile() && readStream) {
+
+								res.writeHead (200, {
+									'Content-Type': contentType + '; charset=utf-8'
+								});
+								readStream.pipe (res);
+								readStream.resume ();
+								return;
+							}
 						}
+						
+						res.statusCode = 404;
+						res.end();
+						
+						console.log ('httpdi not detected: ' + req.method + ' to ' + req.url.pathname);
+						self.emit ("unknown", req, res);
 					});
-					
-					return;
 				}
-				
-				console.log ('not detected');
-				self.emit ("unknown", req, res);
 			}
-			
 		});
 		
 		if (this.host)
