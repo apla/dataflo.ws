@@ -87,8 +87,16 @@ util.extend (task.prototype, taskStateMethods, {
 		this.className    = config.className;
 		this.functionName = config.functionName;
 		
+		this.method       = config.method;
+		if (this.className && !this.method)
+			this.method   = 'run';
+		
 		if (!this.logTitle) {
-			this.logTitle = this.className || this.functionName;
+			if (this.className) {
+				this.logTitle = this.className + '.' + this.method;
+			} else {
+				this.logTitle = this.functionName;
+			}
 		}
 		
 		var stateList = taskStateList;
@@ -110,7 +118,7 @@ util.extend (task.prototype, taskStateMethods, {
 		var state = this.checkState ();
 //		console.log (this.url, 'state is', stateList[state], ' (' + state + ')', (state == 0 ? (this.require instanceof Array ? this.require.join (', ') : this.require) : ''));
 		
-		var oldRun = this[config.method || 'run'];
+		var oldRun = this[this.method || 'run'];
 		
 		this.run = function () {
 			
