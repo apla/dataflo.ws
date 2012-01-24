@@ -78,20 +78,25 @@ for (var stateNum = 0; stateNum < taskStateList.length; stateNum++) {
 		}]
 	}
  *
- * @cfg {String} className (required) The name of a class-module
+ * @cfg {String} className (required) The name of a module-exported class
  * to be instantiated as an asynchronous task.
  *
  * **Warning**: Params {@link #className} and {@link #functionName}
  * are mutually exclusive.
  *
- * @cfg {String} functionName (required) The name of a module exported function
+ * @cfg {String} functionName (required) The name of a module-exported function
  * to be called as a synchronous task.
  *
  * **Warning**: Params {@link #className} and {@link #functionName}
  * are mutually exclusive.
  *
- * @cfg {String} [method="run"] (optional) The entry point method name.
- * This method will be called after requirements are satisfied.
+ * @cfg {String} [method="run"] The entry point method name.
+ * This method will be called after the requirements are satisfied (if any).
+ *
+ * @cfg {Number} [retries=0] The number of times to retry to run the task.
+ *
+ * @cfg {Number} [timeout=1] The number of seconds between retries
+ * to run the task.
  *
  * @cfg {String} produce (required) The name of the property to receive
  * the result of the task.
@@ -99,26 +104,26 @@ for (var stateNum = 0; stateNum < taskStateList.length; stateNum++) {
  * **Note**: The parameter is optional for {@link task#renderTask},
  * because the latter sends its result in {@link renderTask#output}.
  *
- * @cfg {Function|String|String[]} require (optional) Specifies task
+ * @cfg {Function|String|String[]} require Specifies task
  * requirements.
  *
  * Implementations might provide either a function that checks whether
  * the requirements are satisfied or an identifier or a list of identifiers,
  * representing required module objects.
  *
- * The task won't be launched untill these modules are loaded.
+ * The task won't be launched until these modules are loaded.
  *
- * @param {Boolean} mustProduce (optional) Whether the task must produce
+ * @cfg {Boolean} mustProduce Whether the task must produce
  * any result. Used in {@link #completed}.
  *
- * @param {Boolean} important (optional) If the task is marked important,
+ * @cfg {Boolean} important If the task is marked important,
  * it may declare itself {@link #failed}.
  * Used in custom {@link #method} methods.
  *
- * @param {Function} cb (optional) The callback function. Is run before
+ * @cfg {Function} cb The callback function. Is run before
  * the {@link #event-complete} event in {@link #completed}.
  *
- * @param {Object} cbScope (optional) The context in which to do
+ * @cfg {Object} cbScope The context in which to do
  * the {@link #cb} callback (value fo `this`).
  */
 
@@ -187,7 +192,7 @@ util.extend (task.prototype, taskStateMethods, {
 		/**
 		 * @method cancel
 		 * Cancels the running task. The task is registered as attempted
-		 * to be run.
+		 * to run.
 		 *
 		 * Switches the task's state from `running` to `idle`.
 		 *
@@ -231,12 +236,13 @@ util.extend (task.prototype, taskStateMethods, {
 
 	/**
 	 * @method completed
-	 * @param {Object} result The product of the task.
-	 * Checks if task must produce any result
+	 * Checks if the task must produce any result
 	 * (as per {@link #mustProduce} param), calls the {@link #cb} function
 	 * and publishes {@link #event-complete}.
 	 *
 	 * Completed tasks are considered *successful*.
+	 *
+	 * @param {Object} result The product of the task.
 	 */
 	completed: function (result) {
 		this.state = 4;
@@ -267,10 +273,10 @@ util.extend (task.prototype, taskStateMethods, {
 
 		/**
 		 * @event complete
+		 * Published upon successful task completion.
+		 * 
 		 * @param {task} task
 		 * @param {Object} result
-		 *
-		 * Published upon successful task completion.
 		 */
 		this.emit ("complete", this, result);
 	},
@@ -282,25 +288,28 @@ util.extend (task.prototype, taskStateMethods, {
 	 * **Note**: skipped tasks are still considered *successful*.
 	 *
 	 * Publishes {@link #event-skip}.
+	 *
 	 * @param {Object} result Substitutes the tasks's complete result.
+
 	 */
 	skipped: function (result) {
 		this.state = 6;
 
 		/**
 		 * @event skip
+		 * Triggered when the task is {@link #skipped}.
+
 		 * @param {task} task
 		 * @param {Object} result
-		 *
-		 * Triggered when the task is {@link #skipped}.
 		 */
 		this.emit ("skip", this, result);
 	},
 
 	/**
 	 * @method mapFields
+	 * Translates task configuration from custom field-naming cheme.
+	 *
 	 * @param {Object} item
-	 * Creates task configuration using custom field-naming cheme.
 	 */
 	mapFields: function (item) {
 		var self = this;
@@ -313,8 +322,9 @@ util.extend (task.prototype, taskStateMethods, {
 
 	/**
 	 * @method checkState
-	 * @return {Number} The new state code.
 	 * Checks requirements and updates the task state.
+	 *
+	 * @return {Number} The new state code.
 	 */
 	checkState: function () {
 
@@ -405,9 +415,6 @@ util.extend (task.prototype, taskStateMethods, {
 
 	/**
 	 * @method failed
-	 * @returns {Boolean} [true] Always true.
-	 * @param {Error} Error object.
-	 *
 	 * Emits an {@link #event-error}.
 	 *
 	 * Cancels (calls {@link #cancel}) the task if it was ready or running
@@ -417,6 +424,10 @@ util.extend (task.prototype, taskStateMethods, {
 	 *
 	 * Sets the status to `failed`.
 	 * It *doesn't* fail the whole workflow sequence.
+	 *
+	 * @return {Boolean} Always true.
+	 * @param {Error} Error object.
+
 	 */
 	failed: function (e) {
 		var prevState = this.state;
