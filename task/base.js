@@ -39,17 +39,21 @@ for (var stateNum = 0; stateNum < taskStateList.length; stateNum++) {
  * what must be done, what prerequisitives must be satisfied before doing it,
  * and what to produce upon task completion.
  *
- * `task` is the abstract base class, that specific task types
+ * Tasks may only be either *succesful* or *failed*.
+ *
+ * `task` is an abstract base class that specific task types
  * should inherite from.
  *
- * The `task` class cycles through a number of states (`ready`, `running`,
- * `idle` &c), publishes events (`complete`, `skipped` &c) and provides
- * methods to control task execution (`run`, `cancel` &c).
+ * The base `task` class provides methods to control task execution
+ * (`run`, `cancel` &c) and cycles through a number of states
+ * (`ready`, `running`, `idle` &c), publishes events (`complete`,
+ * `skipped` &c).
  *
  * Example:
  *
- * A sequence ({@link workflow}) of task configs
- * within the *RIA.Workflow* concept.
+ * A sequence of task configs
+ * within the *RIA.Workflow* concept. `task` objects are instantiated
+ * by `workflow` internally.
  *
 	{
 		workflows: [{
@@ -103,9 +107,6 @@ for (var stateNum = 0; stateNum < taskStateList.length; stateNum++) {
  * representing required module objects.
  *
  * The task won't be launched untill these modules are loaded.
- *
- * Tasks may only be either *succesful* or *failed*. Note, that skipped tasks
- * are nevertheless successful.
  *
  * @param {Boolean} mustProduce (optional) Whether the task must produce
  * any result. Used in {@link #completed}.
@@ -390,11 +391,13 @@ util.extend (task.prototype, taskStateMethods, {
 	},
 
 	/**
-	 * @enum {Array} stateNames
-	 * Maps the state codes to human-readable state descriptions.
+	 * @enum stateNames
 	 *
-	 * Base states are: `scarce`, `ready`, `running`, `idle`,
-	 * `complete`, `failed` and 'skipped`.
+	 * An implementation-specific map of the task state codes
+	 * to human-readable state descriptions.
+	 *
+	 * The base states are: `scarce`, `ready`, `running`, `idle`,
+	 * `complete`, `failed` and `skipped`.
 	 *
 	 * Any modification of this list will probably break base `task` methods.
 	 */
