@@ -118,7 +118,7 @@ function checkTaskParams (params, dict, prefix) {
 	
 	return {
 		modified: modifiedParams,
-		failed: failedParams
+		failed: failedParams || []
 	};
 }
 
@@ -372,9 +372,6 @@ util.extend (workflow.prototype, {
 			self.tasks.map (function (task) {
 				if (task.state != taskStateNames.scarce && task.state != taskStateNames.skipped)
 					return;
-				// funny thing is important not available on scarce tasks
-				// because task params not provided until all requirements
-				// satisfied
 				if (task.important) {
 					task.failed ("important task didn't started");
 					self.taskStates[taskStateNames.scarce]--;
@@ -382,7 +379,9 @@ util.extend (workflow.prototype, {
 					self.failed = true;
 					scarceTaskMessage += '(important)';
 				}
-				scarceTaskMessage += (task.logTitle) + ' => ' + task.unsatisfiedRequirements.join (', ') + '; ';
+				
+				if (task.state == taskStateNames.scarce)
+					scarceTaskMessage += (task.logTitle) + ' => ' + task.unsatisfiedRequirements.join (', ') + '; ';
 			});
 			self.log (scarceTaskMessage);
 		}
