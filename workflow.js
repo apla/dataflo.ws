@@ -441,7 +441,7 @@ util.extend (workflow.prototype, {
 	},
 	logTaskError: function (task, msg, options) {
 		// TODO: fix by using console.error
-		this.log(task.logTitle, "("+task.state+") \x1B[0;31m" + msg + "\x1B[0m", options || '');
+		this.log(task.logTitle, "("+task.state+") \x1B[0;31m" + msg, options || '', "\x1B[0m");
 	},
 	addEventListenersToTask: function (task) {
 		var self = this;
