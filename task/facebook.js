@@ -120,7 +120,7 @@ util.extend (facebook.prototype, {
 		
 		// store the oa config in the session
 				
-		req._requestUrl			= facebookConfig.requestTokenUrl + "?scope=" + scopes.join(',');
+		req._requestUrl			= redirectUrl;
 		req._authorize_callback = facebookConfig.redirectUrl + ( query.action && query.action != "" ? "?action="+querystring.escape(query.action) : "" );
 			
 		self.completed(redirectUrl);
@@ -143,7 +143,7 @@ util.extend (facebook.prototype, {
 		
 		oa.getOAuthAccessToken(
 			query.code,
-			{redirect_uri: facebookConfig.redirectUrl},
+			{redirect_uri: facebookConfig.callbackUrl},
 			function( error, access_token, refresh_token ){
 				
 				if (error) {
