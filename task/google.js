@@ -54,7 +54,7 @@ if (!googleConfig) {
 		}
 	};
 	
-	console.log ('<------------------ google',  googleConfig);
+	//console.log ('<------------------ google',  googleConfig);
 	
 	googleScopes = googleConfig.scopes;
 	
@@ -94,8 +94,10 @@ util.extend (google.prototype, {
 		var req = self.req;
 		var res = self.res;
 		
-		var scopes = self.scopes.map(function(scope) {
-			return googleScopes[scope][1];
+		var scopes = [];
+		
+		self.scopes.map(function(scope) {
+			scopes.push(googleScopes[scope][1]);
 		});
 		
 		// TODO: move callback path to config
@@ -113,7 +115,7 @@ util.extend (google.prototype, {
 		oa.getOAuthRequestToken(function(error, oauth_token, oauth_token_secret, results){
 		  
 			if(error) {
-				self.failed('Error: statusCode = '+error.statusCode + ', data = ' + error.data);
+				self.failed(error);
 			} else { 
 				
 				// store the oa config in the session
@@ -160,7 +162,7 @@ util.extend (google.prototype, {
 
 				if (error) {
 					
-					self.failed('Error: statusCode = '+error.statusCode + ', data = ' + error.data);
+					self.failed(error);
 					
 				} else {
 

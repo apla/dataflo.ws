@@ -67,7 +67,7 @@ if (!facebookConfig) {
 	facebookScopes = facebookConfig.scopes;
 }
 
-console.log ('<------facebookConfig', facebookConfig);
+//console.log ('<------facebookConfig', facebookConfig);
 
 // - - -
 
@@ -100,8 +100,10 @@ util.extend (facebook.prototype, {
 		var res = self.res;
 		var query = req.url.query;
 		
-		var scopes = self.scopes.map(function(scope) {
-			return facebookScopes[scope];
+		var scopes = [];
+		
+		self.scopes.map(function(scope) {
+			scopes.push (facebookScopes[scope]);
 		});
 		
 		var getParams = {
@@ -112,7 +114,7 @@ util.extend (facebook.prototype, {
 		
 		var redirectUrl = facebookConfig.requestTokenUrl + "?" + querystring.stringify(getParams);
 		
-		console.log ('<--------------facebook.login', redirectUrl);
+		//console.log ('<--------------facebook.login', redirectUrl);
 		
 		// store the oa config in the session
 				
@@ -133,7 +135,7 @@ util.extend (facebook.prototype, {
 			self.failed (query.error_description || "token was not accepted");
 		}
 		
-		console.log ('<--------------facebook.callback', query, tokens, facebookConfig.appId,  facebookConfig.appSecret,  facebookConfig.baseUrl);
+		//console.log ('<--------------facebook.callback', query, tokens, facebookConfig.appId,  facebookConfig.appSecret,  facebookConfig.baseUrl);
 		
 		var oa = new OAuth2(facebookConfig.appId,  facebookConfig.appSecret,  facebookConfig.baseUrl);
 		
