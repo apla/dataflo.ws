@@ -106,7 +106,7 @@ util.extend (facebook.prototype, {
 			scopes.push (facebookScopes[scope]);
 		});
 		
-		console.log ('<--------------facebook.login', self.scopes, scopes);
+		//console.log ('<--------------facebook.login', self.scopes, scopes);
 		
 		var getParams = {
 			client_id: facebookConfig.appId,
@@ -121,7 +121,7 @@ util.extend (facebook.prototype, {
 		// store the oa config in the session
 				
 		req._requestUrl			= facebookConfig.requestTokenUrl + "?scope=" + scopes.join(',');
-		req._authorize_callback = facebookConfig.callbackUrl + ( query.action && query.action != "" ? "?action="+querystring.escape(query.action) : "" );
+		req._authorize_callback = facebookConfig.redirectUrl + ( query.action && query.action != "" ? "?action="+querystring.escape(query.action) : "" );
 			
 		self.completed(redirectUrl);
 	},
