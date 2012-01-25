@@ -131,7 +131,7 @@ var workflow = module.exports = function (config, reqParam) {
 	this.started = new Date().getTime();
 	this.id      = this.id || this.started % 1e6;
 	
-	if (!this.stage) this.stage = 'process';
+	if (!this.stage) this.stage = 'workflow';
 
 	//if (!this.stageMarkers[this.stage])
 	//	console.error ('there is no such stage marker: ' + this.stage);
@@ -403,20 +403,20 @@ util.extend (workflow.prototype, {
 			// workflow stopped and failed
 		
 			self.emit ('failed', self);
-			self.log ('workflow failed '+this.taskStates[taskStateNames.failed]+' tasks of ' + self.tasks.length);
+			self.log (this.stage + ' failed '+this.taskStates[taskStateNames.failed]+' tasks of ' + self.tasks.length);
 
 		} else {
 			// workflow stopped and not failed
 		
 			self.emit ('completed', self);
-			self.log ('workflow complete');
+			self.log (this.stage + ' complete');
 
 		}
 		
 		self.isIdle = true;
 		
 	},
-	stageMarker: {prepare: "()", process: "[]", presentation: "<>"},
+	stageMarker: {prepare: "()", workflow: "[]", presentation: "<>"},
 	log: function (msg) {
 //		if (this.quiet || process.quiet) return;
 		var toLog = [
