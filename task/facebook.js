@@ -139,7 +139,7 @@ util.extend (facebook.prototype, {
 		
 		var oa = new OAuth2(facebookConfig.appId,  facebookConfig.appSecret,  facebookConfig.baseUrl);
 		
-		console.log ('!!!!!!!!!!--------callback', oa, tokens, facebookConfig,query);
+		console.log ('<------------------req.url', req.url);
 		
 		oa.getOAuthAccessToken(
 			query.code,
