@@ -41,7 +41,7 @@ if (!googleScopes) {
 			"webmaster_tools"	: "https://www.google.com/webmasters/tools/feeds/",
 			"youtube"			: "https://gdata.youtube.com"
 		}
-	};
+	});
 	
 	googleScopes = googleConfig.scopes;
 	
@@ -49,7 +49,7 @@ if (!googleScopes) {
 		googleScopes[scope] = [googleScopes[scope], querystring.escape(googleScopes[scope])];
 	}
 	
-	//console.log ('<------------------ google',  googleConfig);
+	console.log ('<------------------ google',  googleConfig);
 
 }
 	
