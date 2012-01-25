@@ -84,7 +84,7 @@ util.extend (google.prototype, {
 	run: function() {
 		
 		var self = this;
-		self.failed('need method [login|callback|profile]');
+		self.failed('use method [login|callback|profile]');
 		
 	},
 	
@@ -94,18 +94,15 @@ util.extend (google.prototype, {
 		var req = self.req;
 		var res = self.res;
 		
-		var gdataScopes = [];
-		
-		// GData specifid: scopes that wa want access to
-		self.scopes.map(function(scope) {
-			gdataScopes.push(googleScopes[scope][1])
+		var scopes = self.scopes.map(function(scope) {
+			return googleScopes[scope][1];
 		});
 		
 		// TODO: move callback path to config
 		
 		var query = req.url.query;
 		
-		var oa = new OAuth(googleConfig.requestTokenUrl+"?scope="+gdataScopes.join('+'),
+		var oa = new OAuth(googleConfig.requestTokenUrl+"?scope="+scopes.join('+'),
 			googleConfig.requestTokenUrl,
 			googleConfig.clientId,
 			googleConfig.clientSecret,
