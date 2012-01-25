@@ -101,7 +101,12 @@ util.extend (google.prototype, {
 		
 		var query = req.url.query;
 		
-		console.log ('<------------------ google',  googleConfig);
+		console.log ('<------------------ google',  googleConfig.requestTokenUrl+"?scope="+scopes.join('+'),
+			googleConfig.requestTokenUrl,
+			googleConfig.clientId,
+			googleConfig.clientSecret,
+			"1.0",
+			googleConfig.callbackUrl);
 		console.log ('<-----------scopes', scopes);
 		
 		var oa = new OAuth(googleConfig.requestTokenUrl+"?scope="+scopes.join('+'),
