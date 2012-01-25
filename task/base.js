@@ -49,8 +49,7 @@ for (var stateNum = 0; stateNum < taskStateList.length; stateNum++) {
  * (`ready`, `running`, `idle` &c), publishes events (`complete`,
  * `skipped` &c).
  *
- * Example
- * =======
+ * ### Example
  *
  * A sequence of task configs
  * within the *RIA.Workflow* concept. `task` objects are instantiated
@@ -102,8 +101,8 @@ for (var stateNum = 0; stateNum < taskStateList.length; stateNum++) {
  * @cfg {String} produce (required) The name of the property to receive
  * the result of the task.
  *
- * **Note**: The parameter is optional for {@link task#renderTask},
- * because the latter sends its result in {@link renderTask#output}.
+ * **Note**: The parameter is optional for {@link task.renderTask},
+ * because the latter sends its result in {@link task.renderTask#output}.
  *
  * @cfg {Function|String|String[]} require Specifies task
  * requirements.
@@ -277,7 +276,7 @@ util.extend (task.prototype, taskStateMethods, {
 		 * @event complete
 		 * Published upon successful task completion.
 		 *
-		 * @param {task} task
+		 * @param {task.task} task
 		 * @param {Object} result
 		 */
 		this.emit ("complete", this, result);
@@ -301,7 +300,7 @@ util.extend (task.prototype, taskStateMethods, {
 		 * @event skip
 		 * Triggered when the task is {@link #skipped}.
 
-		 * @param {task} task
+		 * @param {task.task} task
 		 * @param {Object} result
 		 */
 		this.emit ("skip", this, result);
@@ -419,8 +418,8 @@ util.extend (task.prototype, taskStateMethods, {
 	 * @method failed
 	 * Emits an {@link #event-error}.
 	 *
-	 * Cancels (calls {@link #cancel}) the task if it was ready or running
-	 * or just emits {@link #event-cancel} if not.
+	 * Cancels (calls {@link #method-cancel}) the task if it was ready
+	 * or running; or just emits {@link #event-cancel} if not.
 	 *
 	 * Sets the status to `failed`.
 	 *
@@ -428,7 +427,6 @@ util.extend (task.prototype, taskStateMethods, {
 	 *
 	 * @return {Boolean} Always true.
 	 * @param {Error} Error object.
-
 	 */
 	failed: function (e) {
 		var prevState = this.state;
@@ -436,6 +434,7 @@ util.extend (task.prototype, taskStateMethods, {
 
 		/**
 		 * @event error
+		 * Emitted on task fail and on internal errors.
 		 * @param {Error} e Error object.
 		 */
 		this.emit('error', e);
