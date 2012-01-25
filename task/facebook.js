@@ -1,4 +1,4 @@
-var OAuth2 = require('oauth2').OAuth2,
+var OAuth2 = require('oauth').OAuth2,
 	querystring = require('querystring'),
 	task = require('task/base'),
 	util = require('util');
@@ -111,6 +111,8 @@ util.extend (facebook.prototype, {
 		};
 		
 		var redirectUrl = facebookConfig.requestTokenUrl + "?" + querystring.stringify(getParams);
+		
+		console.log ('<--------------facebook.login', redirectUrl);
 		
 		// store the oa config in the session
 				
