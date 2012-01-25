@@ -7,37 +7,40 @@ var EventEmitter = require ('events').EventEmitter,
 	mongo        = require ('mongodb');
 
 /**
- * @author 
+ * @author
  * @docauthor
  * @class task.mongoRequest
  * @extends task.task
  * 
- * A class implement few methods of working with MongoDB. Config parameter "className" must be equal to class name, that is "mongoRequest".
+ * A class for working with MongoDB.
+ * 
+ * To use, set {@link task.task#className} to `"mongoRequest"`.
  *
  * Example:
- <pre><code>
+ *
 	{
 		workflows: [{
 			url: "/entity/suggest",
+
 			tasks: [{
-				functionName: 'parseFilter',
-				url: "{$request.url}",
-				produce: "data.suggest"
+				functionName:  "parseFilter',
+				url:           "{$request.url}",
+				produce:       "data.suggest"
 			}, {
-				className:  "mongoRequest",
-				connector:  "mongo",
-				collection: "messages",
-				filter:     "{$data.suggest.tag}",
-				produce:    "data.records"
+				className:     "mongoRequest",
+				connector:     "mongo",
+				collection:    "messages",
+				filter:        "{$data.suggest.tag}",
+				produce:       "data.records"
 			}, {
-				className: "renderTask",
-				type: "json",
-				data: "{$data.records}",
-				output: "{$response}"
+				className:     "renderTask",
+				type:          "json",
+				data:          "{$data.records}",
+				output:        "{$response}"
 			}]
 		}]
 	}
- </code></pre>
+ *
  *
  * @cfg {String} connector (Require) config name in project object.
  *
