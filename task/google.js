@@ -13,7 +13,7 @@ if (!googleConfig) {
 	googleConfig = project.config.google = {
 		
 		"clientId": "343539044066.apps.googleusercontent.com",
-		"clientSecret": "PJMW_uP39nogdu0WpBuqMhtB",
+		"clientSecret": "B98IRo3Vj7hKawYYfL5SEbe4",
 		
 		"requestTokenUrl"	: "https://www.google.com/accounts/OAuthGetRequestToken",
 		"accessTokenUrl"	: "https://www.google.com/accounts/OAuthGetAccessToken",
