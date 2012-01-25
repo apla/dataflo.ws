@@ -19,6 +19,7 @@ if (!facebookConfig) {
 		
 		"requestTokenUrl"	: "https://www.facebook.com/dialog/oauth",
 		"accessTokenUrl"	: "https://graph.facebook.com/oauth/access_token",
+		"callbackUrl"		: "http://collaboratoria.com/facebook/callback"
 		"baseUrl"			: "https://graph.facebook.com",
 		"redirectUrl"		: "http://collaboratoria.com/",
 		
