@@ -44,7 +44,7 @@ for (var stateNum = 0; stateNum < taskStateList.length; stateNum++) {
  *
  * The base `task` class provides methods to control the task execution
  * externally. These methods are called by the workflow.
- * They cycle through a number of states ({@link stateNames})
+ * They cycle through a number of states ({@link #stateNames})
  * and emit events.
  *
  * ### Example
@@ -222,9 +222,8 @@ util.extend (task.prototype, taskStateMethods, {
 
 	/**
 	 * @method completed
-	 * Checks if the task must produce any result
-	 * (as per {@link #mustProduce} param), calls the {@link #cb} function
-	 * and publishes {@link #event-complete}.
+	 * Publishes {@link #event-complete} with the result object
+	 * that will go into the {@link #produce} field of the workflow.
 	 *
 	 * @param {Object} result The product of the task.
 	 */

@@ -16,14 +16,7 @@ util.inherits (renderTask, task);
 
 var cache = {};
 
-/**
- * @class task.renderTask
- * @extends task.task
- */
 util.extend (renderTask.prototype, {
-	/**
-	 * @private
-	 */
 	readTemplate: function (templateIO, cb) {
 		templateIO.readFile (function (err, data) {
 			cb.call (this, err, data);
@@ -31,10 +24,6 @@ util.extend (renderTask.prototype, {
 
 	},
 
-	/**
-	 * @method run
-	 * Renders {@link #template} into {@link #output}.
-	 */
 	run: function () {
 
 		var self = this;
@@ -44,6 +33,7 @@ util.extend (renderTask.prototype, {
 				"Content-Type",
 				(this.type || 'text/html') + '; charset=utf-8'
 			);
+
 			var templateIO = project.root.fileIO (this.template);
 			// TODO
 			//if (cache {this.template}) {
@@ -52,7 +42,7 @@ util.extend (renderTask.prototype, {
 			self.readTemplate (templateIO, function (err, data) {
 				if (err) {
 					console.error (
-						"Can't access %s file.", this.template,
+						"Can't access %s file.", self.template,
 						"Create one and define the project ID.",
 					);
 					process.kill ();
