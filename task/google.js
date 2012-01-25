@@ -120,7 +120,9 @@ util.extend (google.prototype, {
 		oa.getOAuthRequestToken(function(error, oauth_token, oauth_token_secret, results){
 		  
 			if(error) {
+				console.log ('<--------ERRRR', error);
 				self.failed(error);
+			
 			} else { 
 				
 				// store the oa config in the session
