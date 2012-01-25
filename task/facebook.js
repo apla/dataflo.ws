@@ -5,22 +5,12 @@ var OAuth2 = require('oauth').OAuth2,
 	
 // - - - static
 
-var facebookConfig	= project.config.facebook;
+var facebookConfig = project.config.consumerConfig.facebook;
 var facebookScopes = (facebookConfig ? facebookConfig.scopes : null);
 
-if (!facebookConfig) {
+if (!facebookScopes) {
 
-	facebookConfig = project.config.facebook = {
-	
-		"appId": "164036140364850",
-		"appSecret": "8b840a12055f78aa5b983dea168da2fd",
-		
-		"requestTokenUrl"	: "https://www.facebook.com/dialog/oauth",
-		"accessTokenUrl"	: "https://graph.facebook.com/oauth/access_token",
-		"callbackUrl"       : "http://collaboratoria.com/facebook/callback",
-		"baseUrl"			: "https://graph.facebook.com",
-		"redirectUrl"		: "http://collaboratoria.com/",
-		
+	util.extend (facebookConfig, {	
 		"scopes": {
 			"profile"			: "user_about_me",
 			"email"				: "email",
@@ -62,12 +52,12 @@ if (!facebookConfig) {
 			"rsvp_event"		: "rsvp_event",
 			"publish_actions"	: "publish_actions"
 		}
-	}
+	});
 	
 	facebookScopes = facebookConfig.scopes;
+	
+	//console.log ('<------facebookConfig', facebookConfig);
 }
-
-console.log ('<------facebookConfig', facebookConfig);
 
 // - - -
 
@@ -106,8 +96,6 @@ util.extend (facebook.prototype, {
 			scopes.push (facebookScopes[scope]);
 		});
 		
-		//console.log ('<--------------facebook.login', self.scopes, scopes);
-		
 		var getParams = {
 			client_id: facebookConfig.appId,
 			redirect_uri: facebookConfig.callbackUrl,
@@ -116,12 +104,8 @@ util.extend (facebook.prototype, {
 		
 		var redirectUrl = facebookConfig.requestTokenUrl + "?" + querystring.stringify(getParams);
 		
-		console.log ('<--------------facebook.login', redirectUrl);
-		
-		// store the oa config in the session
-				
-		req._requestUrl			= redirectUrl;
-		req._authorize_callback = facebookConfig.redirectUrl + ( query.action && query.action != "" ? "?action="+querystring.escape(query.action) : "" );
+		//req._requestUrl			= redirectUrl;
+		//req._authorize_callback = facebookConfig.redirectUrl + ( query.action && query.action != "" ? "?action="+querystring.escape(query.action) : "" );
 			
 		self.completed(redirectUrl);
 	},
@@ -138,8 +122,6 @@ util.extend (facebook.prototype, {
 		}
 		
 		var oa = new OAuth2(facebookConfig.appId,  facebookConfig.appSecret,  facebookConfig.baseUrl);
-		
-		console.log ('<------------------req.url', req.url, oa);
 		
 		oa.getOAuthAccessToken(
 			query.code,

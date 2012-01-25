@@ -5,20 +5,12 @@ var OAuth = require('oauth').OAuth,
 	
 // - - - static	
 	
-var googleConfig = project.config.google;
+var googleConfig = project.config.consumerConfig.google;
 var googleScopes = (googleConfig ? googleConfig.scopes : null);
 
-if (!googleConfig) {
+if (!googleScopes) {
 
-	googleConfig = project.config.google = {
-		
-		"clientId": "343539044066.apps.googleusercontent.com",
-		"clientSecret": "B98IRo3Vj7hKawYYfL5SEbe4",
-		
-		"requestTokenUrl"	: "https://www.google.com/accounts/OAuthGetRequestToken",
-		"accessTokenUrl"	: "https://www.google.com/accounts/OAuthGetAccessToken",
-		"callbackUrl"		: "http://collaboratoria.com/google/callback",
-		
+	util.extend (googleConfig, {		
 		"scopes": {
 			"profile"			: "https://www.googleapis.com/auth/userinfo.profile",
 			"userinfo"			: "https://www.googleapis.com/auth/userinfo.email",
@@ -51,13 +43,13 @@ if (!googleConfig) {
 		}
 	};
 	
-	console.log ('<------------------ google',  googleConfig);
-	
 	googleScopes = googleConfig.scopes;
 	
 	for (var scope in googleScopes) {
 		googleScopes[scope] = [googleScopes[scope], querystring.escape(googleScopes[scope])];
 	}
+	
+	//console.log ('<------------------ google',  googleConfig);
 
 }
 	
@@ -101,14 +93,6 @@ util.extend (google.prototype, {
 		
 		var query = req.url.query;
 		
-		console.log ('<------------------ google',  googleConfig.requestTokenUrl+"?scope="+scopes.join('+'),
-			googleConfig.requestTokenUrl,
-			googleConfig.clientId,
-			googleConfig.clientSecret,
-			"1.0",
-			googleConfig.callbackUrl);
-		console.log ('<-----------scopes', scopes);
-		
 		var oa = new OAuth(googleConfig.requestTokenUrl+"?scope="+scopes.join('+'),
 			googleConfig.requestTokenUrl,
 			googleConfig.clientId,
@@ -120,7 +104,7 @@ util.extend (google.prototype, {
 		oa.getOAuthRequestToken(function(error, oauth_token, oauth_token_secret, results){
 		  
 			if(error) {
-				console.log ('<--------ERRRR', error);
+		
 				self.failed(error);
 			
 			} else { 
@@ -149,9 +133,6 @@ util.extend (google.prototype, {
 		var req = self.req;
 		var query = req.url.query;
 		var tokens = req.user.tokens;
-		
-		console.log ('<------------------ google',  googleConfig);
-		console.log ('<-----------tokens', tokens);
 		
 		var oa = new OAuth(tokens._requestUrl,
 			googleConfig.accessTokenUrl,
