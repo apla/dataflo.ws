@@ -12,8 +12,6 @@ if (!facebookConfig) {
 
 	facebookConfig = project.config.facebook = {
 		
-		"_appId": "anonymous",
-		"_appSecret": "anonymous",
 		"appId": "164036140364850",
 		"appSecret": "8b840a12055f78aa5b983dea168da2fd",
 		
@@ -133,7 +131,7 @@ util.extend (facebook.prototype, {
 			self.failed (query.error_description || "token was not accepted");
 		}
 		
-		console.log ('<--------------facebook.callback', query, tokens);
+		console.log ('<--------------facebook.callback', query, tokens, facebookConfig.appId,  facebookConfig.appSecret,  facebookConfig.baseUrl);
 		
 		var oa = new OAuth2(facebookConfig.appId,  facebookConfig.appSecret,  facebookConfig.baseUrl);
 		
