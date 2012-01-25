@@ -133,6 +133,8 @@ util.extend (facebook.prototype, {
 			self.failed (query.error_description || "token was not accepted");
 		}
 		
+		console.log ('<--------------facebook.callback', query, tokens);
+		
 		var oa = new OAuth2(facebookConfig.appId,  facebookConfig.appSecret,  facebookConfig.baseUrl);
 		
 		oa.getOAuthAccessToken(
