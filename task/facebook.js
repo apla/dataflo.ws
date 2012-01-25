@@ -67,7 +67,7 @@ if (!facebookConfig) {
 	facebookScopes = facebookConfig.scopes;
 }
 
-//console.log ('<------facebookConfig', facebookConfig);
+console.log ('<------facebookConfig', facebookConfig);
 
 // - - -
 
@@ -106,6 +106,8 @@ util.extend (facebook.prototype, {
 			scopes.push (facebookScopes[scope]);
 		});
 		
+		console.log ('<--------------facebook.login', self.scopes, scopes);
+		
 		var getParams = {
 			client_id: facebookConfig.appId,
 			redirect_uri: facebookConfig.callbackUrl,
@@ -114,11 +116,11 @@ util.extend (facebook.prototype, {
 		
 		var redirectUrl = facebookConfig.requestTokenUrl + "?" + querystring.stringify(getParams);
 		
-		//console.log ('<--------------facebook.login', redirectUrl);
+		console.log ('<--------------facebook.login', redirectUrl);
 		
 		// store the oa config in the session
 				
-		req._requestUrl			= facebookConfig.requestTokenUrl + "?scope=" + self.scopes.join(',');
+		req._requestUrl			= facebookConfig.requestTokenUrl + "?scope=" + scopes.join(',');
 		req._authorize_callback = facebookConfig.callbackUrl + ( query.action && query.action != "" ? "?action="+querystring.escape(query.action) : "" );
 			
 		self.completed(redirectUrl);
