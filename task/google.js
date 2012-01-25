@@ -12,15 +12,15 @@ if (!googleConfig) {
 
 	googleConfig = project.config.google = {
 		
-		"clientId": "anonymous",
-		"clientSecret": "anonymous",
-		"_clientId": "343539044066.apps.googleusercontent.com",
-		"_clientSecret": "PJMW_uP39nogdu0WpBuqMhtB",
+		"_clientId": "anonymous",
+		"_clientSecret": "anonymous",
+		"clientId": "343539044066.apps.googleusercontent.com",
+		"clientSecret": "PJMW_uP39nogdu0WpBuqMhtB",
 		
 		"requestTokenUrl"	: "https://www.google.com/accounts/OAuthGetRequestToken",
 		"accessTokenUrl"	: "https://www.google.com/accounts/OAuthGetAccessToken",
-		"callbackUrl"		: "http://127.0.0.1:50088/google/callback",
-		"_callbackUrl"		: "http://collaboratoria.com/google/callback",
+		"_callbackUrl"		: "http://127.0.0.1:50088/google/callback",
+		"callbackUrl"		: "http://collaboratoria.com/google/callback",
 		
 		"scopes": {
 			"profile"			: "https://www.googleapis.com/auth/userinfo.profile",
