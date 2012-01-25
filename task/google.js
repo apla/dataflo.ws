@@ -12,14 +12,11 @@ if (!googleConfig) {
 
 	googleConfig = project.config.google = {
 		
-		"_clientId": "anonymous",
-		"_clientSecret": "anonymous",
 		"clientId": "343539044066.apps.googleusercontent.com",
 		"clientSecret": "PJMW_uP39nogdu0WpBuqMhtB",
 		
 		"requestTokenUrl"	: "https://www.google.com/accounts/OAuthGetRequestToken",
 		"accessTokenUrl"	: "https://www.google.com/accounts/OAuthGetAccessToken",
-		"_callbackUrl"		: "http://127.0.0.1:50088/google/callback",
 		"callbackUrl"		: "http://collaboratoria.com/google/callback",
 		
 		"scopes": {
@@ -54,7 +51,7 @@ if (!googleConfig) {
 		}
 	};
 	
-	//console.log ('<------------------ google',  googleConfig);
+	console.log ('<------------------ google',  googleConfig);
 	
 	googleScopes = googleConfig.scopes;
 	
@@ -104,6 +101,9 @@ util.extend (google.prototype, {
 		
 		var query = req.url.query;
 		
+		console.log ('<------------------ google',  googleConfig);
+		console.log ('<-----------scopes', scopes);
+		
 		var oa = new OAuth(googleConfig.requestTokenUrl+"?scope="+scopes.join('+'),
 			googleConfig.requestTokenUrl,
 			googleConfig.clientId,
@@ -143,7 +143,8 @@ util.extend (google.prototype, {
 		var query = req.url.query;
 		var tokens = req.user.tokens;
 		
-		// console.log ('<-----------tokens', tokens)
+		console.log ('<------------------ google',  googleConfig);
+		console.log ('<-----------tokens', tokens);
 		
 		var oa = new OAuth(tokens._requestUrl,
 			googleConfig.accessTokenUrl,

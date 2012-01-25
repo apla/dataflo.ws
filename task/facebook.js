@@ -11,13 +11,13 @@ var facebookScopes = (facebookConfig ? facebookConfig.scopes : null);
 if (!facebookConfig) {
 
 	facebookConfig = project.config.facebook = {
-		
+	
 		"appId": "164036140364850",
 		"appSecret": "8b840a12055f78aa5b983dea168da2fd",
 		
 		"requestTokenUrl"	: "https://www.facebook.com/dialog/oauth",
 		"accessTokenUrl"	: "https://graph.facebook.com/oauth/access_token",
-		"callbackUrl"		: "http://collaboratoria.com/facebook/callback",
+		"callbackUrl"       : "http://collaboratoria.com/facebook/callback",
 		"baseUrl"			: "https://graph.facebook.com",
 		"redirectUrl"		: "http://collaboratoria.com/",
 		
