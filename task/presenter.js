@@ -54,6 +54,7 @@ util.extend (presenterTask.prototype, {
 		 * by the {@link #file} extension.
 		 *
 		 * Possible values:
+		 *
 		 * - `jade`, Jade template
 		 * - `json`, JSON string
 		 * - `asis`, plain text.
@@ -94,7 +95,7 @@ util.extend (presenterTask.prototype, {
 				if (err) {
 					console.error (
 						"Can't access %s file.", self.file,
-						"Create one and define the project ID.",
+						"Create one and define the project ID."
 					);
 					process.kill ();
 					return;

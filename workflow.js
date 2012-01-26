@@ -39,7 +39,8 @@ function isEmpty(obj) {
 function checkTaskParams (params, dict, prefix) {
 
 	// parse task params
-	// TODO: modify this function because recursive changes of parameters works dirty (indexOf for value)
+	// TODO: modify this function because recursive changing of parameters
+	// works dirty (indexOf for value)
 
 	if (prefix == void 0) prefix = '';
 	if (prefix) prefix += '.';
@@ -122,6 +123,17 @@ function checkTaskParams (params, dict, prefix) {
 	};
 }
 
+/**
+ * @class workflow
+ * @extends events.EventEmitter
+ *
+ * The heart of the framework. Parses task configurations, loads dependencies,
+ * launches tasks, stores their result. When all tasks are completed,
+ * notifies subscribers (inititators).
+ *
+ * @cfg {Object} config (required) Workflow configuration.
+ * @cfg {Object} reqParam (required) Workflow parameters.
+ */
 var workflow = module.exports = function (config, reqParam) {
 
 	var self = this;
@@ -301,6 +313,10 @@ util.extend (workflow.prototype, {
 	checkTaskParams: checkTaskParams,
 	isIdle: true,
 	haveCompletedTasks: false,
+
+	/**
+	 * @method run Initiators call this method to launch the workflow.
+	 */
 	run: function () {
 
 		var self = this;

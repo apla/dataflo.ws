@@ -30,10 +30,8 @@ for (var stateNum = 0; stateNum < taskStateList.length; stateNum++) {
 }
 
 /**
- * @author
- * @docauthor
  * @class task.task
- * @extends Object
+ * @extends events.EventEmitter
  *
  * Tasks are atomic synchronous/asynchronous entities that configure
  * what must be done, what prerequisitives must be satisfied before doing it,
@@ -384,13 +382,17 @@ util.extend (task.prototype, taskStateMethods, {
 	/**
 	 * @enum stateNames
 	 *
-	 * An implementation-specific map of the task state codes
-	 * to human-readable state descriptions.
+	 * A map of the task state codes to human-readable state descriptions.
 	 *
-	 * The base states are: `scarce`, `ready`, `running`, `idle`,
-	 * `complete`, `failed` and `skipped`.
+	 * The states codes are:
 	 *
-	 * Any modification of this list will probably break base `task` methods.
+	 * - `scarce`
+	 * - `ready`
+	 * - `running`
+	 * - `idle`
+	 * - `complete`
+	 * - `failed`
+	 * - `skipped`
 	 */
 	stateNames: taskStateNames,
 
