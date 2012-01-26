@@ -119,7 +119,7 @@ function checkTaskParams (params, dict, prefix) {
 
 	return {
 		modified: modifiedParams,
-		failed: failedParams
+		failed: failedParams || []
 	};
 }
 
@@ -140,8 +140,8 @@ var workflow = module.exports = function (config, reqParam) {
 	util.extend (true, this, config);
 	util.extend (true, this, reqParam);
 
-	this.started = new Date().getTime();
-	this.id      = this.id || this.started % 1e6;
+	this.created = new Date().getTime();
+	this.id      = this.id || this.created % 1e6;
 
 	if (!this.stage) this.stage = 'workflow';
 
@@ -318,6 +318,8 @@ util.extend (workflow.prototype, {
 	 * @method run Initiators call this method to launch the workflow.
 	 */
 	run: function () {
+		if (!this.started)
+			this.started = new Date().getTime();
 
 		var self = this;
 
@@ -379,7 +381,7 @@ util.extend (workflow.prototype, {
 			return;
 		}
 
-		self.stopped = true;
+		self.stopped = new Date().getTime();
 
 		var scarceTaskMessage = 'unsatisfied requirements: ';
 
@@ -388,9 +390,6 @@ util.extend (workflow.prototype, {
 			self.tasks.map (function (task) {
 				if (task.state != taskStateNames.scarce && task.state != taskStateNames.skipped)
 					return;
-				// funny thing is important not available on scarce tasks
-				// because task params not provided until all requirements
-				// satisfied
 				if (task.important) {
 					task.failed ("important task didn't started");
 					self.taskStates[taskStateNames.scarce]--;
@@ -398,7 +397,9 @@ util.extend (workflow.prototype, {
 					self.failed = true;
 					scarceTaskMessage += '(important)';
 				}
-				scarceTaskMessage += (task.logTitle) + ' => ' + task.unsatisfiedRequirements.join (', ') + '; ';
+
+				if (task.state == taskStateNames.scarce)
+					scarceTaskMessage += (task.logTitle) + ' => ' + task.unsatisfiedRequirements.join (', ') + '; ';
 			});
 			self.log (scarceTaskMessage);
 		}
@@ -419,13 +420,13 @@ util.extend (workflow.prototype, {
 			// workflow stopped and failed
 
 			self.emit ('failed', self);
-			self.log (this.stage + ' failed '+this.taskStates[taskStateNames.failed]+' tasks of ' + self.tasks.length);
+			self.log (this.stage + ' failed in ' + (self.stopped - self.started) + 'ms; ' + this.taskStates[taskStateNames.failed]+' tasks of ' + self.tasks.length);
 
 		} else {
 			// workflow stopped and not failed
 
 			self.emit ('completed', self);
-			self.log (this.stage + ' complete');
+			self.log (this.stage + ' complete in ' + (self.stopped - self.started) + 'ms');
 
 		}
 
