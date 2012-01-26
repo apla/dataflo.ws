@@ -96,7 +96,7 @@ util.extend (vkontakte.prototype, {
 			self.failed (query.error_description || "token was not accepted");
 		}
 		
-		var oa = new OAuth2(vkontakteConfig.appId,  vkontakteConfig.appSecret,  vkontakteConfig.baseUrl);
+		var oa = new OAuth2(vkontakteConfig.appId,  vkontakteConfig.appSecret,  vkontakteConfig.baseUrl, vkontakteConfig.authorizeUrl, vkontakteConfig.accessTokenUrl);
 		
 		oa.getOAuthAccessToken(
 			query.code,
@@ -123,7 +123,7 @@ util.extend (vkontakte.prototype, {
 		var req = self.req;
 		var tokens = req.user.tokens;
 		
-		var oa = new OAuth2(vkontakteConfig.appId,  vkontakteConfig.appSecret,  vkontakteConfig.baseUrl);
+		var oa = new OAuth2(vkontakteConfig.appId,  vkontakteConfig.appSecret,  vkontakteConfig.baseUrl, vkontakteConfig.authorizeUrl, vkontakteConfig.accessTokenUrl);
 		
 		oa.getProtectedResource(
 			"https://api.vkontakte.ru/method/getProfiles?id="+self.userId,
