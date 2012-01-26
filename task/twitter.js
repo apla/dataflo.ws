@@ -70,12 +70,12 @@ util.extend (twitter.prototype, {
 		var query = req.url.query;
 		var tokens = req.user.tokens;
 		
-		var oa = new OAuth(tokens._requestUrl,
+		var oa = new OAuth(twitterConfig.requestTokenUrl,
 			twitterConfig.accessTokenUrl,
-			twitterConfig.clientId,
-			twitterConfig.clientSecret,
+			twitterConfig.consumerKey,
+			twitterConfig.consumerSecret,
 			"1.0",
-			tokens._authorize_callback,
+			twitterConfig.callbackUrl,
 			"HMAC-SHA1");
 
 		oa.getOAuthAccessToken(query.oauth_token, tokens.twitter_oauth_token_secret,
@@ -84,51 +84,51 @@ util.extend (twitter.prototype, {
 					self.failed(error);
 				} else {
 					
-					tokens.twitter_oauth_token_secret = oauth_token_secret;
-					tokens.twitter_oauth_token = oauth_token;
+					tokens.oauth_token_secret = oauth_token_secret;
+					tokens.oauth_token = oauth_token;
 					
-					console.log (additionalParameters);
-					
-					self.completed(self.mappingUser(additionalParameters));
+					self.completed(additionalParameters.user_id);
 			}
 		});
 	},
 	
-//	profile: function() {
-//		var self = this;
-//		var req = self.req;
-//		var tokens = req.user.tokens;
-//		
-//		var oa = new OAuth(tokens._requestUrl,
-//			twitterConfig.accessTokenUrl,
-//			twitterConfig.clientId,
-//			twitterConfig.clientSecret,
-//			"1.0",
-//			tokens._authorize_callback,
-//			"HMAC-SHA1");
-//		
-//		oa._headers['GData-Version'] = '2'; 
-//		
-//		oa.getProtectedResource(
-//			"https://www.googleapis.com/oauth2/v1/userinfo", 
-//			"GET", 
-//			tokens.oauth_access_token, 
-//			tokens.oauth_access_token_secret,
-//			function (error, data, response) {
-//				
-//				if (error) {
-//					self.failed(error.message);
-//				} else {
-//					try {
-//						var user = JSON.parse(data);
-//						self.completed(self.mappingUser(user));
-//					} catch (e) {
-//						self.failed(e);
-//					}
-//				}
-//			}
-//		);
-//	},
+	profile: function() {
+		var self = this;
+		var req = self.req;
+		var tokens = req.user.tokens;
+		
+		var oa = new OAuth(twitterConfig.requestTokenUrl,
+			twitterConfig.accessTokenUrl,
+			twitterConfig.consumerKey,
+			twitterConfig.consumerSecret,
+			"1.0",
+			twitterConfig.callbackUrl,
+			"HMAC-SHA1");
+		
+		oa.getProtectedResource(
+			"https://api.twitter.com/1/users/show.json?id="+self.userId, 
+			"GET", 
+			tokens.oauth_token, 
+			tokens.oauth_token_secret,
+			
+			function (error, data, response) {
+				
+				if (error) {
+					self.failed(error.message);
+				} else {
+					try {
+						var user = JSON.parse(data);
+						
+						console.log ('<---------user', user);
+						
+						self.completed(self.mappingUser(user));
+					} catch (e) {
+						self.failed(e);
+					}
+				}
+			}
+		);
+	},
 	
 	mappingUser: function(user) {
 		
