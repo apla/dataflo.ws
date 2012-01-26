@@ -5,12 +5,12 @@ var OAuth = require('oauth').OAuth,
 	
 // - - - static	
 	
-var googleConfig = project.config.consumerConfig.google;
-var googleScopes = (googleConfig ? googleConfig.scopes : null);
+var twitterConfig = project.config.consumerConfig.twitter;
+var twitterScopes = (twitterConfig ? twitterConfig.scopes : null);
 
-if (!googleScopes) {
+if (!twitterScopes) {
 
-	util.extend (googleConfig, {		
+	util.extend (twitterConfig, {		
 		"scopes": {
 			"profile"			: "https://www.googleapis.com/auth/userinfo.profile",
 			"userinfo"			: "https://www.googleapis.com/auth/userinfo.email",
@@ -43,19 +43,19 @@ if (!googleScopes) {
 		}
 	});
 	
-	googleScopes = googleConfig.scopes;
+	twitterScopes = twitterConfig.scopes;
 	
-	for (var scope in googleScopes) {
-		googleScopes[scope] = [googleScopes[scope], querystring.escape(googleScopes[scope])];
+	for (var scope in twitterScopes) {
+		twitterScopes[scope] = [twitterScopes[scope], querystring.escape(twitterScopes[scope])];
 	}
 	
-	console.log ('<------------------ google',  googleConfig);
+	console.log ('<------------------ twitter',  twitterConfig);
 
 }
 	
 // - - -
 
-var google = module.exports = function(config) {
+var twitter = module.exports = function(config) {
 
 	this.scopes = [
 		"profile",
@@ -66,9 +66,9 @@ var google = module.exports = function(config) {
 
 };
 
-util.inherits (google, task);
+util.inherits (twitter, task);
 
-util.extend (google.prototype, {
+util.extend (twitter.prototype, {
 
 	run: function() {
 		
@@ -81,48 +81,41 @@ util.extend (google.prototype, {
 		
 		var self = this;
 		var req = self.req;
+		var res = self.res;
 		
 		var scopes = [];
 		
 		self.scopes.map(function(scope) {
-			scopes.push(googleScopes[scope][1]);
+			scopes.push(twitterScopes[scope][1]);
 		});
 		
 		// TODO: move callback path to config
 		
 		var query = req.url.query;
 		
-		var oa = new OAuth(googleConfig.requestTokenUrl+"?scope="+scopes.join('+'),
-			googleConfig.requestTokenUrl,
-			googleConfig.clientId,
-			googleConfig.clientSecret,
+		var oa = new OAuth(twitterConfig.requestTokenUrl,
+			twitterConfig.accessTokenUrl,
+			twitterConfig.consumerKey,
+			twitterConfig.consumerSecret,
 			"1.0",
-			googleConfig.callbackUrl + ( query.action && query.action != "" ? "?action="+querystring.escape(query.action) : "" ),
+			twitterConfig.callbackUrl + ( query.action && query.action != "" ? "?action="+querystring.escape(query.action) : "" ),
 			"HMAC-SHA1");
 
-		oa.getOAuthRequestToken(function(error, oauth_token, oauth_token_secret, results){
-		  
-			if(error) {
+		oa.getOAuthRequestToken(function(error, oauth_token, oauth_token_secret, oauth_authorize_url, additionalParameters ) {
 		
-				self.failed(error);
-			
-			} else { 
-				
-				// store the oa config in the session
-				
-				req._requestUrl			= oa._requestUrl;
-				req._authorize_callback = oa._authorize_callback;
-				
-				// - - - and tokens
-				
-				req.oauth_token = oauth_token;
-				req.oauth_token_secret = oauth_token_secret;
-				
-				var redirectUrl = "https://www.google.com/accounts/OAuthAuthorizeToken?oauth_token="+oauth_token;
-				
-				self.completed(redirectUrl);
-			}
+          if (error) {
+            
+			self.failed(error);
+          
+		  } else {
 		  
+            req.twitter_redirect_url = req.url;
+            req.twitter_oauth_token_secret = oauth_token_secret;
+            req.twitter_oauth_token = oauth_token;
+            
+			self.complete("http://twitter.com/oauth/authenticate?oauth_token=" + oauth_token);
+          }
+        
 		});
 	},
 	
@@ -134,74 +127,72 @@ util.extend (google.prototype, {
 		var tokens = req.user.tokens;
 		
 		var oa = new OAuth(tokens._requestUrl,
-			googleConfig.accessTokenUrl,
-			googleConfig.clientId,
-			googleConfig.clientSecret,
+			twitterConfig.accessTokenUrl,
+			twitterConfig.clientId,
+			twitterConfig.clientSecret,
 			"1.0",
 			tokens._authorize_callback,
 			"HMAC-SHA1");
 
-		oa.getOAuthAccessToken(
-
-			tokens.oauth_token, 
-			tokens.oauth_token_secret, 
-			query['oauth_verifier'], 
-			function(error, oauth_access_token, oauth_access_token_secret, results) {
-
+		oa.getOAuthAccessToken(query.oauth_token, tokens.twitter_oauth_token_secret,
+			function(error, oauth_token, oauth_token_secret, additionalParameters ) {
 				if (error) {
-					
 					self.failed(error);
-					
 				} else {
-
-					// store the access token in the session
-					tokens.oauth_access_token = oauth_access_token;
-					tokens.oauth_access_token_secret = oauth_access_token_secret;
 					
-					var redirectUrl = (query.action && query.action != "") ? query.action : "/"
-					self.completed(redirectUrl);
-				}
+					tokens.twitter_oauth_token_secret = oauth_token_secret;
+					tokens.twitter_oauth_token = oauth_token;
+					
+					console.log (additionalParameters);
+					
+					self.complete(self.mappingUser(additionalParameters));
 			}
-		);
+		});
 	},
 	
-	profile: function() {
-		var self = this;
-		var req = self.req;
-		var tokens = req.user.tokens;
-		
-		var oa = new OAuth(tokens._requestUrl,
-			googleConfig.accessTokenUrl,
-			googleConfig.clientId,
-			googleConfig.clientSecret,
-			"1.0",
-			tokens._authorize_callback,
-			"HMAC-SHA1");
-		
-		oa._headers['GData-Version'] = '2'; 
-		
-		oa.getProtectedResource(
-			"https://www.googleapis.com/oauth2/v1/userinfo", 
-			"GET", 
-			tokens.oauth_access_token, 
-			tokens.oauth_access_token_secret,
-			function (error, data, response) {
-				
-				if (error) {
-					self.failed(error.message);
-				} else {
-					try {
-						var user = JSON.parse(data);
-						self.completed(self.mappingUser(user));
-					} catch (e) {
-						self.failed(e);
-					}
-				}
-			}
-		);
-	},
+//	profile: function() {
+//		var self = this;
+//		var req = self.req;
+//		var tokens = req.user.tokens;
+//		
+//		var oa = new OAuth(tokens._requestUrl,
+//			twitterConfig.accessTokenUrl,
+//			twitterConfig.clientId,
+//			twitterConfig.clientSecret,
+//			"1.0",
+//			tokens._authorize_callback,
+//			"HMAC-SHA1");
+//		
+//		oa._headers['GData-Version'] = '2'; 
+//		
+//		oa.getProtectedResource(
+//			"https://www.googleapis.com/oauth2/v1/userinfo", 
+//			"GET", 
+//			tokens.oauth_access_token, 
+//			tokens.oauth_access_token_secret,
+//			function (error, data, response) {
+//				
+//				if (error) {
+//					self.failed(error.message);
+//				} else {
+//					try {
+//						var user = JSON.parse(data);
+//						self.completed(self.mappingUser(user));
+//					} catch (e) {
+//						self.failed(e);
+//					}
+//				}
+//			}
+//		);
+//	},
 	
 	mappingUser: function(user) {
+		
+		var user = {
+			user_id: user.user_id,
+			username: user.screen_name
+		};
+		
 		
 		return {
 			name: user.name,
