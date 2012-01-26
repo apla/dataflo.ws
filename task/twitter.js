@@ -57,7 +57,7 @@ util.extend (twitter.prototype, {
             req.twitter_oauth_token_secret = oauth_token_secret;
             req.twitter_oauth_token = oauth_token;
             
-			self.complete("http://twitter.com/oauth/authenticate?oauth_token=" + oauth_token);
+			self.completes("http://twitter.com/oauth/authenticate?oauth_token=" + oauth_token);
           }
         
 		});
@@ -89,7 +89,7 @@ util.extend (twitter.prototype, {
 					
 					console.log (additionalParameters);
 					
-					self.complete(self.mappingUser(additionalParameters));
+					self.completed(self.mappingUser(additionalParameters));
 			}
 		});
 	},
