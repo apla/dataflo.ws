@@ -5,66 +5,43 @@ var OAuth2 = require('oauth').OAuth2,
 	
 // - - - static
 
-var facebookConfig = project.config.consumerConfig.facebook;
-var facebookScopes = (facebookConfig ? facebookConfig.scopes : null);
+var vkontakteConfig = project.config.consumerConfig.vkontakte;
+var vkontakteScopes = (vkontakteConfig ? vkontakteConfig.scopes : null);
 
-if (!facebookScopes) {
+if (!vkontakteScopes) {
 
-	util.extend (facebookConfig, {	
+	util.extend (vkontakteConfig, {	
 		"scopes": {
-			"profile"			: "user_about_me",
-			"email"				: "email",
-			"activities"		: "user_activities",
-			"birthday"			: "user_birthday",
-			"checkins"			: "user_checkins",
-			"education_history"	: "user_education_history",
-			"events"			: "user_events",
-			"groups"			: "user_groups",
-			"hometown"			: "user_hometown",
-			"interests"			: "user_interests",
-			"likes"				: "user_likes",
-			"location"			: "user_location",
-			"notes"				: "user_notes",
-			"online_presence"	: "user_online_presence",
-			"photo_video_tags"	: "user_photo_video_tags",
-			"photos"			: "user_photos",
-			"questions"			: "user_questions",
-			"relationships"		: "user_relationships",
-			"relationship_details"	: "user_relationship_details",
-			"religion_politics"		: "user_religion_politics",
-			"status"			: "user_status",
-			"videos"			: "user_videos",
-			"website"			: "user_website",
-			"work_history"		: "user_work_history",
-			"contacts"			: "read_friendlists",
-			"insights"			: "read_insights",
-			"mailbox"			: "read_mailbox",
-			"requests"			: "read_requests",
-			"stream"			: "read_stream",
-			"xmpp_login"		: "xmpp_login",
-			"ads_management"	: "ads_management",
-			"create_event"		: "create_event",
-			"manage_friendlists"	: "manage_friendlists",
-			"manage_notifications"	: "manage_notifications",
-			"offline_access"		: "offline_access",
-			"publish_checkins"		: "publish_checkins",
-			"publish_stream"		: "publish_stream",
-			"rsvp_event"		: "rsvp_event",
-			"publish_actions"	: "publish_actions"
+			"notify": "notify",
+			"contacts": "friends",
+			"photos": "photos",
+			"audio": "audio",
+			"video": "video",
+			"docs": "docs",
+			"notes": "notes",
+			"pages": "pages",
+			"offers": "offers",
+			"questions": "questions",
+			"wall": "wall",
+			"groups": "groups",
+			"messages": "messages",
+			"notifications": "notifications",
+			"ads": "ads",
+			"offline": "offline",
+			"nohttps": "nohttps"
 		}
 	});
 	
-	facebookScopes = facebookConfig.scopes;
+	vkontakteScopes = vkontakteConfig.scopes;
 	
-	console.log ('<------facebookConfig', facebookConfig);
+	console.log ('<------vkontakteConfig', vkontakteConfig);
 }
 
 // - - -
 
-var facebook = module.exports = function(config) {
+var vkontakte = module.exports = function(config) {
 
 	this.scopes = [
-		"profile",
 		"contacts"
 	];
 
@@ -72,9 +49,9 @@ var facebook = module.exports = function(config) {
 
 };
 
-util.inherits (facebook, task);
+util.inherits (vkontakte, task);
 
-util.extend (facebook.prototype, {
+util.extend (vkontakte.prototype, {
 
 	run: function() {
 		
@@ -93,20 +70,18 @@ util.extend (facebook.prototype, {
 		var scopes = [];
 		
 		self.scopes.map(function(scope) {
-			scopes.push (facebookScopes[scope]);
+			scopes.push (vkontakteScopes[scope]);
 		});
 		
 		var getParams = {
-			client_id: facebookConfig.appId,
-			redirect_uri: facebookConfig.callbackUrl,
+			client_id: vkontakteConfig.appId,
+			response_type : "code",
+			redirect_uri: vkontakteConfig.callbackUrl,
 			scope: scopes.join(','),
 		};
 		
-		var redirectUrl = facebookConfig.requestTokenUrl + "?" + querystring.stringify(getParams);
+		var redirectUrl = vkontakteConfig.requestTokenUrl + "?" + querystring.stringify(getParams);
 		
-		//req._requestUrl			= redirectUrl;
-		//req._authorize_callback = facebookConfig.redirectUrl + ( query.action && query.action != "" ? "?action="+querystring.escape(query.action) : "" );
-			
 		self.completed(redirectUrl);
 	},
 	
@@ -121,18 +96,22 @@ util.extend (facebook.prototype, {
 			self.failed (query.error_description || "token was not accepted");
 		}
 		
-		var oa = new OAuth2(facebookConfig.appId,  facebookConfig.appSecret,  facebookConfig.baseUrl);
+		var oa = new OAuth2(vkontakteConfig.appId,  vkontakteConfig.appSecret,  vkontakteConfig.baseUrl);
 		
 		oa.getOAuthAccessToken(
 			query.code,
-			{redirect_uri: facebookConfig.callbackUrl},
+			{},
 			function( error, access_token, refresh_token ){
+			
+				console.log ('<--------------vkontakte', arguments);
 				
 				if (error) {
 					
 					self.failed(error);
-				
+									
 				} else {
+					
+					//{"access_token":"533bacf01e11f55b536a565b57531ac114461ae8736d6506a3", "expires_in":43200, "user_id":6492}
 					
 					tokens.oauth_access_token = access_token;
 					if (refresh_token) tokens.oauth_refresh_token = refresh_token;
@@ -150,10 +129,10 @@ util.extend (facebook.prototype, {
 		var req = self.req;
 		var tokens = req.user.tokens;
 		
-		var oa = new OAuth2(facebookConfig.appId,  facebookConfig.appSecret,  facebookConfig.baseUrl);
+		var oa = new OAuth2(vkontakteConfig.appId,  vkontakteConfig.appSecret,  vkontakteConfig.baseUrl);
 		
 		oa.getProtectedResource(
-			facebookConfig.baseUrl+"/me",
+			"https://api.vkontakte.ru/method/getProfiles?uid=", //"66748",
 			tokens.oauth_access_token,
 			function (error, data, response) {
 				
@@ -174,8 +153,8 @@ util.extend (facebook.prototype, {
 		
 		return {
 			name: user.name,
-			email: user.username + "@facebook.com",
-			avatar: "http://graph.facebook.com/" + user.username + "/picture",
+			email: user.username + "@vkontakte.com",
+			avatar: "http://graph.vkontakte.com/" + user.username + "/picture",
 			link: user.link
 		};
 		
