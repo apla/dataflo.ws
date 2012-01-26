@@ -6,6 +6,9 @@ var OAuth = require('oauth').OAuth,
 // - - - static	
 	
 var twitterConfig = project.config.consumerConfig.twitter;
+
+console.log ('<------twitterConfig', twitterConfig);
+
 	
 // - - -
 
