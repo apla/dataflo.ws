@@ -7,7 +7,7 @@ var OAuth = require('oauth').OAuth,
 	
 var twitterConfig = project.config.consumerConfig.twitter;
 
-console.log ('<------twitterConfig', twitterConfig);
+//console.log ('<------twitterConfig', twitterConfig);
 
 	
 // - - -
@@ -119,7 +119,7 @@ util.extend (twitter.prototype, {
 					try {
 						var user = JSON.parse(data);
 						
-						console.log ('<---------user', user);
+						//console.log ('<---------user', user);
 						
 						self.completed(self.mappingUser(user));
 					} catch (e) {
@@ -132,17 +132,11 @@ util.extend (twitter.prototype, {
 	
 	mappingUser: function(user) {
 		
-		var user = {
-			user_id: user.user_id,
-			username: user.screen_name
-		};
-		
-		
 		return {
 			name: user.name,
-			email: user.email,
-			avatar: user.picture,
-			link: user.link
+			email: user.screen_name+"@twitter.com",
+			avatar: user.profile_image_url,
+			link: "https://twitter.com/?id="+user.link
 		};
 		
 	}
