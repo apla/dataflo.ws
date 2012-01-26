@@ -101,24 +101,18 @@ util.extend (vkontakte.prototype, {
 		oa.getOAuthAccessToken(
 			query.code,
 			{},
-			function( error, access_token, refresh_token ){
+			function( error, access_token, refresh_token, results){
 			
-				console.log ('<--------------vkontakte', arguments);
-				
 				if (error) {
 					
 					self.failed(error);
 									
 				} else {
 					
-					//{"access_token":"533bacf01e11f55b536a565b57531ac114461ae8736d6506a3", "expires_in":43200, "user_id":6492}
-					
 					tokens.oauth_access_token = access_token;
 					if (refresh_token) tokens.oauth_refresh_token = refresh_token;
 					
-					var redirectUrl = (query.action && query.action != "") ? query.action : "/";
-					self.completed (redirectUrl)
-					
+					self.completed (results.user_id);
 				}
 		});
 	},
@@ -132,7 +126,7 @@ util.extend (vkontakte.prototype, {
 		var oa = new OAuth2(vkontakteConfig.appId,  vkontakteConfig.appSecret,  vkontakteConfig.baseUrl);
 		
 		oa.getProtectedResource(
-			"https://api.vkontakte.ru/method/getProfiles?uid=", //"66748",
+			"https://api.vkontakte.ru/method/getProfiles?id="+self.userId,
 			tokens.oauth_access_token,
 			function (error, data, response) {
 				
