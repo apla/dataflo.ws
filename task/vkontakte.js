@@ -123,10 +123,15 @@ util.extend (vkontakte.prototype, {
 		var req = self.req;
 		var tokens = req.user.tokens;
 		
+		var options = {
+			uid: self.userId,
+			fields: 'uid,first_name,last_name,nickname,screen_name,photo'
+		};
+		
 		var oa = new OAuth2(vkontakteConfig.appId,  vkontakteConfig.appSecret,  vkontakteConfig.baseUrl, vkontakteConfig.authorizeUrl, vkontakteConfig.accessTokenUrl);
 		
 		oa.getProtectedResource(
-			"https://api.vkontakte.ru/method/getProfiles?uid="+self.userId,
+			"https://api.vkontakte.ru/method/getProfiles?"+querystring.stringify(options),
 			tokens.oauth_access_token,
 			function (error, data, response) {
 				
@@ -146,10 +151,10 @@ util.extend (vkontakte.prototype, {
 	mappingUser: function(user) {
 		
 		return {
-			name: user.name,
-			email: user.username + "@vkontakte.com",
-			avatar: "http://graph.vkontakte.com/" + user.username + "/picture",
-			link: user.link
+			name: user.first_name+' '+user.last_name,
+			email: (user.nickname || screen_name || user.first_name+' '+user.last_name)+ "@vkontakte.com",
+			avatar: user.photo,
+			link: "http://vk.com/id"+user.uid
 		};
 		
 	}
