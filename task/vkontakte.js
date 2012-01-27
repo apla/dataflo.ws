@@ -125,7 +125,7 @@ util.extend (vkontakte.prototype, {
 		
 		var options = {
 			uid: self.userId,
-			fields: 'uid,first_name,last_name,nickname,screen_name,photo'
+			fields: 'uid,first_name,last_name,nickname,photo'
 		};
 		
 		var oa = new OAuth2(vkontakteConfig.appId,  vkontakteConfig.appSecret,  vkontakteConfig.baseUrl, vkontakteConfig.authorizeUrl, vkontakteConfig.accessTokenUrl);
@@ -152,7 +152,7 @@ util.extend (vkontakte.prototype, {
 		
 		return {
 			name: user.first_name+' '+user.last_name,
-			email: (user.nickname || screen_name || user.first_name+' '+user.last_name)+ "@vkontakte.com",
+			email: (user.nickname || user.first_name+' '+user.last_name)+ "@vkontakte.com",
 			avatar: user.photo,
 			link: "http://vk.com/id"+user.uid
 		};
