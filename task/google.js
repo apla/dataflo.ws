@@ -49,7 +49,7 @@ if (!googleScopes) {
 		googleScopes[scope] = [googleScopes[scope], querystring.escape(googleScopes[scope])];
 	}
 	
-	console.log ('<------------------ google',  googleConfig);
+//	console.log ('<------------------ google',  googleConfig);
 
 }
 	

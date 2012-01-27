@@ -34,7 +34,7 @@ if (!vkontakteScopes) {
 	
 	vkontakteScopes = vkontakteConfig.scopes;
 	
-	console.log ('<------vkontakteConfig', vkontakteConfig);
+//	console.log ('<------vkontakteConfig', vkontakteConfig);
 }
 
 // - - -
@@ -126,7 +126,7 @@ util.extend (vkontakte.prototype, {
 		var oa = new OAuth2(vkontakteConfig.appId,  vkontakteConfig.appSecret,  vkontakteConfig.baseUrl, vkontakteConfig.authorizeUrl, vkontakteConfig.accessTokenUrl);
 		
 		oa.getProtectedResource(
-			"https://api.vkontakte.ru/method/getProfiles?id="+self.userId,
+			"https://api.vkontakte.ru/method/getProfiles?uid="+self.userId,
 			tokens.oauth_access_token,
 			function (error, data, response) {
 				

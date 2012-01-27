@@ -56,7 +56,7 @@ if (!facebookScopes) {
 	
 	facebookScopes = facebookConfig.scopes;
 	
-	console.log ('<------facebookConfig', facebookConfig);
+//	console.log ('<------facebookConfig', facebookConfig);
 }
 
 // - - -
