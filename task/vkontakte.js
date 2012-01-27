@@ -139,7 +139,7 @@ util.extend (vkontakte.prototype, {
 					self.failed(error);
 				} else {
 					try {
-						var user = JSON.parse(data);
+						var user = JSON.parse(data).response[0];
 						self.completed(self.mappingUser(user));
 					} catch (e) {
 						self.failed(e);
