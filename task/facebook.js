@@ -1,4 +1,4 @@
-var OAuth2 = require('oauth').OAuth2,
+var OAuth2 = require('lib/node-oauth').OAuth2,
 	querystring = require('querystring'),
 	task = require('task/base'),
 	util = require('util');
