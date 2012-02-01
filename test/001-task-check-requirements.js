@@ -6,7 +6,8 @@ var workflow = require ('../workflow');
 
 clearInterval (global.currentDateInterval);
 
-var checkTaskParams = workflow.prototype.checkTaskParams;
+var checkTaskParams  = workflow.prototype.checkTaskParams;
+var taskRequirements = workflow.prototype.taskRequirements;
 
 var data = {
 	boolExp: "{$data.bool}",
@@ -47,6 +48,31 @@ var dict = {
 	arr: ['a', 'b'],
 };
 
+test('findInterpolation', {
+	'simple': function() {
+		var result = common.findInterpolation (data);
+		console.log (result);
+		assert.deepEqual (result, {
+			boolExp: [ 'data.bool' ],
+			'checkFalse.falseExp': [ 'data.no' ],
+			'checkFalse.zeroExp': [ 'data.zero' ],
+			'checkFalse.emptyExp': [ 'data.empty' ],
+			'checkFalse.emptyArr': [ 'data.emptyArr' ],
+			'checkFalse.emptyObj': [ 'data.emptyObj' ],
+			'exception.stringExp2': [ 'badString' ],
+			'exception.nothing': [ 'erlkjgnwlekrjgn' ],
+			stringExp: [ 'data.string' ],
+			stringExp3: [ 'okString' ],
+			numberExp: [ 'data.number' ],
+			inlineExp: [ 'data.string', 'data.number' ],
+			arrayExp: [ 'arr' ],
+			objectExp: [ 'data' ],
+			'arrayExtExp.0': [ 'data' ],
+			'arrayExtExp.1': [ 'data.number' ]
+		});
+	}
+});
+
 test('check task requirements', {
 	'expandFailNoThrow': function() {
 		var result = checkTaskParams (data, dict);
@@ -62,7 +88,47 @@ test('check task requirements', {
 			"exception.stringExp2",
 			"exception.nothing"
 		]);
-	},
+	}
+});
+
+
+test('compare interpolation', {
+	'simple': function() {
+		var byTreeWalk = checkTaskParams (data, dict);
+//		console.log (result);
+
+		var interpolateWhat  = common.findInterpolation (data);
+		var taskWaitingFor   = taskRequirements (interpolateWhat, dict);
+		
+		// strictly saying string exception below is incorrect
+		// because pathToVal is flawed
+		assert.deepEqual (taskWaitingFor, [
+			'checkFalse.falseExp',
+			'checkFalse.zeroExp',
+			'checkFalse.emptyExp',
+			'checkFalse.emptyArr',
+			'checkFalse.emptyObj',
+			'exception.nothing'
+		]);
+		
+		console.log (taskWaitingFor);
+		
+//		var byDirectValueSet = ;
+
+		assert.strictEqual (byTreeWalk.modified.arrayExtExp[1], 123);
+		assert.deepEqual (byTreeWalk.failed, [
+			"checkFalse.falseExp",
+			"checkFalse.zeroExp",
+			"checkFalse.emptyExp",
+			"checkFalse.emptyArr",
+			"checkFalse.emptyObj",
+			
+			"exception.stringExp2",
+			"exception.nothing"
+		]);
+	}
+});
+
 
 //	'expandString': function() {
 //		var result = data.stringExp.interpolate (dict);
@@ -101,5 +167,3 @@ test('check task requirements', {
 //			number: 123
 //		});
 //	}
-
-});

@@ -335,7 +335,6 @@ util.extend (mongoRequestTask.prototype, {
 			var idList = self.data.map (function (item) {
 
 				if (item._id && item._id != "") {
-
 					//var id = self._objectId (item._id);
 
 					var set = {};

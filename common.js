@@ -98,15 +98,77 @@ var pathToVal = module.exports.pathToVal = function (dict, path, value) {
 	return pathToVal (dict[chunks.shift()], chunks.join('.'), value)
 }
 
+
+var findInterpolation = module.exports.findInterpolation = function (params, prefix) {
+	
+	// parse task params
+	// TODO: modify this function because recursive changes of parameters works dirty (indexOf for value)
+	
+	if (prefix == void 0) prefix = '';
+	if (prefix) prefix += '.';
+	
+	var found = {};
+	
+	if (params.constructor == Array) { // params is array
+		
+		params.forEach(function (val, index, arr) {
+			
+			if (val.indexOf && val.interpolate) { // string				
+				
+				var tmp = val.interpolate ({}, false, true);
+				
+				if (tmp !== void 0) {
+					found[prefix + index] = tmp;
+				}
+
+			} else if (!val.toFixed) { // array and object (check for function and boolean)
+				var result = findInterpolation (val, prefix+index);
+				for (var attrname in result) {
+					found[attrname] = result[attrname];
+				}
+			}
+		});
+		
+	} else { // params is hash
+	
+		modifiedParams = {};
+		
+		for (var key in params) {
+			var val = params[key];
+
+			if (val.indexOf && val.interpolate) { // string				
+				
+				var tmp = val.interpolate ({}, false, true);
+				
+				if (tmp !== void 0) {
+					found[prefix + key] = tmp;
+				}
+
+			} else if (!val.toFixed) { // array and object (check for function and boolean)
+				var result = findInterpolation (val, prefix+key);
+				for (var attrname in result) {
+					found[attrname] = result[attrname];
+				}
+			}
+		}
+	}
+	
+	return found;
+}
+
 var define;
 if (typeof define === "undefined")
 	define = function () {}
 
 define (function (require, exports, module) {
-	return {pathToVal: pathToVal};
+	return {
+		pathToVal: pathToVal,
+		findInterpolation: findInterpolation
+	};
 });
 
-String.prototype.interpolate = function (dict, marks) {
+
+String.prototype.interpolate = function (dict, marks, checkOnly) {
 	if (!marks)
 		marks = {
 			start: '{$', end: '}', path: '.'
@@ -114,12 +176,20 @@ String.prototype.interpolate = function (dict, marks) {
 	
 	var result;
 	
+	var interpolatePaths = [];
+	
 	var template = this;
 	
 	var pos = this.indexOf (marks.start);
 	while (pos > -1) {
 		var end = (result || this).indexOf (marks.end, pos);
 		var str = (result || this).substr (pos + 2, end - pos - 2);
+		
+		if (checkOnly && str) {
+			interpolatePaths.push (str);
+			pos = this.indexOf (marks.start, end);
+			continue;
+		}
 		
 //		console.log ("found replacement: key => ???, requires => $"+this+"\n");
 		
@@ -148,6 +218,9 @@ String.prototype.interpolate = function (dict, marks) {
 		else
 			break;
 	}
+	
+	if (checkOnly)
+		return interpolatePaths;
 	
 	return result;
 
