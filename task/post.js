@@ -35,7 +35,7 @@ util.extend (postTask.prototype, {
 			var body = {fields: fields, files: files};
 			self.request.body = body;
 			
-			console.log ('<---------', body);
+			//console.log ('<---------', body);
 			
 			self.completed (body);
 		});

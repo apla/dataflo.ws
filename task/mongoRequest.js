@@ -333,8 +333,6 @@ util.extend (mongoRequestTask.prototype, {
 				
 				if (item._id && item._id != "") {
 					
-					//var id = self._objectId (item._id);
-					
 					var set = {};
 					
 					for (var k in item) {
