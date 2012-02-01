@@ -23,10 +23,10 @@ function isEmpty(obj) {
     // that that property is correct.
     if (obj === true)
 		return !obj;
-	
+
 	if (obj.toFixed && obj !== 0)
 		return false;
-	
+
 	if (obj.length && obj.length > 0)
 		return false;
 
@@ -34,7 +34,7 @@ function isEmpty(obj) {
         if (hasOwnProperty.call(obj, key))
 			return false;
     }
-	
+
     return true;
 }
 
@@ -59,31 +59,32 @@ function taskRequirements (requirements, dict) {
 
 
 function checkTaskParams (params, dict, prefix) {
-	
+
 	// parse task params
-	// TODO: modify this function because recursive changes of parameters works dirty (indexOf for value)
-	
+	// TODO: modify this function because recursive changing of parameters
+	// works dirty (indexOf for value)
+
 	if (prefix == void 0) prefix = '';
 	if (prefix) prefix += '.';
-	
+
 	var modifiedParams;
 	var failedParams = [];
-	
+
 	if (params.constructor == Array) { // params is array
-		
+
 		modifiedParams = [];
-		
+
 		params.forEach(function (val, index, arr) {
-			
-			if (val.indexOf || val.interpolate) { // string				
-				
+
+			if (val.indexOf || val.interpolate) { // string
+
 				try {
 					var tmp = val.interpolate (dict);
 					if (tmp === void 0)
 						modifiedParams.push(val);
 					else
 						modifiedParams.push(tmp);
-						
+
 //					console.log (val, ' interpolated to the "', modifiedParams[key], '" and ', isEmpty (modifiedParams[key]) ? ' is empty' : 'is not empty');
 
 					if (isEmpty (modifiedParams[modifiedParams.length-1]))
@@ -100,59 +101,70 @@ function checkTaskParams (params, dict, prefix) {
 				failedParams = failedParams.concat (result.failed);
 			}
 		});
-		
+
 	} else { // params is hash
-	
+
 		modifiedParams = {};
-		
+
 		for (var key in params) {
 			var val = params[key];
 			var valCheck = val;
 			if (val.interpolate) { // val is string || number
-				
+
 				try {
 					var tmp = modifiedParams[key] = val.interpolate (dict);
 					if (tmp === void 0)
 						modifiedParams[key] = val;
 //					if (tmp === false || tmp === 0 || tmp === "")
-						
+
 //					console.log (val, ' interpolated to the "', modifiedParams[key], '" and ', isEmpty (modifiedParams[key]) ? ' is empty' : 'is not empty');
 					if (isEmpty (modifiedParams[key]))
 						throw "EMPTY VALUE";
-					
+
 				} catch (e) {
-					
+
 					failedParams.push (prefix+key);
-				
+
 				}
-				
+
 			} else if (val.toFixed) {
 				modifiedParams[key] = val;
 			} else { // val is hash || array
-				
+
 				var result = checkTaskParams(val, dict, prefix+key);
-				
+
 				modifiedParams[key] = result.modified;
 				failedParams = failedParams.concat (result.failed);
 			}
 		}
 	}
-	
+
 	return {
 		modified: modifiedParams,
 		failed: failedParams || []
 	};
 }
 
+/**
+ * @class workflow
+ * @extends events.EventEmitter
+ *
+ * The heart of the framework. Parses task configurations, loads dependencies,
+ * launches tasks, stores their result. When all tasks are completed,
+ * notifies subscribers (inititators).
+ *
+ * @cfg {Object} config (required) Workflow configuration.
+ * @cfg {Object} reqParam (required) Workflow parameters.
+ */
 var workflow = module.exports = function (config, reqParam) {
-	
+
 	var self = this;
 	util.extend (true, this, config);
 	util.extend (true, this, reqParam);
-	
+
 	this.created = new Date().getTime();
 	this.id      = this.id || this.created % 1e6;
-	
+
 	if (!this.stage) this.stage = 'workflow';
 
 	//if (!this.stageMarkers[this.stage])
@@ -171,26 +183,26 @@ var workflow = module.exports = function (config, reqParam) {
 		} catch (e) {
 			return item;
 		}
-		
+
 	}).join ('');
 
 	this.data = this.data || {};
-	
+
 //	console.log ('!!!!!!!!!!!!!!!!!!!' + this.data.keys.length);
-	
+
 //	console.log ('config, reqParam', config, reqParam);
-	
+
 	self.ready = true;
-	
+
 	// TODO: optimize usage - find placeholders and check only placeholders
-	
+
 	this.tasks = config.tasks.map (function (taskParams) {
 		var task;
 
 		var checkRequirements = function () {
-			
+
 			var result = checkTaskParams (taskParams, self);
-			
+
 			if (result.failed && result.failed.length > 0) {
 				this.unsatisfiedRequirements = result.failed;
 				return false;
@@ -199,13 +211,13 @@ var workflow = module.exports = function (config, reqParam) {
 				return true;
 			}
 		}
-		
+
 		//console.log (taskParams);
-		
+
 		if (taskParams.className) {
 //			self.log (taskParams.className + ': initializing task from class');
 			var xTaskClass;
-			
+
 			// TODO: need check all task classes, because some compile errors may be there
 //			console.log ('task/'+taskParams.className);
 			try {
@@ -215,7 +227,7 @@ var workflow = module.exports = function (config, reqParam) {
 				self.ready = false;
 				return;
 			}
-			
+
 			task = new xTaskClass ({
 				className: taskParams.className,
 				method:    taskParams.method,
@@ -223,11 +235,11 @@ var workflow = module.exports = function (config, reqParam) {
 				important: taskParams.important
 			});
 		} else if (taskParams.coderef || taskParams.functionName) {
-		
+
 //			self.log ((taskParams.functionName || taskParams.logTitle) + ': initializing task from function');
 			if (!taskParams.functionName && !taskParams.logTitle)
 				throw "task must have a logTitle when using call parameter";
-			
+
 			var xTaskClass = function (config) {
 				this.init (config);
 			};
@@ -246,7 +258,7 @@ var workflow = module.exports = function (config, reqParam) {
 								var fChunk = fSplit.shift();
 								functionRef = functionRef[fChunk];
 							}
-							
+
 							this.completed (functionRef.call (taskParams.bind, this));
 						} catch (e) {
 							failed = 'failed call function "'+taskParams.functionName+'" from ' + taskParams.bind + ' with ' + e;
@@ -277,21 +289,21 @@ var workflow = module.exports = function (config, reqParam) {
 					if (failed) throw failed;
 				}
 			});
-			
+
 			task = new xTaskClass ({
 				functionName: taskParams.functionName,
 				logTitle:     taskParams.logTitle,
 				require:      checkRequirements,
 				important:    taskParams.important
 			});
-			
+
 		}
-		
+
 //		console.log (task);
-		
+
 		return task;
 	});
-	
+
 };
 
 util.inherits (workflow, EventEmitter);
@@ -326,42 +338,45 @@ util.extend (workflow.prototype, {
 	taskRequirements: taskRequirements,
 	isIdle: true,
 	haveCompletedTasks: false,
+
+	/**
+	 * @method run Initiators call this method to launch the workflow.
+	 */
 	run: function () {
-		
 		if (!this.started)
 			this.started = new Date().getTime();
-		
+
 		var self = this;
-		
+
 		if (self.stopped)
 			return;
-		
+
 		self.failed = false;
 		self.isIdle = false;
 		self.haveCompletedTasks = false;
-				
+
 //		self.log ('workflow run');
-		
+
 		this.taskStates = [0, 0, 0, 0, 0, 0, 0];
-		
+
 		// check task states
-		
+
 		this.tasks.map (function (task) {
-			
+
 			if (task.subscribed === void(0)) {
 				self.addEventListenersToTask (task);
 			}
-			
+
 			task.checkState ();
-			
+
 			self.taskStates[task.state]++;
-			
+
 //			console.log ('task.className, task.state\n', task, task.state, task.isReady ());
-			
+
 			if (task.isReady ()) {
 				self.logTask (task, 'started');
 				task.run ();
-				
+
 				// sync task support
 				if (!task.isReady()) {
 					self.taskStates[task.stateNames.ready]--;
@@ -371,13 +386,13 @@ util.extend (workflow.prototype, {
 		});
 
 		var taskStateNames = taskClass.prototype.stateNames;
-		
+
 		if (this.taskStates[taskStateNames.ready] || this.taskStates[taskStateNames.running]) {
 			// it is save to continue, wait for running/ready task
 			console.log ('have running tasks');
-			
+
 			self.isIdle = true;
-			
+
 			return;
 		} else if (self.haveCompletedTasks) {
 			console.log ('have completed tasks');
@@ -385,16 +400,16 @@ util.extend (workflow.prototype, {
 			setTimeout (function () {
 				self.run ();
 			}, 0);
-			
+
 			self.isIdle = true;
-			
+
 			return;
 		}
-		
+
 		self.stopped = new Date().getTime();
-		
+
 		var scarceTaskMessage = 'unsatisfied requirements: ';
-	
+
 		// TODO: display scarce tasks unsatisfied requirements
 		if (this.taskStates[taskStateNames.scarce]) {
 			self.tasks.map (function (task) {
@@ -407,7 +422,7 @@ util.extend (workflow.prototype, {
 					self.failed = true;
 					scarceTaskMessage += '(important)';
 				}
-				
+
 				if (task.state == taskStateNames.scarce)
 					scarceTaskMessage += (task.logTitle) + ' => ' + task.unsatisfiedRequirements.join (', ') + '; ';
 			});
@@ -425,23 +440,23 @@ util.extend (workflow.prototype, {
 					requestDump = e
 			};
 		}
-		
+
 		if (this.failed) {
 			// workflow stopped and failed
-		
+
 			self.emit ('failed', self);
 			self.log (this.stage + ' failed in ' + (self.stopped - self.started) + 'ms; ' + this.taskStates[taskStateNames.failed]+' tasks of ' + self.tasks.length);
 
 		} else {
 			// workflow stopped and not failed
-		
+
 			self.emit ('completed', self);
 			self.log (this.stage + ' complete in ' + (self.stopped - self.started) + 'ms');
 
 		}
-		
+
 		self.isIdle = true;
-		
+
 	},
 	stageMarker: {prepare: "()", workflow: "[]", presentation: "<>"},
 	log: function (msg) {
@@ -453,12 +468,12 @@ util.extend (workflow.prototype, {
 		for (var i = 0, len = arguments.length; i < len; ++i) {
 			toLog.push (arguments[i]);
 		}
-		
+
 		try {if (PhoneGap) {
 			toLog.shift();
 			toLog = [toLog.join (' ')];
 		}} catch (e) {};
-		
+
 		console.log.apply (console, toLog);
 	},
 	logTask: function (task, msg) {
@@ -470,22 +485,20 @@ util.extend (workflow.prototype, {
 	},
 	addEventListenersToTask: function (task) {
 		var self = this;
-		
+
 		task.subscribed = 1;
-		
+
 		// loggers
 		task.on ('log', function (message) {
-			self.logTask (task, message); 
+			self.logTask (task, message);
 		});
 
 		task.on ('warn', function (message) {
-			self.logTaskError (task, message); 
+			self.logTaskError (task, message);
 		});
-		
+
 		task.on ('error', function () {
 			self.logTaskError (task, 'error: ', arguments);// + '\n' + arguments[0].stack);
-			
-
 		});
 
 		// states
@@ -495,28 +508,28 @@ util.extend (workflow.prototype, {
 //				return self.logTaskError (task, 'error ' + arguments[0]);// + '\n' + arguments[0].stack);
 //			}
 			self.logTask (task, 'task skipped');
-			
+
 			if (self.isIdle)
 				self.run ();
-			
+
 		});
-		
+
 		task.on ('cancel', function () {
-			
+
 			self.logTaskError (task, 'canceled, retries = ' + task.retries);
 			self.failed = true;
-			
+
 			if (self.isIdle)
 				self.run ();
 		});
-		
+
 		task.on ('complete', function (t, result) {
-			
+
 			if (t.produce && result)
 				common.pathToVal (self, t.produce, result);
-			
+
 			self.logTask (task, 'task completed');
-			
+
 			if (self.isIdle)
 				self.run ();
 			else
