@@ -16,8 +16,10 @@ var taskStateNames = taskClass.prototype.stateNames;
 var hasOwnProperty = Object.prototype.hasOwnProperty;
 
 function isEmpty(obj) {
-
-    // Assume if it has a length property with a non-zero value
+	
+    if (obj === void 0)
+		return true;
+	// Assume if it has a length property with a non-zero value
     // that that property is correct.
     if (obj === true)
 		return !obj;
@@ -35,6 +37,26 @@ function isEmpty(obj) {
 	
     return true;
 }
+
+function taskRequirements (requirements, dict) {
+	
+	var result = [];
+	
+	for (var k in requirements) {
+		var requirement = requirements[k];
+		for (var i = 0; i < requirement.length; i++) {
+			try {
+				if (isEmpty (common.pathToVal (dict, requirement[i])))
+					result.push (k);
+			} catch (e) {
+				result.push (k);
+			}
+		}
+	}
+	
+	return result;
+}
+
 
 function checkTaskParams (params, dict, prefix) {
 	
@@ -159,6 +181,8 @@ var workflow = module.exports = function (config, reqParam) {
 //	console.log ('config, reqParam', config, reqParam);
 	
 	self.ready = true;
+	
+	// TODO: optimize usage - find placeholders and check only placeholders
 	
 	this.tasks = config.tasks.map (function (taskParams) {
 		var task;
@@ -299,6 +323,7 @@ function timestamp () {
 
 util.extend (workflow.prototype, {
 	checkTaskParams: checkTaskParams,
+	taskRequirements: taskRequirements,
 	isIdle: true,
 	haveCompletedTasks: false,
 	run: function () {
