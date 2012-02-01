@@ -140,7 +140,11 @@ util.extend (mongoRequestTask.prototype, {
 	// private method to create ObjectID
 	
 	_objectId: function (hexString) {
+		
+		if (!hexString.substring) return hexString;
+		
 		var ObjectID = project.connectors[this.connector].bson_serializer.ObjectID;
+		
 		return new ObjectID (hexString);
 	},
 	
@@ -364,7 +368,7 @@ util.extend (mongoRequestTask.prototype, {
 					self.emit ('log', 'strange things with _id: "'+item._id+'"');
 				}
 			});
-			
+			console.log ('<<<<<<<<<<<<<<<<<<<<<!!!!!!!!!!!!');
 			self.completed ({_id: {$in: idList}});
 		});
 	},
