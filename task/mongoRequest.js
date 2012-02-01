@@ -174,8 +174,21 @@ util.extend (mongoRequestTask.prototype, {
 			}
 
 			// find by filter or all records
-			if (filter && filter.substring)
-				filter = {_id: self._objectId (filter)};
+			if (filter) {
+				// filter is string
+				if (filter.substring) filter = {_id: self._objectId (filter)};
+				// filter is hash
+				if (filter._id) {
+					// filter._id is string
+					if (filter._id.substring) filter._id = self._objectId (filter._id);
+					// filter._id is hash with $in quantificators
+					if (filter._id['$in']) {
+						filter._id['$in'] = filter._id['$in'].map(function(id) {
+							return self._objectId (id);
+						});
+					}
+				}
+			}
 			
 			findArgs.unshift (filter || {});
 
@@ -342,7 +355,7 @@ util.extend (mongoRequestTask.prototype, {
 					
 					if (self.timestamp) set.updated = new Date().getTime();
 					
-					collection.update ({_id: item._id}, {$set: set});
+					collection.update ({_id: self._objectId(item._id)}, {$set: set});
 						
 					return item._id;
 					
