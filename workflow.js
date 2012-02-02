@@ -387,10 +387,11 @@ util.extend (workflow.prototype, {
 			);
 
 		} else if (self.haveCompletedTasks) {
-			
-			setTimeout (function () {
-				self.run ();
-			}, 0);
+			if ($isClientSide) {
+				setTimeout (function () {self.run ()}, 0);
+			} else if ($isServerSide) {
+				process.nextTick (function () {self.run ()});
+			}
 		
 		}
 	}
