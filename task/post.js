@@ -42,19 +42,23 @@ util.extend (postTask.prototype, {
 			 
 			self.request.on("end", function () {
 				 
-				var parsedData;
+				var fields;
 				 
 				if (self.dumpData) {
 					self.emit ('log', self.data);
 				}
 				 
 				if (self.jsonEncoded) {
-					parsedData = JSON.parse (self.data);
+					fields = JSON.parse (self.data);
 				} else {
-					parsedData = qs.parse (self.data);
+					fields = qs.parse (self.data);
 				}
+				
+				var body = {fields: fields};
+				
+				self.request.body = body;
 				 
-				self.completed ({fields: parsedData});
+				self.completed (body);
 			});
 			
 			return;
