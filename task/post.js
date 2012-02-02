@@ -24,6 +24,42 @@ util.extend (postTask.prototype, {
 		if (self.request.method != 'POST' && self.request.method != 'PUT')
 			return self.skipped ();
 
+		if (self.request.header['content-type'] == 'application/json') {
+			
+			var self = this;
+			 
+			self.data = "";
+			 
+			self.request.on("data", function (chunk) {
+				self.data += chunk;
+			});
+			 
+			self.request.on("error", function (e) {
+				self.emmitError(e);
+			});
+			 
+			// TODO: file uploads
+			 
+			self.request.on("end", function () {
+				 
+				var parsedData;
+				 
+				if (self.dumpData) {
+					self.emit ('log', self.data);
+				}
+				 
+				if (self.jsonEncoded) {
+					parsedData = JSON.parse (self.data);
+				} else {
+					parsedData = qs.parse (self.data);
+				}
+				 
+				self.completed (parsedData);
+			});
+			
+			return;
+		}
+		
 		var form = new formidable.IncomingForm();
 		form.parse(self.request, function(err, fields, files) {
 			
