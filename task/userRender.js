@@ -22,11 +22,11 @@ util.extend (userRender.prototype, {
 		
 		if (data && data.length > 0) {
 			
-			var userData = data[0];
+			var user = data[0];
 			
-			self.request.user = userData;
+			self.request.user = user;
 			
-			self.completed(userData.user);
+			self.completed(user);
 		} else {
 			self.completed({});
 		}

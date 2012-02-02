@@ -65,7 +65,8 @@ var facebook = module.exports = function(config) {
 
 	this.scopes = [
 		"profile",
-		"contacts"
+		"contacts",
+		"groups"
 	];
 
 	this.init (config);		
@@ -79,7 +80,7 @@ util.extend (facebook.prototype, {
 	run: function() {
 		
 		var self = this;
-		self.failed('use method [login|callback|profile]');
+		self.failed('use method [login|callback|profile|grouplist]');
 		
 	},
 	
@@ -178,6 +179,42 @@ util.extend (facebook.prototype, {
 			avatar: "http://graph.facebook.com/" + user.username + "/picture",
 			link: user.link
 		};
+		
+	},
+	
+	grouplist: function() {
+		
+		var self = this;
+		var req = self.req;
+		var tokens = req.user.tokens;
+		
+		var oa = new OAuth2(facebookConfig.appId,  facebookConfig.appSecret,  facebookConfig.baseUrl);
+		
+		oa.getProtectedResource(
+			facebookConfig.baseUrl+"/me/groups",
+			tokens.oauth_access_token,
+			function (error, data, response) {
+				
+				if (error) {
+					self.failed(error);
+				} else {
+					try {
+						var groups = JSON.parse(data);
+						self.completed(self.mappingGroups(groups));
+					} catch (e) {
+						self.failed(e);
+					}
+				}
+		});
+	},
+	
+	mappingGroups: function(groups) {
+		
+		var groupIds = groups.data.map(function(group) {
+			return group.id;
+		});
+		
+		return groupIds;
 		
 	}
 });

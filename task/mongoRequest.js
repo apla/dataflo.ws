@@ -195,8 +195,10 @@ util.extend (mongoRequestTask.prototype, {
 			}
 			
 			findArgs.unshift (filter || {});
-
-			collection.find.apply (collection, findArgs).toArray (function (err, docs) {
+			
+			var options = self.options || {};
+			
+			collection.find.apply (collection, findArgs, options).toArray (function (err, docs) {
 			
 				if (self.verbose)
 					console.log ("findResult", docs);
@@ -237,12 +239,9 @@ util.extend (mongoRequestTask.prototype, {
 			self.data.map(function(item) {
 				
 				if (self.timestamp) item.created = item.updated = new Date().getTime();
-				console.log ('item._id', item._id);
 				if (item._id && item._id != '') docsId.push(item._id);
 				
 			});
-			
-			console.log ('mongoRequestTask.insert', self.data);
 			
 			if (self.insertingSafe) {
 			
@@ -368,7 +367,7 @@ util.extend (mongoRequestTask.prototype, {
 					self.emit ('log', 'strange things with _id: "'+item._id+'"');
 				}
 			});
-			console.log ('<<<<<<<<<<<<<<<<<<<<<!!!!!!!!!!!!');
+			
 			self.completed ({_id: {$in: idList}});
 		});
 	},
