@@ -242,10 +242,11 @@ util.extend (workflow.prototype, {
 			toLog.push (arguments[i]);
 		}
 		
-		try {if (PhoneGap) {
+		// TODO: also check for bad clients (like ie9)
+		if ($isPhoneGap) {
 			toLog.shift();
 			toLog = [toLog.join (' ')];
-		}} catch (e) {};
+		}
 		
 		console.log.apply (console, toLog);
 	},
