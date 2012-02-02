@@ -167,22 +167,15 @@ var workflow = module.exports = function (config, reqParam) {
 							failed = 'failed call function "'+taskParams.functionName+'" from ' + taskParams.bind + ' with ' + e;
 						}
 					} else if (taskParams.functionName) {
-						try {
-							if (process.mainModule.exports[taskParams.functionName]) {
-								this.completed (process.mainModule.exports[taskParams.functionName] (this));
-							} else {
-								failed = "you defined functionName as " + taskParams.functionName
-								+ " but we cannot find this name in current scope.\nplease add 'module.exports = {"
-								+ taskParams.functionName + ": function (params) {...}}' in your main module";
-							}
-						} catch (e) {
-							if (window[taskParams.functionName]) {
-								this.completed (window[taskParams.functionName] (this));
-							} else {
-								failed = "you defined functionName as " + taskParams.functionName
-								+ " but we cannot find this name in current scope.\nplease add 'window["
-								+ taskParams.functionName + "] = function (params) {...}}' in your main module";
-							}
+						var fn = $mainModule[taskParams.functionName];
+						if (fn && fn.constructor == Function) {
+							this.completed (fn (this));
+						} else {
+							// TODO: fix description for window
+							failed = "you defined functionName as " + taskParams.functionName
+							+ " but we cannot find this name in current scope (" + $scope
+							+ ").\nplease add 'module.exports = {"
+							+ taskParams.functionName + ": function (params) {...}}' in your main module";
 						}
 					} else {
 						// TODO: detailed error description
