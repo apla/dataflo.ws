@@ -48,11 +48,13 @@ util.extend (postTask.prototype, {
 					self.emit ('log', self.data);
 				}
 				 
-				if (self.jsonEncoded) {
+				try {
 					fields = JSON.parse (self.data);
-				} else {
+				} catch (e) {
 					fields = qs.parse (self.data);
 				}
+				
+				console.log('<---------------post',fields);
 				
 				var body = {fields: fields};
 				
