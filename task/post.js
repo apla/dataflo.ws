@@ -54,7 +54,7 @@ util.extend (postTask.prototype, {
 					parsedData = qs.parse (self.data);
 				}
 				 
-				self.completed (parsedData);
+				self.completed ({fields: parsedData});
 			});
 			
 			return;
