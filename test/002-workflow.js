@@ -6,7 +6,7 @@ var util     = require ('util');
 var common   = require ('../common');
 var workflow = require ('../workflow');
 
-clearInterval (global.currentDateInterval);
+clearInterval ($stash.currentDateInterval);
 
 var verbose = true;
 
