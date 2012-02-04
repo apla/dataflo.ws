@@ -263,8 +263,8 @@ var workflow = module.exports = function (config, reqParam) {
 							// TODO: fix description for window
 							failed = "you defined functionName as " + taskParams.functionName
 							+ " but we cannot find this name in current scope (" + $scope
-							+ ").\nplease add 'module.exports = {"
-							+ taskParams.functionName + ": function (params) {...}}' in your main module";
+							+ ").\nplease add " + ($isClientSide ? "'window." : "'module.exports.")
+							+ taskParams.functionName + " = function (params) {...}}' in your main module";
 						}
 					} else {
 						// TODO: detailed error description
