@@ -7,37 +7,40 @@ var EventEmitter = require ('events').EventEmitter,
 	mongo        = require ('mongodb');
 
 /**
- * @author 
+ * @author
  * @docauthor
  * @class task.mongoRequest
  * @extends task.task
  * 
- * A class implement few methods of working with MongoDB. Config parameter "className" must be equal to class name, that is "mongoRequest".
+ * A class for working with MongoDB.
+ * 
+ * To use, set {@link task.task#className} to `"mongoRequest"`.
  *
  * Example:
- <pre><code>
+ *
 	{
 		workflows: [{
 			url: "/entity/suggest",
+
 			tasks: [{
-				functionName: 'parseFilter',
-				url: "{$request.url}",
-				produce: "data.suggest"
+				functionName:  "parseFilter',
+				url:           "{$request.url}",
+				produce:       "data.suggest"
 			}, {
-				className:  "mongoRequest",
-				connector:  "mongo",
-				collection: "messages",
-				filter:     "{$data.suggest.tag}",
-				produce:    "data.records"
+				className:     "mongoRequest",
+				connector:     "mongo",
+				collection:    "messages",
+				filter:        "{$data.suggest.tag}",
+				produce:       "data.records"
 			}, {
-				className: "renderTask",
-				type: "json",
-				data: "{$data.records}",
-				output: "{$response}"
+				className:     "renderTask",
+				type:          "json",
+				data:          "{$data.records}",
+				output:        "{$response}"
 			}]
 		}]
 	}
- </code></pre>
+ *
  *
  * @cfg {String} connector (Require) config name in project object.
  *
@@ -80,7 +83,7 @@ util.extend (mongoRequestTask.prototype, {
 		
 		var connectorConfig = project.config.db[this.connector];
 		
-		console.log (connectorConfig);
+		//console.log (connectorConfig);
 		
 		// create connector
 		
@@ -155,12 +158,30 @@ util.extend (mongoRequestTask.prototype, {
 		// open collection
 		self._openCollection (function (err, collection) {
 			
-			if (this.verbose)
+			if (self.verbose)
 				console.log ("collection.find", self.collection, self.filter);
-			// find by filter or all records
-			collection.find (self.filter || {}).toArray (function (err, docs) {
 			
-				if (this.verbose)
+			var filter = self.filter;
+			
+			var windowBegin, windowWidth;
+			var findArgs = [];
+
+			if (self.pager && self.pager.page && self.pager.limit && self.pager.limit < 100) {
+				windowBegin = self.pager.start;
+				windowWidth = self.pager.limit;
+				filter = self.pager.filter;
+				findArgs.push ({}, windowBegin, windowWidth);
+			}
+
+			// find by filter or all records
+			if (filter && filter.substring)
+				filter = {_id: self._objectId (filter)};
+			
+			findArgs.unshift (filter || {});
+
+			collection.find.apply (collection, findArgs).toArray (function (err, docs) {
+			
+				if (self.verbose)
 					console.log ("findResult", docs);
 				
 				if (docs) {
@@ -185,10 +206,10 @@ util.extend (mongoRequestTask.prototype, {
 		
 		var self = this;
 		
-		if (this.verbose)
-			this.emit ('log', 'insert called ' + self.data);
+		if (self.verbose)
+			self.emit ('log', 'insert called ' + self.data);
 		
-		this._openCollection (function (err, collection) {
+		self._openCollection (function (err, collection) {
 			
 			if (self.data.constructor != Array) {
 				self.data = [self.data];
@@ -203,6 +224,8 @@ util.extend (mongoRequestTask.prototype, {
 				if (item._id && item._id != '') docsId.push(item._id);
 				
 			});
+			
+			console.log ('mongoRequestTask.insert', self.data);
 			
 			if (self.insertingSafe) {
 			
@@ -294,23 +317,21 @@ util.extend (mongoRequestTask.prototype, {
 		
 		var self = this;
 		
-		if (this.verbose)
-			this.emit ('log', 'update called ' + self.data);
+		if (self.verbose)
+			self.emit ('log', 'update called ', self.data);
 		
-		this._openCollection (function (err, collection) {
+		self._openCollection (function (err, collection) {
 			
 			if (self.data.constructor != Array) {
 				self.data = [self.data];
 			}
 			
-			if (this.verbose)
+			if (self.verbose)
 				console.log ('data for update', self.data);
 			
 			var idList = self.data.map (function (item) {
 				
 				if (item._id && item._id != "") {
-					
-					var id = self._objectId (item._id);
 					
 					var set = {};
 					
@@ -321,9 +342,9 @@ util.extend (mongoRequestTask.prototype, {
 					
 					if (self.timestamp) set.updated = new Date().getTime();
 					
-					collection.update ({_id: id}, {$set: set});
+					collection.update ({_id: item._id}, {$set: set});
 						
-					return id;
+					return item._id;
 					
 				} else {
 					// something wrong. this couldn't happen

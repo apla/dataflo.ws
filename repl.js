@@ -1,4 +1,4 @@
-var repl = require("repl"),
-	common = require ("common");
+var repl   = require("repl");
+var common = require ("./common");
 
 repl.start().context.project = global.project;

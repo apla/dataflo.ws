@@ -1,6 +1,7 @@
-var task         = require ('task/base'),
-	util         = require ('util'),
-	qs			 = require ('querystring');
+var task        = require ('task/base'),
+	util        = require ('util'),
+	qs			= require ('querystring'),
+	formidable  = require ('formidable');
 
 
 var postTask = module.exports = function (config) {
@@ -20,35 +21,23 @@ util.extend (postTask.prototype, {
 		
 		var self = this;
 		
-		self.data = "";
-		
-		self.request.on("data", function (chunk) {
-			self.data += chunk;
-		});
-		
-		self.request.on("error", function (e) {
-			self.emmitError(e);
-		});
-		
-		// TODO: file uploads
-		
-		self.request.on("end", function () {
+		if (self.request.method != 'POST' && self.request.method != 'PUT')
+			return self.skipped ();
+
+		var form = new formidable.IncomingForm();
+		form.parse(self.request, function(err, fields, files) {
 			
-			var parsedData;
-			
-			if (self.dumpData) {
-				self.emit ('log', self.data);
+			if (err) {
+				self.failed (err);
+				return;
 			}
 			
-			if (self.jsonEncoded) {
-				parsedData = JSON.parse (self.data);
-			} else {
-				parsedData = qs.parse (self.data);
-			}
+			var body = {fields: fields, files: files};
+			self.request.body = body;
 			
-			//console.log (parsedData);
+			//console.log ('<---------', body);
 			
-			self.completed (parsedData);
+			self.completed (body);
 		});
 	}
 });

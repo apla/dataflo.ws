@@ -122,21 +122,85 @@ var pathToVal = module.exports.pathToVal = function (dict, path, value) {
 	return pathToVal (dict[chunks.shift()], chunks.join('.'), value)
 }
 
+
+var findInterpolation = module.exports.findInterpolation = function (params, prefix) {
+	
+	// parse task params
+	// TODO: modify this function because recursive changes of parameters works dirty (indexOf for value)
+	
+	if (prefix == void 0) prefix = '';
+	if (prefix) prefix += '.';
+	
+	var found = {};
+	
+	if (params.constructor == Array) { // params is array
+		
+		params.forEach(function (val, index, arr) {
+			
+			if (val.indexOf && val.interpolate) { // string				
+				
+				var tmp = val.interpolate ({}, false, true);
+				
+				if (tmp !== void 0) {
+					found[prefix + index] = tmp;
+				}
+
+			} else if (!val.toFixed) { // array and object (check for function and boolean)
+				var result = findInterpolation (val, prefix+index);
+				for (var attrname in result) {
+					found[attrname] = result[attrname];
+				}
+			}
+		});
+		
+	} else { // params is hash
+	
+		modifiedParams = {};
+		
+		for (var key in params) {
+			var val = params[key];
+
+			if (val.indexOf && val.interpolate) { // string				
+				
+				var tmp = val.interpolate ({}, false, true);
+				
+				if (tmp !== void 0) {
+					found[prefix + key] = tmp;
+				}
+
+			} else if (!val.toFixed) { // array and object (check for function and boolean)
+				var result = findInterpolation (val, prefix+key);
+				for (var attrname in result) {
+					found[attrname] = result[attrname];
+				}
+			}
+		}
+	}
+	
+	return found;
+}
+
 var define;
 if (typeof define === "undefined")
 	define = function () {}
 
 define (function (require, exports, module) {
-	return {pathToVal: pathToVal};
+	return {
+		pathToVal: pathToVal,
+		findInterpolation: findInterpolation
+	};
 });
 
-String.prototype.interpolate = function (dict, marks) {
+
+String.prototype.interpolate = function (dict, marks, checkOnly) {
 	if (!marks)
 		marks = {
 			start: '{$', end: '}', path: '.'
 		};
 	
 	var result;
+	
+	var interpolatePaths = [];
 	
 	var template = this;
 	
@@ -145,11 +209,16 @@ String.prototype.interpolate = function (dict, marks) {
 		var end = (result || this).indexOf (marks.end, pos);
 		var str = (result || this).substr (pos + 2, end - pos - 2);
 		
+		if (checkOnly && str) {
+			interpolatePaths.push (str);
+			pos = this.indexOf (marks.start, end);
+			continue;
+		}
+		
 //		console.log ("found replacement: key => ???, requires => $"+this+"\n");
 		
 		var fix;
 		if (str.indexOf (marks.path) > -1) { //  treat as path
-			//  warn join ', ', keys %{$self->var};
 			fix = pathToVal (dict, str);
 		} else { // scalar
 			fix = dict[str];
@@ -158,7 +227,8 @@ String.prototype.interpolate = function (dict, marks) {
 		if (fix === void(0))
 			throw (result || this);
 		
-		// warn "value for replace is: $fix\n";
+		if (fix.indexOf && fix.indexOf (marks.start) > -1)
+			throw 'interpolation mark "' + marks.start + '" within interpolation string (' + fix + ') is denied';
 		
 		if (pos == 0 && end == ((result || this).length - 1)) {
 			result = fix;
@@ -167,11 +237,14 @@ String.prototype.interpolate = function (dict, marks) {
 //			console.log ('!!!', (result || this).toString(), fix.toString(), pos, end, end - pos + 1);
 		}
 		
-		if ((result || this).indexOf)
-			pos = (result || this).indexOf (marks.start, end);
+		if ((((result === false || result === 0 || result === "") ? true : result) || this).indexOf)
+			pos = (((result === false || result === 0 || result === "") ? true : result) || this).indexOf (marks.start);
 		else
 			break;
 	}
+	
+	if (checkOnly)
+		return interpolatePaths;
 	
 	return result;
 
@@ -181,7 +254,7 @@ if ($isServerSide) {
 
 	var path = require ('path');
 
-	var io = require ('io/easy');
+	var io = require ('./io/easy');
 
 	var project = function () {
 		// TODO: root directory object
@@ -192,6 +265,9 @@ if ($isServerSide) {
 			rootPath = script.match (/(.*)\\(bin|t|lib)\\/)
 		}
 		
+		if (!rootPath)
+			return;
+		
 		var root = new io (rootPath[1]);
 		
 		this.root = root;
@@ -200,7 +276,7 @@ if ($isServerSide) {
 		root.fileIO ('etc/project').readFile (function (err, data) {
 			if (err) {
 				console.error ("can't access etc/project file. create one and define project id");
-				process.kill ();
+				// process.kill ();
 				return;
 			}
 			
@@ -212,9 +288,12 @@ if ($isServerSide) {
 			
 			if (parser == 'json') {
 
-				// TODO: error handling
-
-				var config = JSON.parse (configData[0]);
+				try {
+					var config = JSON.parse (configData[0]);
+				} catch (e) {
+					console.log ('WARNING: http config cannon parsed');
+					throw e;
+				}
 				
 				self.id     = config.id;
 				self.config = config;
@@ -223,7 +302,8 @@ if ($isServerSide) {
 				// TODO: read config fixup
 			} else {
 				console.error ('parser ' + parser + ' unknown');
-				process.kill ();
+				// process.kill ();
+				return;
 			}
 
 
@@ -247,8 +327,9 @@ if ($isServerSide) {
 							+ "create one and define local configuration fixup. "
 						);
 						self.emit ('ready');
-						return;
 						// process.kill ();
+						return;
+						
 					}
 					
 					var fixupData = (""+data).match (/(\w+)(\W[^]*)/);
@@ -268,7 +349,8 @@ if ($isServerSide) {
 						util.extend (true, self.config, config);
 					} else {
 						console.log ('parser ' + fixupParser + ' unknown');
-						process.kill ();
+						// process.kill ();
+						return;
 					}
 					
 					console.log ('project ready');

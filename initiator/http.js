@@ -1,10 +1,15 @@
 var EventEmitter = require ('events').EventEmitter,
 	http         = require ('http'),
 	util         = require ('util'),
-	mime         = require ('mime'),
-	workflow     = require ('workflow'),
+	workflow     = require ('../workflow'),
 	url          = require ('url'),
 	os			 = require ('os');
+
+try {
+	var mime     = require ('mime');
+} catch (e) {
+	console.error ('cannot find mime module');
+};
 
 var httpdi = module.exports = function (config) {
 	// we need to launch httpd
@@ -19,6 +24,18 @@ var httpdi = module.exports = function (config) {
 	
 	this.workflows = config.workflows;
 	this.static    = config.static;
+	
+	this.router    = config.router;
+	// router is function in main module or initiator method
+	if (config.router === void 0) {
+		this.router = this.defaultRouter;
+	} else if (process.mainModule.exports[config.router]) {
+		this.router = process.mainModule.exports[config.router];
+	} else if (this[config.router]) {
+		this.router = this[config.router];
+	} else {
+		throw "we cannot find " + config.router + " router method within initiator or function in main module";
+	}
 	
 	if (this.host  == "auto") {
 		this.detectIP (this.listen);
@@ -68,7 +85,7 @@ util.extend (httpdi.prototype, {
 				file:      presenter,
 				vars:      "{$vars}",
 				response:  "{$response}",
-				className: "presenter"
+				className: "task/presenter"
 			});
 		} else if (presenter.constructor == Array) {
 			// TODO: [{...}, {...}]
@@ -77,45 +94,43 @@ util.extend (httpdi.prototype, {
 				util.extend (true, task, item);
 				task.response  = "{$response}";
 				task.vars      = task.vars || "{$vars}";
-				task.className = task.className || "presenter";
+				if (!task.functionName)
+					task.className = task.className || "task/presenter";
 				tasks.push (task);
 			});
 		} else {
 			// {"type": "json"}
 			presenter.response  = "{$response}";
 			presenter.vars      = presenter.vars || "{$vars}";
-			presenter.className = presenter.className || "presenter";
+			if (!presenter.functionName)
+				presenter.className = presenter.className || "task/presenter";
 			tasks.push (presenter);
 		}
 
 		var presenterWf = new workflow ({
 			id:    wf.id,
+			data:  wf.data,
 			vars:  wf,
 			tasks: tasks,
 			stage: 'presentation',
 			response: res
 		});
 
-		presenterWf.on ('complete', function () {
+		presenterWf.on ('completed', function () {
 			//self.log ('presenter done');
 		});
 
 		presenterWf.run ();
 	},
-	listen: function () {
+	initWorkflow: function (wfConfig, req) {
+		
+	},
+	defaultRouter: function (req, res) {
+		var wf;
 		
 		var self = this;
-	
-		this.server = http.createServer (function (req, res) {
-			
-			// console.log ('serving: ' + req.method + ' ' + req.url + ' for ', req.connection.remoteAddress + ':' + req.connection.remotePort);
-			
-			// here we need to find matching workflows
-			// for received request
-			
-			req.url = url.parse(req.url, true);
-			
-			var wf;
+		
+		if (self.workflows.constructor == Array) {
 			
 			self.workflows.map (function (item) {
 				
@@ -126,14 +141,18 @@ util.extend (httpdi.prototype, {
 				
 				if (match && match[0] == req.url.pathname) { //exact match
 					
-					console.log ('match');
+					console.log ('httpdi match: ' + req.method + ' to ' + req.url.pathname);
 					wf = true;
 
 				} else if (req.url.pathname.indexOf(item.urlBeginsWith) == 0) {
 					console.log ('begins match');
 					
 					req.pathInfo = req.url.pathname.substr (item.urlBeginsWith.length);
-					
+					if (req.pathInfo == '/')
+						delete (req.pathInfo);
+
+					if (req.pathInfo && req.pathInfo[0] == '/')
+						req.pathInfo = req.pathInfo.substr (1);
 					wf = true;
 				}
 				
@@ -154,11 +173,35 @@ util.extend (httpdi.prototype, {
 
 				self.emit ("detected", req, res, wf);
 				
-				if (!item.auth) wf.run();
+				if (!item.prepare && wf.ready) wf.run();
 				
 				return;
 
 			});
+		}
+		
+		return wf;
+	},
+	listen: function () {
+		
+		var self = this;
+	
+		this.server = http.createServer (function (req, res) {
+			
+			// console.log ('serving: ' + req.method + ' ' + req.url + ' for ', req.connection.remoteAddress + ':' + req.connection.remotePort);
+			
+			// here we need to find matching workflows
+			// for received request
+			
+			req.url = url.parse (req.url, true);
+			// use for workflow match
+			req[req.method] = true;
+
+			var wf = self.router (req, res);
+			
+			if (wf && !wf.ready) {
+				console.error ("workflow not ready and cannot be started");
+			}
 			
 			if (!wf) {
 				if (self.static) {
@@ -172,29 +215,48 @@ util.extend (httpdi.prototype, {
 					if (pathName.match (/\/$/)) {
 						pathName += self.static.index;
 					}
-					var contentType = mime.lookup (pathName);
+					
+					var contentType;
+					if (pathName.match (/\.html$/)) {
+						contentType = 'text/html';
+					}
+					
+					if (mime && mime.lookup) {
+						contentType = mime.lookup (pathName);
+					} else if (!contentType) {
+						console.error ('sorry, there is no content type for ' + pathName);
+					}
 
 					self.static.root.fileIO (pathName).readStream (function (readStream, stats) {
 						
 						if (stats) {
-							res.writeHead (200, {
-								'Content-Type': contentType + '; charset=utf-8'
-							});
-							readStream.pipe (res);
-							readStream.resume ();
-						} else {
-							res.writeHead (404, {});
-							res.end();
+							
+							if (stats.isDirectory() && !readStream) {
+								
+								res.statusCode = 303;
+								res.setHeader('Location', pathName +'/');
+								res.end('Redirecting to ' + pathName +'/');
+								return;
+						
+							} else if (stats.isFile() && readStream) {
+
+								res.writeHead (200, {
+									'Content-Type': contentType + '; charset=utf-8'
+								});
+								readStream.pipe (res);
+								readStream.resume ();
+								return;
+							}
 						}
+						
+						res.statusCode = 404;
+						res.end();
+						
+						console.log ('httpdi not detected: ' + req.method + ' to ' + req.url.pathname);
+						self.emit ("unknown", req, res);
 					});
-					
-					return;
 				}
-				
-				console.log ('not detected');
-				self.emit ("unknown", req, res);
 			}
-			
 		});
 		
 		if (this.host)

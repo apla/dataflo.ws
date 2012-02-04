@@ -15,18 +15,19 @@ util.extend (cookieParser.prototype, {
 
 		var self = this;
 		
-		var cookie = self.cookie;
-		var cookieObj = {};
+		var cookies = self.headers.cookie ? self.headers.cookie : null;
+		var cookiesObj = {length:0};
 		
-		console.log ('cookiecookiecookiecookie',cookie);
-		
-		cookie.split('; ').map (function(item) {
+		if (cookies) cookies.split('; ').map (function(item) {
 			
 			var s = item.split('=');
-			cookieObj[s[0]] = s[1];
+			if (s[0] && s[1]) {
+				cookiesObj[s[0]] = s[1];
+				cookiesObj.length++;
+			}
 		
 		});
 		
-		self.completed (cookieObj);
+		self.completed (cookiesObj);
 	}
 });
