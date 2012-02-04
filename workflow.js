@@ -155,7 +155,7 @@ var workflow = module.exports = function (config, reqParam) {
 	// here we make sure workflow uid generated
 	// TODO: check for cpu load
 	var salt = (Math.random () * 1e6).toFixed(0);
-	this.id      = this.id || (this.started & salt) % 1e6;
+	this.id      = this.id || (this.started ^ salt) % 1e6;
 
 	if (!this.stage) this.stage = 'workflow';
 
