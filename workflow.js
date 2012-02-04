@@ -260,11 +260,20 @@ var workflow = module.exports = function (config, reqParam) {
 						if (fn && fn.constructor == Function) {
 							this.completed (fn (this));
 						} else {
-							// TODO: fix description for window
-							failed = "you defined functionName as " + taskParams.functionName
-							+ " but we cannot find this name in current scope (" + $scope
-							+ ").\nplease add " + ($isClientSide ? "'window." : "'module.exports.")
-							+ taskParams.functionName + " = function (params) {...}}' in your main module";
+							// this is solution for nodejs scope:
+							// exports can be redefined
+							var mainExports = eval ($scope);
+							var fn = mainExports[taskParams.functionName];
+							if (fn && fn.constructor == Function) {
+								$mainModule = mainExports;
+								this.completed (fn (this));
+							} else {
+								// TODO: fix description for window
+								failed = "you defined functionName as " + taskParams.functionName
+								+ " but we cannot find this name in current scope (" + $scope
+								+ ").\nplease add " + ($isClientSide ? "'window." : "'module.exports.")
+								+ taskParams.functionName + " = function (params) {...}}' in your main module";
+							}
 						}
 					} else {
 						// TODO: detailed error description
