@@ -108,7 +108,10 @@ function checkTaskParams (params, dict, prefix) {
 		for (var key in params) {
 			var val = params[key];
 			var valCheck = val;
-			if (val.interpolate) { // val is string || number
+			if (key == 'bind' && prefix == '') {
+				// bind is a real js object. it can be circular
+				modifiedParams[key] = val;
+			} else if (val.interpolate) { // val is string || number
 				
 				try {
 					var tmp = modifiedParams[key] = val.interpolate (dict);
