@@ -163,23 +163,113 @@ var workflows = [{
 
 }];
 
-workflows.map (function (item) {
+var started = new Date ();
 
-	var wf = new workflow (
-		util.extend (true, {}, item.config),
-		{request: item.request}
+var repeat = parseInt (process.argv[2]) || 1;
+
+repeat.times (function () {
+	
+	var independentConfig = {
+		description: "1000 independent tasks",
+		config: {
+			tasks: []
+		},
+		request: {
+			test: true
+		},
+		failed: failure ('1000 independent tasks'),
+		completed: ok ('1000 independent tasks')
+
+	};
+	
+	1000..times (function (num) {
+		independentConfig.config.tasks.push ({
+			className: "./test/task/002-ok-task",
+			produce: "data.ok"+num
+		});
+	});
+	
+	var independentWf = new workflow (
+		util.extend (true, {}, independentConfig.config),
+		{request: independentConfig.request}
 	);
 	
-	if (!wf.ready)
-		return item.failed ();
+	if (!independentWf.ready)
+		return independentConfig.failed ();
 	
-	wf.on ('completed', item.completed);
+	independentWf.on ('completed', independentConfig.completed);
 
-	wf.on ('failed', item.failed);
+	independentWf.on ('failed', independentConfig.failed);
 
-	if (item.autoRun || item.autoRun == void 0)
-		wf.run();
+	if (independentConfig.autoRun || independentConfig.autoRun == void 0)
+		independentWf.run();
 
+	var dependentConfig = {
+		description: "1000 dependent tasks",
+		config: {
+			tasks: []
+		},
+		request: {
+			test: true
+		},
+		failed: failure ('1000 dependent tasks'),
+		completed: ok ('1000 dependent tasks')
+
+	};
+
+	dependentConfig.config.tasks.push ({
+		className: "./test/task/002-ok-task",
+		produce: "data.ok0"
+	});
+
+	999..times (function (num) {
+		dependentConfig.config.tasks.push ({
+			className: "./test/task/002-ok-task",
+			produce: "data.ok"+(num+1),
+			require: "{$data.ok"+num+"}"
+		});
+	});
+	
+	var dependentWf = new workflow (
+		util.extend (true, {}, dependentConfig.config),
+		{request: dependentConfig.request}
+	);
+	
+	if (!dependentWf.ready)
+		return dependentConfig.failed ();
+	
+	dependentWf.on ('completed', dependentConfig.completed);
+
+	dependentWf.on ('failed', dependentConfig.failed);
+
+	if (dependentConfig.autoRun || dependentConfig.autoRun == void 0)
+		dependentWf.run();
+
+	
+	workflows.map (function (item) {
+
+		var wf = new workflow (
+			util.extend (true, {}, item.config),
+			{request: item.request}
+		);
+		
+		if (!wf.ready)
+			return item.failed ();
+		
+		wf.on ('completed', item.completed);
+
+		wf.on ('failed', item.failed);
+
+		if (item.autoRun || item.autoRun == void 0)
+			wf.run();
+
+	});
+	
+});
+
+process.on('exit', function () {
+	var finished = new Date ();
+	console.error ('finished in', finished.getTime () - started.getTime (), 'ms');
 });
 
 //test('check task requirements', {
