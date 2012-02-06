@@ -18,12 +18,13 @@ util.extend (userParser.prototype, {
 		var self = this;
 		var request = self.request;
 		var user = request.user;
+		var groups = request.groups;
 		
-		var authUser = {
-			user: self.userData,
-		};
+		var authUser = self.userData;
 		
 		util.extend (authUser, user);
+		
+		if (self.groupsData) authUser.groupIds = self.groupsData;
 		
 		self.completed(authUser);
 		

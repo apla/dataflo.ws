@@ -23,7 +23,49 @@ util.extend (postTask.prototype, {
 		
 		if (self.request.method != 'POST' && self.request.method != 'PUT')
 			return self.skipped ();
-
+			
+		if (self.request.headers['content-type'] == 'application/json') {
+			
+			var self = this;
+			 
+			self.data = "";
+			 
+			self.request.on("data", function (chunk) {
+				self.data += chunk;
+			});
+			 
+			self.request.on("error", function (e) {
+				self.emmitError(e);
+			});
+			 
+			// TODO: file uploads
+			 
+			self.request.on("end", function () {
+				 
+				var fields;
+				 
+				if (self.dumpData) {
+					self.emit ('log', self.data);
+				}
+				 
+				try {
+					fields = JSON.parse (self.data);
+				} catch (e) {
+					fields = qs.parse (self.data);
+				}
+				
+				console.log('<---------------post',fields);
+				
+				var body = {fields: fields};
+				
+				self.request.body = body;
+				 
+				self.completed (body);
+			});
+			
+			return;
+		}
+		
 		var form = new formidable.IncomingForm();
 		form.parse(self.request, function(err, fields, files) {
 			
