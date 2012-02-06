@@ -147,6 +147,17 @@ function checkTaskParams (params, dict, prefix) {
 	};
 }
 
+/**
+ * @class workflow
+ * @extends events.EventEmitter
+ *
+ * The heart of the framework. Parses task configurations, loads dependencies,
+ * launches tasks, stores their result. When all tasks are completed,
+ * notifies subscribers (inititators).
+ *
+ * @cfg {Object} config (required) Workflow configuration.
+ * @cfg {Object} reqParam (required) Workflow parameters.
+ */
 var workflow = module.exports = function (config, reqParam) {
 	
 	var self = this;
@@ -335,8 +346,11 @@ util.extend (workflow.prototype, {
 	taskRequirements: taskRequirements,
 	isIdle: true,
 	haveCompletedTasks: false,
-	run: function () {
 		
+	/**
+	 * @method run Initiators call this method to launch the workflow.
+	 */
+	run: function () {
 		if (!this.started)
 			this.started = new Date().getTime();
 		

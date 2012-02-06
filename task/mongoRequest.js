@@ -12,11 +12,11 @@ var EventEmitter = require ('events').EventEmitter,
  * @class task.mongoRequest
  * @extends task.task
  * 
- * A class for working with MongoDB.
+ * A class for creating MongoDB-related tasks.
  * 
- * To use, set {@link task.task#className} to `"mongoRequest"`.
+ * To use, set {@link #className} to `"mongoRequest"`.
  *
- * Example:
+ * ### Example
  *
 	{
 		workflows: [{
@@ -41,20 +41,22 @@ var EventEmitter = require ('events').EventEmitter,
 		}]
 	}
  *
+ * @cfg {String} connector (required) The config name in the project object.
  *
- * @cfg {String} connector (Require) config name in project object.
+ * @cfg {String} collection (required) The collection name from MongoDB.
  *
- * @cfg {String} collection (Require) collection name from mongodb.
+ * @cfg {String} [method="run"] The name of the method name to be called
+ * after the task requirements are statisfied.
  *
- * @cfg {String} method (Optional) method name, wich will be called after task requirements statisfied.
- * <li>
- * <ul>run - default value, do selection from db</ul>
- * <ul>insert - do insertion to db</ul>
- * <ul>update - do update some records in db</ul>
- * <li>
+ * Possible values:
  *
- * @cfg {String} filter (Require) name of the property in workflow scope or object with filter fields for select | insert | update methods.
+ * - `run`, selects from the DB
+ * - `insert`, inserts into the DB
+ * - `update`, updates records in the DB
  *
+ * @cfg {String} filter (required) The name of the property of the workflow
+ * instance or the identifier of an object with filter fields for `select`,
+ * `insert` or `update` methods (see {@link #method}).
  */
 var mongoRequestTask = module.exports = function (config) {
 	
