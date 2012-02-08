@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>The source code</title>
+  <link href="../resources/prettify/prettify.css" type="text/css" rel="stylesheet" />
+  <script type="text/javascript" src="../resources/prettify/prettify.js"></script>
+  <style type="text/css">
+    .highlight { display: block; background-color: #ddd; }
+  </style>
+  <script type="text/javascript">
+    function highlight() {
+      document.getElementById(location.hash.replace(/#/, "")).className = "highlight";
+    }
+  </script>
+</head>
+<body onload="prettyPrint(); highlight();">
+  <pre class="prettyprint lang-js">var EventEmitter = require ('events').EventEmitter,
+	crypto       = require ('crypto'),
+	task         = require ('task/base'),
+	util         = require ('util'),
+	urlUtil      = require ('url'),
+	spawn        = require('child_process').spawn;
+
+var command = 'ldapsearch';
+
+// TODO: docs
+
+// ldap connector
+// need connector property and configuration:
+// host, base, user, pass
+
+var ldapRequestTask = module.exports = function (config) {
+	this.init (config);
+	
+};
+
+util.inherits (ldapRequestTask, task);
+
+util.extend (ldapRequestTask.prototype, {
+	
+	run: function () {
+
+		var self = this;
+		
+//		console.log ('run', self);
+		
+		self.emit ('log', 'requested '+this.searchString);
+		
+		// TODO: error handling
+		var connector = project.config.db[this.connector];
+		
+		var connectorString = &quot;-LLL -z 50 -x -H &quot;+connector.host+&quot; -b &quot;+connector.base+&quot; -D &quot;+connector.user+&quot; -w &quot;+connector.pass;
+		
+		// params preparation
+		var args = [
+			connectorString,
+			this.searchPattern.replace (/\{\}/g, this.searchString),
+			this.fields
+		].join (' ').split (' ');
+		
+//		console.log (args);
+		
+		var fork  = spawn(command, args);
+		
+		var stderr = '';
+		var stdout = '';
+		
+		fork.stdout.on('data', function (data) {
+			stdout += data;
+//			console.log (1);
+		});
+
+		fork.stderr.on('data', function (data) {
+			stderr += data;
+//			console.log (2);
+		});
+
+		fork.on('exit', function (code) {
+
+			var docs = [];
+			var records = stdout.split (&quot;\n\n&quot;);
+		
+			records.map (function (item) {
+				
+				var account;
+				
+				item.split (/\n\s+/).join ('').split (&quot;\n&quot;).map (function (item) {
+					if (!item || item.charAt (0) == '#')
+						return
+					
+					var parts = item.split (': ');
+					if (parts[0].charAt(parts[0].length - 1) == ':') {
+						parts[0] = parts[0].substr (0, parts[0].length - 1)
+						parts[1] = new Buffer(parts[1], 'base64').toString('utf-8')
+					}
+					
+					if (!account)
+						account = {};
+					
+					if (self.toLowerCase)
+						parts[0] = parts[0].toLowerCase();
+					
+					if (account[parts[0]] &amp;&amp; account[parts[0]].constructor == Array) {
+						account[parts[0]].push (parts[1]);
+					} else if (account[parts[0]]) {
+						account[parts[0]] = [account[parts[0]], parts[1]];
+					} else {
+						account[parts[0]] = parts[1];
+					}
+					
+				});
+				
+				if (account) {
+					if (self.mapping) {
+						self.mapFields (account);
+					}
+					
+					docs.push (account);
+				}
+				
+			});
+		
+			self.completed ({
+				success: (docs.length &gt; 0),
+				total: docs.length || 0,
+				err: null,
+				data: docs
+			});
+		
+		});
+	
+	}
+});
+</pre>
+</body>
+</html>

@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>The source code</title>
+  <link href="../resources/prettify/prettify.css" type="text/css" rel="stylesheet" />
+  <script type="text/javascript" src="../resources/prettify/prettify.js"></script>
+  <style type="text/css">
+    .highlight { display: block; background-color: #ddd; }
+  </style>
+  <script type="text/javascript">
+    function highlight() {
+      document.getElementById(location.hash.replace(/#/, "")).className = "highlight";
+    }
+  </script>
+</head>
+<body onload="prettyPrint(); highlight();">
+  <pre class="prettyprint lang-js">var OAuth2 = require('lib/node-oauth').OAuth2,
+	querystring = require('querystring'),
+	task = require('task/base'),
+	util = require('util');
+	
+// - - - static
+
+var facebookConfig = project.config.consumerConfig.facebook;
+var facebookScopes = (facebookConfig ? facebookConfig.scopes : null);
+
+if (!facebookScopes) {
+
+	util.extend (facebookConfig, {	
+		&quot;scopes&quot;: {
+			&quot;profile&quot;			: &quot;user_about_me&quot;,
+			&quot;email&quot;				: &quot;email&quot;,
+			&quot;activities&quot;		: &quot;user_activities&quot;,
+			&quot;birthday&quot;			: &quot;user_birthday&quot;,
+			&quot;checkins&quot;			: &quot;user_checkins&quot;,
+			&quot;education_history&quot;	: &quot;user_education_history&quot;,
+			&quot;events&quot;			: &quot;user_events&quot;,
+			&quot;groups&quot;			: &quot;user_groups&quot;,
+			&quot;hometown&quot;			: &quot;user_hometown&quot;,
+			&quot;interests&quot;			: &quot;user_interests&quot;,
+			&quot;likes&quot;				: &quot;user_likes&quot;,
+			&quot;location&quot;			: &quot;user_location&quot;,
+			&quot;notes&quot;				: &quot;user_notes&quot;,
+			&quot;online_presence&quot;	: &quot;user_online_presence&quot;,
+			&quot;photo_video_tags&quot;	: &quot;user_photo_video_tags&quot;,
+			&quot;photos&quot;			: &quot;user_photos&quot;,
+			&quot;questions&quot;			: &quot;user_questions&quot;,
+			&quot;relationships&quot;		: &quot;user_relationships&quot;,
+			&quot;relationship_details&quot;	: &quot;user_relationship_details&quot;,
+			&quot;religion_politics&quot;		: &quot;user_religion_politics&quot;,
+			&quot;status&quot;			: &quot;user_status&quot;,
+			&quot;videos&quot;			: &quot;user_videos&quot;,
+			&quot;website&quot;			: &quot;user_website&quot;,
+			&quot;work_history&quot;		: &quot;user_work_history&quot;,
+			&quot;contacts&quot;			: &quot;read_friendlists&quot;,
+			&quot;insights&quot;			: &quot;read_insights&quot;,
+			&quot;mailbox&quot;			: &quot;read_mailbox&quot;,
+			&quot;requests&quot;			: &quot;read_requests&quot;,
+			&quot;stream&quot;			: &quot;read_stream&quot;,
+			&quot;xmpp_login&quot;		: &quot;xmpp_login&quot;,
+			&quot;ads_management&quot;	: &quot;ads_management&quot;,
+			&quot;create_event&quot;		: &quot;create_event&quot;,
+			&quot;manage_friendlists&quot;	: &quot;manage_friendlists&quot;,
+			&quot;manage_notifications&quot;	: &quot;manage_notifications&quot;,
+			&quot;offline_access&quot;		: &quot;offline_access&quot;,
+			&quot;publish_checkins&quot;		: &quot;publish_checkins&quot;,
+			&quot;publish_stream&quot;		: &quot;publish_stream&quot;,
+			&quot;rsvp_event&quot;		: &quot;rsvp_event&quot;,
+			&quot;publish_actions&quot;	: &quot;publish_actions&quot;
+		}
+	});
+	
+	facebookScopes = facebookConfig.scopes;
+	
+//	console.log ('&lt;------facebookConfig', facebookConfig);
+}
+
+// - - -
+
+var facebook = module.exports = function(config) {
+
+	this.scopes = [
+		&quot;profile&quot;,
+		&quot;contacts&quot;,
+		&quot;groups&quot;
+	];
+
+	this.init (config);		
+
+};
+
+util.inherits (facebook, task);
+
+util.extend (facebook.prototype, {
+
+	run: function() {
+		
+		var self = this;
+		self.failed('use method [login|callback|profile|grouplist]');
+		
+	},
+	
+	login: function () {
+		
+		var self = this;
+		var req = self.req;
+		var res = self.res;
+		var query = req.url.query;
+		
+		var scopes = [];
+		
+		self.scopes.map(function(scope) {
+			scopes.push (facebookScopes[scope]);
+		});
+		
+		var getParams = {
+			client_id: facebookConfig.appId,
+			redirect_uri: facebookConfig.callbackUrl,
+			scope: scopes.join(','),
+		};
+		
+		var redirectUrl = facebookConfig.requestTokenUrl + &quot;?&quot; + querystring.stringify(getParams);
+		
+		//req._requestUrl			= redirectUrl;
+		//req._authorize_callback = facebookConfig.redirectUrl + ( query.action &amp;&amp; query.action != &quot;&quot; ? &quot;?action=&quot;+querystring.escape(query.action) : &quot;&quot; );
+			
+		self.completed(redirectUrl);
+	},
+	
+	callback: function() {
+		
+		var self = this;
+		var req = self.req;
+		var query = req.url.query;
+		var tokens = req.user.tokens;
+		
+		if (query.error || !query.code) {
+			self.failed (query.error_description || &quot;token was not accepted&quot;);
+		}
+		
+		var oa = new OAuth2(facebookConfig.appId,  facebookConfig.appSecret,  facebookConfig.baseUrl);
+		
+		oa.getOAuthAccessToken(
+			query.code,
+			{redirect_uri: facebookConfig.callbackUrl},
+			function( error, access_token, refresh_token ){
+				
+				if (error) {
+					
+					self.failed(error);
+				
+				} else {
+					
+					tokens.oauth_access_token = access_token;
+					if (refresh_token) tokens.oauth_refresh_token = refresh_token;
+					
+					var redirectUrl = (query.action &amp;&amp; query.action != &quot;&quot;) ? query.action : &quot;/&quot;;
+					self.completed (redirectUrl)
+					
+				}
+		});
+	},
+	
+	profile: function() {
+		
+		var self = this;
+		var req = self.req;
+		var tokens = req.user.tokens;
+		
+		var oa = new OAuth2(facebookConfig.appId,  facebookConfig.appSecret,  facebookConfig.baseUrl);
+		
+		oa.getProtectedResource(
+			facebookConfig.baseUrl+&quot;/me&quot;,
+			tokens.oauth_access_token,
+			function (error, data, response) {
+				
+				if (error) {
+					self.failed(error);
+				} else {
+					try {
+						var user = JSON.parse(data);
+						self.completed(self.mappingUser(user));
+					} catch (e) {
+						self.failed(e);
+					}
+				}
+		});
+	},
+	
+	mappingUser: function(user) {
+		
+		return {
+			name: user.name,
+			email: user.username + &quot;@facebook.com&quot;,
+			avatar: &quot;http://graph.facebook.com/&quot; + user.username + &quot;/picture&quot;,
+			link: user.link
+		};
+		
+	},
+	
+	grouplist: function() {
+		
+		var self = this;
+		var req = self.req;
+		var tokens = req.user.tokens;
+		
+		var oa = new OAuth2(facebookConfig.appId,  facebookConfig.appSecret,  facebookConfig.baseUrl);
+		
+		oa.getProtectedResource(
+			facebookConfig.baseUrl+&quot;/me/groups&quot;,
+			tokens.oauth_access_token,
+			function (error, data, response) {
+				
+				if (error) {
+					self.failed(error);
+				} else {
+					try {
+						var groups = JSON.parse(data);
+						self.completed(self.mappingGroups(groups));
+					} catch (e) {
+						self.failed(e);
+					}
+				}
+		});
+	},
+	
+	mappingGroups: function(groups) {
+		
+		var groupIds = groups.data.map(function(group) {
+			return group.id;
+		});
+		
+		return groupIds;
+		
+	}
+});</pre>
+</body>
+</html>

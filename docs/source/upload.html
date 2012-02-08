@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>The source code</title>
+  <link href="../resources/prettify/prettify.css" type="text/css" rel="stylesheet" />
+  <script type="text/javascript" src="../resources/prettify/prettify.js"></script>
+  <style type="text/css">
+    .highlight { display: block; background-color: #ddd; }
+  </style>
+  <script type="text/javascript">
+    function highlight() {
+      document.getElementById(location.hash.replace(/#/, "")).className = "highlight";
+    }
+  </script>
+</head>
+<body onload="prettyPrint(); highlight();">
+  <pre class="prettyprint lang-js">var task         = require ('task/base'),
+	util         = require ('util'),
+	formidable   = require ('formidable');
+
+
+var upload = module.exports = function (config) {
+	
+	this.request = config.request;
+	this.init (config);
+	
+};
+
+util.inherits (upload, task);
+
+util.extend (upload.prototype, {
+	
+	run: function () {
+		
+		var self = this;
+		
+		var form = new formidable.IncomingForm();
+		// TODO: add support for parameters
+		
+		form.on ('fileBegin', function (name, file) {
+			self.emit ('log', 'started loading '+name);
+			// here we can overload generated file name
+		});
+
+		form.on ('file', function (name, file) {
+			self.emit ('log', 'finished loading '+name);
+		});
+		
+		form.parse(this.request, function(err, fields, files) {
+			self.completed ({fields: fields, files: files});
+		});
+		
+	}
+});</pre>
+</body>
+</html>

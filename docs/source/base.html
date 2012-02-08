@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>The source code</title>
+  <link href="../resources/prettify/prettify.css" type="text/css" rel="stylesheet" />
+  <script type="text/javascript" src="../resources/prettify/prettify.js"></script>
+  <style type="text/css">
+    .highlight { display: block; background-color: #ddd; }
+  </style>
+  <script type="text/javascript">
+    function highlight() {
+      document.getElementById(location.hash.replace(/#/, "")).className = "highlight";
+    }
+  </script>
+</head>
+<body onload="prettyPrint(); highlight();">
+  <pre class="prettyprint lang-js">var define;
+if (typeof define === &quot;undefined&quot;)
+	define = function (classInstance) {
+		classInstance (require, exports, module);
+	}
+
+define (function (require, exports, module) {
+
+var EventEmitter = require ('events').EventEmitter,
+	util         = require ('util');
+
+var taskStateList = [
+	'scarce', 'ready', 'running', 'idle',
+	'complete', 'failed', 'skipped'
+];
+
+var taskStateNames = {};
+
+var taskStateMethods = {};
+
+for (var stateNum = 0; stateNum &lt; taskStateList.length; stateNum++) {
+	taskStateNames[taskStateList[stateNum]] = stateNum;
+
+	var fName = 'is' + taskStateList[stateNum].toLowerCase().replace(
+		/\b([a-z])/i, function(c) {return c.toUpperCase()}
+	);
+	taskStateMethods[fName] = function (x) {
+		return function () {return this.state == x};
+	} (stateNum);
+}
+
+<span id='task-task-cfg-important'><span id='task-task-cfg-require'><span id='task-task-cfg-produce'><span id='task-task-cfg-timeout'><span id='task-task-cfg-retries'><span id='task-task-cfg-method'><span id='task-task-cfg-functionName'><span id='task-task-cfg-className'><span id='task-task'>/**
+</span></span></span></span></span></span></span></span></span> * @class task.task
+ * @extends events.EventEmitter
+ *
+ * Tasks are atomic synchronous/asynchronous entities that configure
+ * what must be done, what prerequisitives must be satisfied before doing it,
+ * and, optionally, where to store the task's result.
+ *
+ * `task` is an abstract base class that specific task types
+ * should inherite from.
+ *
+ * The base `task` class provides methods to control the task execution
+ * externally. These methods are called by the workflow.
+ * They cycle through a number of states ({@link #stateNames})
+ * and emit events.
+ *
+ * ### Example
+ *
+ * A sequence of task configs
+ * within the *RIA.Workflow* concept. `task` objects are instantiated
+ * by `workflow` internally.
+ *
+	{
+		workflows: [{
+			url: &quot;/entity/suggest&quot;,
+
+			tasks: [{
+				functionName: &quot;parseFilter&quot;,
+				url:          &quot;{$request.url}&quot;,
+				produce:      &quot;data.suggest&quot;
+			}, {
+				className:    &quot;mongoRequestTask&quot;,
+				connector:    &quot;mongo&quot;,
+				collection:   &quot;messages&quot;,
+				filter:       &quot;{$data.suggest.tag}&quot;,
+				produce:      &quot;data.records&quot;
+			}, {
+				className:    &quot;renderTask&quot;,
+				type:         &quot;json&quot;,
+				data:         &quot;{$data.records}&quot;,
+				output:       &quot;{$response}&quot;
+			}]
+		}]
+	}
+ *
+ * @cfg {String} className (required) The name of a module-exported class
+ * to be instantiated as an asynchronous task.
+ *
+ * **Warning**: Params {@link #className} and {@link #functionName}
+ * are mutually exclusive.
+ *
+ * @cfg {String} functionName (required) The name of a module-exported function
+ * to be called as a synchronous task.
+ *
+ * **Warning**: Params {@link #className} and {@link #functionName}
+ * are mutually exclusive.
+ *
+ * @cfg {String} [method=&quot;run&quot;] The entry point method name.
+ * This method will be called after the requirements are satisfied (if any).
+ *
+ * @cfg {Number} [retries=0] The number of times to retry to run the task.
+ *
+ * @cfg {Number} [timeout=1] The number of seconds between retries
+ * to run the task.
+ *
+ * @cfg {String} produce The name of the workflow data field to receive
+ * the result of the task.
+ *
+ * @cfg {Function|String|String[]} require Lists requirements to check.
+ *
+ * Implementations might provide either a function that checks whether
+ * the requirements are satisfied or an identifier or a list of identifiers,
+ * representing required objects.
+ *
+ * @returns {Boolean} If `require` is callable, it must return a boolean value.
+ *
+ * @cfg {Boolean} important If the task is marked important,
+ * it may declare itself {@link #failed}.
+ * Used in custom {@link #method} methods.
+ */
+
+var task = module.exports = function (config) {
+
+}
+
+util.inherits (task, EventEmitter);
+
+util.extend (task.prototype, taskStateMethods, {
+
+	init: function (config) {
+
+		this.require      = config.require || null;
+		this.mustProduce  = config.mustProduce;
+		this.cb           = config.cb;
+		this.cbScope      = config.cbScope;
+		this.className    = config.className;
+		this.functionName = config.functionName;
+
+		this.method       = config.method;
+		if (this.className &amp;&amp; !this.method)
+			this.method   = 'run';
+
+		if (!this.logTitle) {
+			if (this.className) {
+				this.logTitle = this.className + '.' + this.method;
+			} else {
+				this.logTitle = this.functionName;
+			}
+		}
+
+		var stateList = taskStateList;
+
+		var self = this;
+
+		this.state = 0;
+
+		// default values
+
+		// TODO: this is provided only on run
+		self.timeout = config.timeout || 1;
+		self.retries = config.retries || 0;
+
+		self.attempts = 0;
+
+		self.important = config.important || void 0;
+
+		var state = this.checkState ();
+//		console.log (this.url, 'state is', stateList[state], ' (' + state + ')', (state == 0 ? (this.require instanceof Array ? this.require.join (', ') : this.require) : ''));
+
+		var oldRun = this[this.method || 'run'];
+
+		this.run = function () {
+
+			//this.emit ('log', 'RUN RETRIES : ' + this.retries);
+
+			if (this.state != 1) return;
+
+			this.state = 2;
+
+			if (oldRun) oldRun.call (this);
+		}
+
+		var oldCancel = this.cancel;
+
+<span id='task-task-method-cancel'>		/**
+</span>		 * @method cancel
+		 * Cancels the running task. The task is registered as attempted
+		 * to run.
+		 *
+		 * Switches the task's state from `running` to `idle`.
+		 *
+		 * If the {@link #retries} limit allows, attempt to run the task
+		 * after a delay ({@link #timeout}).
+		 *
+		 * Publishes {@link #event-cancel}.
+		 */
+		this.cancel = function () {
+
+			this.attempts ++;
+
+			if (this.state == 2) return;
+
+			this.state = 5;
+
+			if (oldCancel) oldCancel.call (this);
+
+			self.clearOperationTimeout();
+
+			//this.emit ('log', 'CANCEL RETRIES : ' + this.retries);
+
+			if (this.attempts - this.retries - 1 &lt; 0) {
+
+				this.state = 1;
+
+				setTimeout(function () {
+					self.run();
+				}, this.timeout.seconds());
+			}
+
+<span id='task-task-event-cancel'>		    /**
+</span>			 * @event cancel
+			 * Published on task cancel.
+			 */
+			this.emit ('cancel');
+
+		}
+
+	},
+
+<span id='task-task-method-completed'>	/**
+</span>	 * @method completed
+	 * Publishes {@link #event-complete} with the result object
+	 * that will go into the {@link #produce} field of the workflow.
+	 *
+	 * @param {Object} result The product of the task.
+	 */
+	completed: function (result) {
+		this.state = 4;
+
+		var mustProduce = this.mustProduce;
+
+		if (mustProduce) {
+			var checkString = (mustProduce instanceof Array ? mustProduce.join (' &amp;&amp; ') : mustProduce);
+			var satisfy = 0;
+			try {satisfy = eval (&quot;if (&quot;+ checkString +&quot;) 1&quot;) } catch (e) {};
+			if (!satisfy) {
+				// TODO: WebApp.Loader.instance.taskError (this);
+				console.error (&quot;task &quot; + this.url + &quot; must produce &quot; + checkString + &quot; but it doesn't&quot;);
+				// TODO: return;
+			}
+		}
+
+		// coroutine call
+		if (typeof this.cb == 'function') {
+//			console.log ('cb defined', this.cb, this.cbScope);
+
+			if (this.cbScope) {
+				this.cb.call (this.cbScope, this);
+			} else {
+				this.cb (this);
+			}
+		}
+
+<span id='task-task-event-complete'>		/**
+</span>		 * @event complete
+		 * Published upon task completion.
+		 *
+		 * @param {task.task} task
+		 * @param {Object} result
+		 */
+		this.emit (&quot;complete&quot;, this, result);
+	},
+
+<span id='task-task-method-skipped'>	/**
+</span>	 * @method skipped
+	 * Skips the task with a given result.
+	 *
+	 * Publishes {@link #event-skip}.
+	 *
+	 * @param {Object} result Substitutes the tasks's complete result.
+
+	 */
+	skipped: function (result) {
+		this.state = 6;
+
+<span id='task-task-event-skip'>		/**
+</span>		 * @event skip
+		 * Triggered when the task is {@link #skipped}.
+
+		 * @param {task.task} task
+		 * @param {Object} result
+		 */
+		this.emit (&quot;skip&quot;, this, result);
+	},
+
+<span id='task-task-method-mapFields'>	/**
+</span>	 * @method mapFields
+	 * Translates task configuration from custom field-naming cheme.
+	 *
+	 * @param {Object} item
+	 */
+	mapFields: function (item) {
+		var self = this;
+
+		for (var k in self.mapping) {
+			if (item[self.mapping[k]])
+				item[k] = item[self.mapping[k]];
+		}
+	},
+
+<span id='task-task-method-checkState'>	/**
+</span>	 * @method checkState
+	 * Checks requirements and updates the task state.
+	 *
+	 * @return {Number} The new state code.
+	 */
+	checkState: function () {
+
+		var self = this;
+
+		if (!self.require &amp;&amp; this.state == 0) {
+			this.state = 1;
+		}
+
+		if (this.state &gt;= 1)
+			return this.state;
+
+		var satisfy = 0;
+		if (typeof self.require == 'function') {
+			satisfy = self.require ();
+		} else {
+			try {
+				satisfy = eval (&quot;if (&quot;+ (
+					self.require instanceof Array
+						? self.require.join (' &amp;&amp; ')
+						: self.require)+&quot;) 1&quot;)
+			} catch (e) {
+
+			};
+		}
+		if (satisfy) {
+			this.state = 1;
+			return this.state;
+		}
+
+		return this.state;
+	},
+
+<span id='task-task-method-clearOperationTimeout'>	/**
+</span>	 * @private
+	 */
+	clearOperationTimeout: function() {
+
+		if (this.timeoutId) {
+			clearTimeout (this.timeoutId);
+			this.timeoutId = 0;
+		}
+
+	},
+
+<span id='task-task-method-activityCheck'>	/**
+</span>	 * @private
+	 */
+	activityCheck: function (place, breakOnly) {
+
+		if (place!==&quot;model.fetch data&quot;) {
+			// console.log(&quot;%%%%%%%%%%%%%place -&gt; &quot;, place);
+		}
+		var self = this;
+
+		if (breakOnly === void (0)) {
+			breakOnly = false;
+		}
+
+		self.clearOperationTimeout();
+
+		if (!breakOnly)
+		{
+			self.timeoutId = setTimeout(function () {
+				self.state = 5;
+				self.emit (
+					'log', 'timeout is over for ' + place + ' operation'
+				);
+				self.model.stop();
+				self.cancel();
+
+			}, self.timeout.seconds());
+		}
+	},
+
+<span id='task-task-property-stateNames'>	/**
+</span>	 * @enum stateNames
+	 *
+	 * A map of the task state codes to human-readable state descriptions.
+	 *
+	 * The states codes are:
+	 *
+	 * - `scarce`
+	 * - `ready`
+	 * - `running`
+	 * - `idle`
+	 * - `complete`
+	 * - `failed`
+	 * - `skipped`
+	 */
+	stateNames: taskStateNames,
+
+<span id='task-task-method-failed'>	/**
+</span>	 * @method failed
+	 * Emits an {@link #event-error}.
+	 *
+	 * Cancels (calls {@link #method-cancel}) the task if it was ready
+	 * or running; or just emits {@link #event-cancel} if not.
+	 *
+	 * Sets the status to `failed`.
+	 *
+	 * Sidenote: when a task fails the whole workflow, that it belongs to, fails.
+	 *
+	 * @return {Boolean} Always true.
+	 * @param {Error} Error object.
+
+	 */
+	failed: function (e) {
+		var prevState = this.state;
+		this.state = 5;
+
+<span id='task-task-event-error'>		/**
+</span>		 * @event error
+		 * Emitted on task fail and on internal errors.
+		 * @param {Error} e Error object.
+		 */
+		this.emit('error', e);
+		// if task failed at scarce state
+		if (prevState)
+			this.cancel()
+		else
+			this.emit ('cancel');
+		return true;
+	}
+
+
+});
+
+<span id='task-task-method-EmitError'>/**
+</span> * @method EmitError
+ * Implementation-specific.
+ * When an unexpected error occurs, the task is automatically {@link #failed}.
+ */
+task.prototype.EmitError = task.prototype.failed;
+
+return task;
+
+});
+</pre>
+</body>
+</html>

@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>The source code</title>
+  <link href="../resources/prettify/prettify.css" type="text/css" rel="stylesheet" />
+  <script type="text/javascript" src="../resources/prettify/prettify.js"></script>
+  <style type="text/css">
+    .highlight { display: block; background-color: #ddd; }
+  </style>
+  <script type="text/javascript">
+    function highlight() {
+      document.getElementById(location.hash.replace(/#/, "")).className = "highlight";
+    }
+  </script>
+</head>
+<body onload="prettyPrint(); highlight();">
+  <pre class="prettyprint lang-js">// Require initiator.listener
+
+var events  = require ('events'),
+	http    = require ('http'),
+	urlUtil = require ('url'),
+	util    = require ('util');
+
+
+var model = module.exports = function (url) {
+	
+	var self = this;
+	
+	if (url.constructor === String) {
+		try {
+			this.url = urlUtil.parse (url, true);
+			var a = this.url.protocol.length;
+		} catch (e) {
+			self.emit ('error', e);
+		}
+	} else {
+		this.url = url;
+	}
+	
+	this.modelName = this.url.protocol.substr (0, this.url.protocol.length - 1);
+	
+//	console.log (this.modelName);
+	var requiredModel = require ('model/'+this.modelName);
+	this.dataSource = new  requiredModel (this);
+	
+	// fetch method
+	
+	this.fetch = function (target) {
+		
+		self.dataSource.fetch(target);
+		
+	}
+	
+	this.store = function (target) {
+		
+		self.dataSource.store(target);
+		
+	}
+	
+	this.stop = function () {
+		
+		if (self.dataSource.stop) self.dataSource.stop();
+		
+	}
+	
+	// this.init();
+}
+
+util.inherits (model, events.EventEmitter);
+
+// there are some examples:
+// fetch: url (call GET for http, RETR for ftp)
+// store: url (call POST for http, PUT for ftp, send email for mailto)</pre>
+</body>
+</html>

@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>The source code</title>
+  <link href="../resources/prettify/prettify.css" type="text/css" rel="stylesheet" />
+  <script type="text/javascript" src="../resources/prettify/prettify.js"></script>
+  <style type="text/css">
+    .highlight { display: block; background-color: #ddd; }
+  </style>
+  <script type="text/javascript">
+    function highlight() {
+      document.getElementById(location.hash.replace(/#/, "")).className = "highlight";
+    }
+  </script>
+</head>
+<body onload="prettyPrint(); highlight();">
+  <pre class="prettyprint lang-js">define(function(require, exports, module) {
+
+var EventEmitter = require ('events').EventEmitter,
+	workflow     = require ('workflow');
+
+var callbacki = module.exports = function (config) {
+	var self = this;
+	
+	this.workflows = config.workflows;
+}
+
+util.inherits (callbacki, EventEmitter);
+
+util.extend (callbacki.prototype, {
+	prepare: function () {
+		this.emit ('ready');
+		
+	},
+	
+	process: function (token, request) {
+		
+		var self = this;
+		
+		var wf;
+		
+		self.workflows.map (function (item) {
+			
+			var match = (token == item.token);
+			
+			if (match) { //exact match
+				
+				wf = new workflow (
+					util.extend (true, {}, item),
+					{request: request}
+				);
+
+				self.emit (&quot;detected&quot;, request, wf);
+				if (item.autoRun || item.autoRun == void 0)
+					wf.run();
+				
+				return;
+			}
+		});
+		
+		if (!wf)
+			self.emit (&quot;unknown&quot;, request, wf);
+		
+		return wf;
+	}
+});
+
+return callbacki;
+
+});</pre>
+</body>
+</html>

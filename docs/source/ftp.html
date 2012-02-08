@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>The source code</title>
+  <link href="../resources/prettify/prettify.css" type="text/css" rel="stylesheet" />
+  <script type="text/javascript" src="../resources/prettify/prettify.js"></script>
+  <style type="text/css">
+    .highlight { display: block; background-color: #ddd; }
+  </style>
+  <script type="text/javascript">
+    function highlight() {
+      document.getElementById(location.hash.replace(/#/, "")).className = "highlight";
+    }
+  </script>
+</head>
+<body onload="prettyPrint(); highlight();">
+  <pre class="prettyprint lang-js">var FTPClient         = require ('node-ftp/ftp'),
+	util            = require ('util'),
+	fs                = require ('fs'),
+	ftpManager        = require ('model/ftp/model-manager');
+
+var pipeProgress = function (config) {
+	this.bytesTotal = 0;
+	this.bytesPass  = 0; // because bytes can be read and written
+	this.lastLogged = 0;
+	util.extend (this, config);
+}
+
+pipeProgress.prototype.watch = function () {
+	var self = this;
+	if (this.reader &amp;&amp; this.readerWatch) {
+		this.reader.on (this.readerWatch, function (chunk) {
+			self.bytesPass += chunk.length;
+		});
+	} else if (this.writer &amp;&amp; this.writerWatch) {
+		this.writer.on (this.writerWatch, function (chunk) {
+			self.bytesPass += chunk.length;
+		});
+	}
+}
+
+var ftpModel = module.exports = function (modelBase) {
+	
+	this.modelBase = modelBase;
+	this.url = modelBase.url;
+	
+}
+
+util.extend(ftpModel.prototype, {
+
+	store: function (source) {
+		
+		var self = this;
+		
+		var isStream = source.from instanceof fs.ReadStream;
+		
+		if (!isStream) {
+			self.emitError('Source is not ReadStream');
+			return;
+		}
+		
+		var progress = new pipeProgress ({
+			reader: source.from,
+			readerWatch: 'data',
+			totalBytes: source.size
+		});
+		
+		self.ftp = new FTPClient({ host: self.url.hostname});
+				
+		self.ftp.on ('error', function (e) {
+			if (self.emitError(e)) {
+				self.ftp.end();
+			}
+		});
+		
+		self.ftp.on ('timeout', function () {
+			if (self.emitError('connTimeout is over')) {
+				self.ftp.end();
+			}
+		});
+		
+		self.readStream = source.from;
+		
+		self.readStream.on ('data', function (chunk) {
+			self.modelBase.emit('data', chunk);
+		});
+		
+		self.readStream.on ('error', function (err) {
+			console.log ('readStream error');			
+			if (self.emitError(e)) {
+				self.ftp.end();
+			}
+		});
+
+		self.ftp.on('connect', function() {
+			
+			var auth = self.url.auth.split (':');
+			//console.log(&quot;!#!#!#!#!#!#!#!#!#!#!#!#!#!!#ftp before auth -&gt; &quot;);
+			self.ftp.auth(auth[0], auth[1], function(e) {
+				// console.log(&quot;!#!#!#!#!#!#!#!#!#!#!#!#!#!!# ftp after auth -&gt; &quot;);
+				
+				if (self.emitError(e)) {
+					self.ftp.end();
+					return;
+				}
+				
+				var cwdTarget = self.url.pathname.substring(1);
+				
+				self.ftp.cwd (cwdTarget, function (e) {
+				
+					if (e) { //self.emitError(e)) {
+						self.ftp.end();
+						return;
+					}
+					
+					if (self.progress) {
+							self.progress.watch ();
+					}
+					
+					self.readStream.resume ();
+										
+					var putResult = self.ftp.put(self.readStream, source.originalFileName, function(e) {
+						
+						if (self.emitError(e)) {
+							self.ftp.end();
+							return;
+						}
+						
+						self.ftp.end();
+						
+						self.modelBase.emit('end');
+						
+					});
+					
+				});
+				
+			});		
+		
+		});
+		
+		// add self for watching into ftpModelManager
+		project.ftpModelManager.add(self, source);
+		
+		return progress;
+	},
+	
+	run: function () {
+		this.ftp.connect();
+	},
+	
+	stop: function () {
+		this.ftp.end();
+	},
+	
+	emitError: function (e) {
+		if (e) {
+			this.modelBase.emit('error', e);
+			return true;
+		} else {
+			return false;
+		}
+	}
+	
+});</pre>
+</body>
+</html>
