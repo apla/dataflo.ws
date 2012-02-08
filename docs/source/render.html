@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>The source code</title>
+  <link href="../resources/prettify/prettify.css" type="text/css" rel="stylesheet" />
+  <script type="text/javascript" src="../resources/prettify/prettify.js"></script>
+  <style type="text/css">
+    .highlight { display: block; background-color: #ddd; }
+  </style>
+  <script type="text/javascript">
+    function highlight() {
+      document.getElementById(location.hash.replace(/#/, "")).className = "highlight";
+    }
+  </script>
+</head>
+<body onload="prettyPrint(); highlight();">
+  <pre class="prettyprint lang-js">var task         = require ('task/base'),
+	util         = require ('util'),
+	mime		 = require ('mime');
+
+var jade         = require ('jade');
+
+var renderTask = module.exports = function (config) {
+	
+	this.init (config);
+	
+};
+
+util.inherits (renderTask, task);
+
+var cache = {};
+
+util.extend (renderTask.prototype, {
+	readTemplate: function (templateIO, cb) {
+		templateIO.readFile (function (err, data) {
+			cb.call (this, err, data);
+		});
+	
+	},
+	run: function () {
+
+		var self = this;
+		
+		if (this.type == 'jade') {
+			self.output.setHeader(&quot;Content-Type&quot;, (this.type || 'text/html') + '; charset=utf-8');
+			var templateIO = project.root.fileIO (this.template);
+			// TODO
+			//if (cache {this.template}) {
+			//	templateIO.stat
+			//}
+			self.readTemplate (templateIO, function (err, data) {
+				if (err) {
+					console.error (&quot;can't access &quot; + this.template + &quot; file. create one and define project id&quot;);
+					process.kill ();
+					return;
+				};
+				var fn = jade.compile(data, {});
+				self.output.end (fn ({test: 2, pageTitle: 3, youAreUsingJade: false}));
+				self.completed ();
+
+			});
+
+		} else if (this.type == 'json') {
+			self.output.setHeader(&quot;Content-Type&quot;, mime.lookup(this.type) + '; charset=utf-8');
+			self.output.end (JSON.stringify(self.data));
+			self.completed ();
+		} else  if (this.type == 'asis') {
+			self.output.setHeader (&quot;Content-Type&quot;, self.contentType);
+			self.output.end (self.data);
+			self.completed ();
+		}		
+	}
+});
+</pre>
+</body>
+</html>

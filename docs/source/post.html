@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>The source code</title>
+  <link href="../resources/prettify/prettify.css" type="text/css" rel="stylesheet" />
+  <script type="text/javascript" src="../resources/prettify/prettify.js"></script>
+  <style type="text/css">
+    .highlight { display: block; background-color: #ddd; }
+  </style>
+  <script type="text/javascript">
+    function highlight() {
+      document.getElementById(location.hash.replace(/#/, "")).className = "highlight";
+    }
+  </script>
+</head>
+<body onload="prettyPrint(); highlight();">
+  <pre class="prettyprint lang-js">var task        = require ('task/base'),
+	util        = require ('util'),
+	qs			= require ('querystring'),
+	formidable  = require ('formidable');
+
+
+var postTask = module.exports = function (config) {
+	
+	this.request = config.request;
+	this.init (config);
+	
+};
+
+util.inherits (postTask, task);
+
+util.extend (postTask.prototype, {
+	
+	run: function () {
+		
+		// TODO: add data limit
+		
+		var self = this;
+		
+		if (self.request.method != 'POST' &amp;&amp; self.request.method != 'PUT')
+			return self.skipped ();
+			
+		if (self.request.headers['content-type'] == 'application/json') {
+			
+			var self = this;
+			 
+			self.data = &quot;&quot;;
+			 
+			self.request.on(&quot;data&quot;, function (chunk) {
+				self.data += chunk;
+			});
+			 
+			self.request.on(&quot;error&quot;, function (e) {
+				self.emmitError(e);
+			});
+			 
+			// TODO: file uploads
+			 
+			self.request.on(&quot;end&quot;, function () {
+				 
+				var fields;
+				 
+				if (self.dumpData) {
+					self.emit ('log', self.data);
+				}
+				 
+				try {
+					fields = JSON.parse (self.data);
+				} catch (e) {
+					fields = qs.parse (self.data);
+				}
+				
+				console.log('&lt;---------------post',fields);
+				
+				var body = {fields: fields};
+				
+				self.request.body = body;
+				 
+				self.completed (body);
+			});
+			
+			return;
+		}
+		
+		var form = new formidable.IncomingForm();
+		form.parse(self.request, function(err, fields, files) {
+			
+			if (err) {
+				self.failed (err);
+				return;
+			}
+			
+			var body = {fields: fields, files: files};
+			self.request.body = body;
+			
+			//console.log ('&lt;---------', body);
+			
+			self.completed (body);
+		});
+	}
+});
+</pre>
+</body>
+</html>

@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>The source code</title>
+  <link href="../resources/prettify/prettify.css" type="text/css" rel="stylesheet" />
+  <script type="text/javascript" src="../resources/prettify/prettify.js"></script>
+  <style type="text/css">
+    .highlight { display: block; background-color: #ddd; }
+  </style>
+  <script type="text/javascript">
+    function highlight() {
+      document.getElementById(location.hash.replace(/#/, "")).className = "highlight";
+    }
+  </script>
+</head>
+<body onload="prettyPrint(); highlight();">
+  <pre class="prettyprint lang-js">var test   = require('utest');
+var assert = require('assert');
+
+var common = require ('../common');
+
+var data = {
+	boolExp: &quot;{$data.bool}&quot;,
+	stringExp: &quot;{$data.string}&quot;,
+	stringExp2: &quot;{$badString}&quot;,
+	stringExp3: &quot;{$okString}&quot;,
+	numberExp: &quot;{$data.number}&quot;,
+	inlineExp: &quot;{$data.string}-{$data.number}&quot;,
+	arrayExp: &quot;{$arr}&quot;,
+	objectExp: &quot;{$data}&quot;,
+
+};
+
+var dict = {
+	data: {
+		bool: true,
+		string: &quot;string&quot;,
+		number: 123
+	},
+	badString: &quot;{$&quot;,
+	okString: &quot;}&quot;,
+	arr: ['a', 'b'],
+};
+
+test('interpolate', {
+	'expandBoolean': function() {
+		var result = data.boolExp.interpolate (dict);
+		assert.strictEqual (result, true);
+	},
+
+	'expandString': function() {
+		var result = data.stringExp.interpolate (dict);
+		assert.strictEqual (result, &quot;string&quot;);
+	},
+	'expandString2': function() {
+		assert.throws (function () {
+			var result = data.stringExp2.interpolate (dict);
+		});
+	},
+	'expandString3': function() {
+		var result = data.stringExp3.interpolate (dict);
+		assert.strictEqual (result, &quot;}&quot;);
+	},
+
+	'expandNumber': function() {
+		var result = data.numberExp.interpolate (dict);
+		assert.strictEqual (result, 123);
+	},
+
+	'expandInline': function() {
+		var result = data.inlineExp.interpolate (dict);
+		assert.strictEqual (result, &quot;string-123&quot;);
+	},
+
+	'expandArray': function() {
+		var result = data.arrayExp.interpolate (dict);
+		assert.deepEqual (result, ['a', 'b']);
+	},
+
+	'expandObject': function() {
+		var result = data.objectExp.interpolate (dict);
+		assert.deepEqual (result, {
+			bool: true,
+			string: &quot;string&quot;,
+			number: 123
+		});
+	}
+
+});
+</pre>
+</body>
+</html>

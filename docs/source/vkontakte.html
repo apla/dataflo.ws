@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>The source code</title>
+  <link href="../resources/prettify/prettify.css" type="text/css" rel="stylesheet" />
+  <script type="text/javascript" src="../resources/prettify/prettify.js"></script>
+  <style type="text/css">
+    .highlight { display: block; background-color: #ddd; }
+  </style>
+  <script type="text/javascript">
+    function highlight() {
+      document.getElementById(location.hash.replace(/#/, "")).className = "highlight";
+    }
+  </script>
+</head>
+<body onload="prettyPrint(); highlight();">
+  <pre class="prettyprint lang-js">var OAuth2 = require('lib/node-oauth').OAuth2,
+	querystring = require('querystring'),
+	task = require('task/base'),
+	util = require('util');
+	
+// - - - static
+
+var vkontakteConfig = project.config.consumerConfig.vkontakte;
+var vkontakteScopes = (vkontakteConfig ? vkontakteConfig.scopes : null);
+
+if (!vkontakteScopes) {
+
+	util.extend (vkontakteConfig, {	
+		&quot;scopes&quot;: {
+			&quot;notify&quot;: &quot;notify&quot;,
+			&quot;contacts&quot;: &quot;friends&quot;,
+			&quot;photos&quot;: &quot;photos&quot;,
+			&quot;audio&quot;: &quot;audio&quot;,
+			&quot;video&quot;: &quot;video&quot;,
+			&quot;docs&quot;: &quot;docs&quot;,
+			&quot;notes&quot;: &quot;notes&quot;,
+			&quot;pages&quot;: &quot;pages&quot;,
+			&quot;offers&quot;: &quot;offers&quot;,
+			&quot;questions&quot;: &quot;questions&quot;,
+			&quot;wall&quot;: &quot;wall&quot;,
+			&quot;groups&quot;: &quot;groups&quot;,
+			&quot;messages&quot;: &quot;messages&quot;,
+			&quot;notifications&quot;: &quot;notifications&quot;,
+			&quot;ads&quot;: &quot;ads&quot;,
+			&quot;offline&quot;: &quot;offline&quot;,
+			&quot;nohttps&quot;: &quot;nohttps&quot;
+		}
+	});
+	
+	vkontakteScopes = vkontakteConfig.scopes;
+	
+//	console.log ('&lt;------vkontakteConfig', vkontakteConfig);
+}
+
+// - - -
+
+var vkontakte = module.exports = function(config) {
+
+	this.scopes = [
+		&quot;contacts&quot;
+	];
+
+	this.init (config);		
+
+};
+
+util.inherits (vkontakte, task);
+
+util.extend (vkontakte.prototype, {
+
+	run: function() {
+		
+		var self = this;
+		self.failed('use method [login|callback|profile]');
+		
+	},
+	
+	login: function () {
+		
+		var self = this;
+		var req = self.req;
+		var res = self.res;
+		var query = req.url.query;
+		
+		var scopes = [];
+		
+		self.scopes.map(function(scope) {
+			scopes.push (vkontakteScopes[scope]);
+		});
+		
+		var getParams = {
+			client_id: vkontakteConfig.appId,
+			response_type : &quot;code&quot;,
+			redirect_uri: vkontakteConfig.callbackUrl,
+			scope: scopes.join(','),
+		};
+		
+		var redirectUrl = vkontakteConfig.requestTokenUrl + &quot;?&quot; + querystring.stringify(getParams);
+		
+		self.completed(redirectUrl);
+	},
+	
+	callback: function() {
+		
+		var self = this;
+		var req = self.req;
+		var query = req.url.query;
+		var tokens = req.user.tokens;
+		
+		if (query.error || !query.code) {
+			self.failed (query.error_description || &quot;token was not accepted&quot;);
+		}
+		
+		var oa = new OAuth2(vkontakteConfig.appId,  vkontakteConfig.appSecret,  vkontakteConfig.baseUrl, vkontakteConfig.authorizeUrl, vkontakteConfig.accessTokenUrl);
+		
+		oa.getOAuthAccessToken(
+			query.code,
+			{},
+			function( error, access_token, refresh_token, results){
+			
+				if (error) {
+					
+					self.failed(error);
+									
+				} else {
+					
+					tokens.oauth_access_token = access_token;
+					if (refresh_token) tokens.oauth_refresh_token = refresh_token;
+					
+					self.completed (results.user_id);
+				}
+		});
+	},
+	
+	profile: function() {
+		
+		var self = this;
+		var req = self.req;
+		var tokens = req.user.tokens;
+		
+		var options = {
+			uid: self.userId,
+			fields: 'uid,first_name,last_name,photo'
+		};
+		
+		var oa = new OAuth2(vkontakteConfig.appId,  vkontakteConfig.appSecret,  vkontakteConfig.baseUrl, vkontakteConfig.authorizeUrl, vkontakteConfig.accessTokenUrl);
+		
+		oa.getProtectedResource(
+			&quot;https://api.vkontakte.ru/method/getProfiles?&quot;+querystring.stringify(options),
+			tokens.oauth_access_token,
+			function (error, data, response) {
+				
+				if (error) {
+					self.failed(error);
+				} else {
+					try {
+						var user = JSON.parse(data).response[0];
+						self.completed(self.mappingUser(user));
+					} catch (e) {
+						self.failed(e);
+					}
+				}
+		});
+	},
+	
+	mappingUser: function(user) {
+		
+		return {
+			name: user.first_name+' '+user.last_name,
+			email: &quot;id&quot;+user.uid+ &quot;@vk.com&quot;,
+			avatar: user.photo,
+			link: &quot;http://vk.com/id&quot;+user.uid
+		};
+		
+	}
+});</pre>
+</body>
+</html>

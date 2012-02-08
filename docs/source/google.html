@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>The source code</title>
+  <link href="../resources/prettify/prettify.css" type="text/css" rel="stylesheet" />
+  <script type="text/javascript" src="../resources/prettify/prettify.js"></script>
+  <style type="text/css">
+    .highlight { display: block; background-color: #ddd; }
+  </style>
+  <script type="text/javascript">
+    function highlight() {
+      document.getElementById(location.hash.replace(/#/, "")).className = "highlight";
+    }
+  </script>
+</head>
+<body onload="prettyPrint(); highlight();">
+  <pre class="prettyprint lang-js">var OAuth = require('lib/node-oauth').OAuth,
+	querystring = require('querystring'),
+	task = require('task/base'),
+	util = require('util');
+	
+// - - - static	
+	
+var googleConfig = project.config.consumerConfig.google;
+var googleScopes = (googleConfig ? googleConfig.scopes : null);
+
+if (!googleScopes) {
+
+	util.extend (googleConfig, {		
+		&quot;scopes&quot;: {
+			&quot;profile&quot;			: &quot;https://www.googleapis.com/auth/userinfo.profile&quot;,
+			&quot;userinfo&quot;			: &quot;https://www.googleapis.com/auth/userinfo.email&quot;,
+			&quot;analytics&quot;			: &quot;https://www.google.com/analytics/feeds/&quot;,
+			&quot;google_base&quot;		: &quot;https://www.google.com/base/feeds/&quot;,
+			&quot;google_buzz&quot;		: &quot;https://www.googleapis.com/auth/buzz&quot;,
+			&quot;book_search&quot;		: &quot;https://www.google.com/books/feeds/&quot;,
+			&quot;blogger&quot;			: &quot;https://www.blogger.com/feeds/&quot;,
+			&quot;calendar&quot;			: &quot;https://www.google.com/calendar/feeds/&quot;,
+			&quot;contacts&quot;			: &quot;https://www.google.com/m8/feeds/&quot;,
+			&quot;chrome_web store&quot;	: &quot;https://www.googleapis.com/auth/chromewebstore.readonly&quot;,
+			&quot;documents_list&quot;	: &quot;https://docs.google.com/feeds/&quot;,
+			&quot;finance&quot;			: &quot;https://finance.google.com/finance/feeds/&quot;,
+			&quot;gmail&quot;				: &quot;https://mail.google.com/mail/feed/atom&quot;,
+			&quot;health&quot;			: &quot;https://www.google.com/health/feeds/&quot;,
+			&quot;h9&quot;				: &quot;https://www.google.com/h9/feeds/&quot;,
+			&quot;maps&quot;				: &quot;https://maps.google.com/maps/feeds/&quot;,
+			&quot;moderator&quot;			: &quot;https://www.googleapis.com/auth/moderator&quot;,
+			&quot;opensocial&quot;		: &quot;https://www-opensocial.googleusercontent.com/api/people/&quot;,
+			&quot;orkut&quot;				: &quot;https://orkut.gmodules.com/social/rest&quot;,
+			&quot;picasa_web&quot;		: &quot;https://picasaweb.google.com/data/&quot;,
+			&quot;sidewiki&quot;			: &quot;https://www.google.com/sidewiki/feeds/&quot;,
+			&quot;sites&quot;				: &quot;https://sites.google.com/feeds/&quot;,
+			&quot;spreadsheets&quot;		: &quot;https://spreadsheets.google.com/feeds/&quot;,
+			&quot;tasks&quot;				: &quot;https://www.googleapis.com/auth/tasks&quot;,
+			&quot;url_shortener&quot;		: &quot;https://www.googleapis.com/auth/urlshortener&quot;,
+			&quot;wave&quot;				: &quot;http://wave.googleusercontent.com/api/rpc&quot;,
+			&quot;webmaster_tools&quot;	: &quot;https://www.google.com/webmasters/tools/feeds/&quot;,
+			&quot;youtube&quot;			: &quot;https://gdata.youtube.com&quot;
+		}
+	});
+	
+	googleScopes = googleConfig.scopes;
+	
+	for (var scope in googleScopes) {
+		googleScopes[scope] = [googleScopes[scope], querystring.escape(googleScopes[scope])];
+	}
+	
+//	console.log ('&lt;------------------ google',  googleConfig);
+
+}
+	
+// - - -
+
+var google = module.exports = function(config) {
+
+	this.scopes = [
+		&quot;profile&quot;,
+		&quot;userinfo&quot;
+	];
+
+	this.init (config);		
+
+};
+
+util.inherits (google, task);
+
+util.extend (google.prototype, {
+
+	run: function() {
+		
+		var self = this;
+		self.failed('use method [login|callback|profile]');
+		
+	},
+	
+	login: function () {
+		
+		var self = this;
+		var req = self.req;
+		
+		var scopes = [];
+		
+		self.scopes.map(function(scope) {
+			scopes.push(googleScopes[scope][1]);
+		});
+		
+		// TODO: move callback path to config
+		
+		var query = req.url.query;
+		
+		var oa = new OAuth(googleConfig.requestTokenUrl+&quot;?scope=&quot;+scopes.join('+'),
+			googleConfig.requestTokenUrl,
+			googleConfig.clientId,
+			googleConfig.clientSecret,
+			&quot;1.0&quot;,
+			googleConfig.callbackUrl + ( query.action &amp;&amp; query.action != &quot;&quot; ? &quot;?action=&quot;+querystring.escape(query.action) : &quot;&quot; ),
+			&quot;HMAC-SHA1&quot;);
+
+		oa.getOAuthRequestToken(function(error, oauth_token, oauth_token_secret, results){
+		  
+			if(error) {
+		
+				self.failed(error);
+			
+			} else { 
+				
+				// store the oa config in the session
+				
+				req._requestUrl			= oa._requestUrl;
+				req._authorize_callback = oa._authorize_callback;
+				
+				// - - - and tokens
+				
+				req.oauth_token = oauth_token;
+				req.oauth_token_secret = oauth_token_secret;
+				
+				var redirectUrl = &quot;https://www.google.com/accounts/OAuthAuthorizeToken?oauth_token=&quot;+oauth_token;
+				
+				self.completed(redirectUrl);
+			}
+		  
+		});
+	},
+	
+	callback: function() {
+		
+		var self = this;
+		var req = self.req;
+		var query = req.url.query;
+		var tokens = req.user.tokens;
+		
+		var oa = new OAuth(tokens._requestUrl,
+			googleConfig.accessTokenUrl,
+			googleConfig.clientId,
+			googleConfig.clientSecret,
+			&quot;1.0&quot;,
+			tokens._authorize_callback,
+			&quot;HMAC-SHA1&quot;);
+
+		oa.getOAuthAccessToken(
+
+			tokens.oauth_token, 
+			tokens.oauth_token_secret, 
+			query['oauth_verifier'], 
+			function(error, oauth_access_token, oauth_access_token_secret, results) {
+
+				if (error) {
+					
+					self.failed(error);
+					
+				} else {
+
+					// store the access token in the session
+					tokens.oauth_access_token = oauth_access_token;
+					tokens.oauth_access_token_secret = oauth_access_token_secret;
+					
+					var redirectUrl = (query.action &amp;&amp; query.action != &quot;&quot;) ? query.action : &quot;/&quot;
+					self.completed(redirectUrl);
+				}
+			}
+		);
+	},
+	
+	profile: function() {
+		var self = this;
+		var req = self.req;
+		var tokens = req.user.tokens;
+		
+		var oa = new OAuth(tokens._requestUrl,
+			googleConfig.accessTokenUrl,
+			googleConfig.clientId,
+			googleConfig.clientSecret,
+			&quot;1.0&quot;,
+			tokens._authorize_callback,
+			&quot;HMAC-SHA1&quot;);
+		
+		oa._headers['GData-Version'] = '2'; 
+		
+		oa.getProtectedResource(
+			&quot;https://www.googleapis.com/oauth2/v1/userinfo&quot;, 
+			&quot;GET&quot;, 
+			tokens.oauth_access_token, 
+			tokens.oauth_access_token_secret,
+			function (error, data, response) {
+				
+				if (error) {
+					self.failed(error.message);
+				} else {
+					try {
+						var user = JSON.parse(data);
+						self.completed(self.mappingUser(user));
+					} catch (e) {
+						self.failed(e);
+					}
+				}
+			}
+		);
+	},
+	
+	mappingUser: function(user) {
+		
+		return {
+			name: user.name,
+			email: user.email,
+			avatar: user.picture,
+			link: user.link
+		};
+		
+	}
+});</pre>
+</body>
+</html>

@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>The source code</title>
+  <link href="../resources/prettify/prettify.css" type="text/css" rel="stylesheet" />
+  <script type="text/javascript" src="../resources/prettify/prettify.js"></script>
+  <style type="text/css">
+    .highlight { display: block; background-color: #ddd; }
+  </style>
+  <script type="text/javascript">
+    function highlight() {
+      document.getElementById(location.hash.replace(/#/, "")).className = "highlight";
+    }
+  </script>
+</head>
+<body onload="prettyPrint(); highlight();">
+  <pre class="prettyprint lang-js">var task         = require ('task/base'),
+	util         = require ('util'),
+	mime		 = require ('mime');
+
+var cookieRender = module.exports = function (config) {
+	
+	this.init (config);
+	
+};
+
+util.inherits (cookieRender, task);
+
+util.extend (cookieRender.prototype, {
+	
+	run: function () {
+
+		var self = this;
+		
+		var cookies = [];
+		
+		self.cookies.map(function(cookie) {
+		
+			cookies.push(self.serializeCookie(cookie));
+		
+		});
+		
+		self.output.setHeader (&quot;Set-Cookie&quot;, cookies);
+		
+		self.completed (cookies);
+	},
+	
+	serializeCookie: function(cookie) {
+		
+		var pairs = [cookie.name + '=' + encodeURIComponent(cookie.value)];
+		
+		if (cookie.domain) pairs.push('domain=' + cookie.domain);
+		if (cookie.path) pairs.push('path=' + cookie.path);
+		if (cookie.expirePeriod) {
+			
+			var expires = new Date();
+			var expirePeriod;
+			
+			var firstChar = cookie.expirePeriod[0];
+			expirePeriod = parseInt(cookie.expirePeriod);
+			
+			if (firstChar == &quot;+&quot; || firstChar == &quot;-&quot;) {
+				expires.setTime(expires.getTime() + expirePeriod);
+			} else {
+				expires.setTime(expirePeriod);			
+			}
+			
+			
+			pairs.push('expires=' + expires.toUTCString());
+		}
+		if (cookie.httpOnly) pairs.push('httpOnly');
+		if (cookie.secure) pairs.push('secure');
+
+		return pairs.join('; ');
+	}
+	
+});</pre>
+</body>
+</html>

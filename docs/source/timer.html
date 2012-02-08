@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>The source code</title>
+  <link href="../resources/prettify/prettify.css" type="text/css" rel="stylesheet" />
+  <script type="text/javascript" src="../resources/prettify/prettify.js"></script>
+  <style type="text/css">
+    .highlight { display: block; background-color: #ddd; }
+  </style>
+  <script type="text/javascript">
+    function highlight() {
+      document.getElementById(location.hash.replace(/#/, "")).className = "highlight";
+    }
+  </script>
+</head>
+<body onload="prettyPrint(); highlight();">
+  <pre class="prettyprint lang-js">var EventEmitter   = require ('events').EventEmitter,
+	Workflow       = require ('workflow');
+var util = require('util');
+
+var timeri = module.exports = function (config) {
+	var self = this;
+	
+	// here we must define what timer events we must watch:
+	// 1. at precise time - unix time (precise: 1223312333221312) ???
+	// 2. once after timeout, in milliseconds (timeout: 2000)
+	// 3. using interval, in milliseconds (every: 1000)
+	
+	if (!config.conf)
+		throw &quot;you must define 'config' for timer initiator&quot;;
+	
+	this.workflows = config.workflows;
+	
+	this.ready ();
+}
+
+util.inherits (amqpi, EventEmitter);
+
+util.extend (amqpi.prototype, {
+	
+	ready: function () {
+		
+		var self = this;
+				
+		self.workflows.map(function (workflowParams) {
+			
+			// TODO: workflow manager for workflows running more time than interval
+
+			var workflow = new Workflow (
+				util.extend (true, {}, workflowParams),
+				{request: {time: new Date()}}
+			);
+			
+			if (workflowParams.interval) {
+				setInterval (function () {
+					workflow.run ();
+				}, workflowParams.interval);
+			} else if (workflowParams.timeout) {
+				setTimeout (function () {
+					workflow.run ();
+				}, workflowParams.timeout);
+			}
+		});
+		
+	}
+});</pre>
+</body>
+</html>

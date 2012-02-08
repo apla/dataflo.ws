@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>The source code</title>
+  <link href="../resources/prettify/prettify.css" type="text/css" rel="stylesheet" />
+  <script type="text/javascript" src="../resources/prettify/prettify.js"></script>
+  <style type="text/css">
+    .highlight { display: block; background-color: #ddd; }
+  </style>
+  <script type="text/javascript">
+    function highlight() {
+      document.getElementById(location.hash.replace(/#/, "")).className = "highlight";
+    }
+  </script>
+</head>
+<body onload="prettyPrint(); highlight();">
+  <pre class="prettyprint lang-js">var OAuth = require('lib/node-oauth').OAuth,
+	querystring = require('querystring'),
+	task = require('task/base'),
+	util = require('util');
+	
+// - - - static	
+	
+var twitterConfig = project.config.consumerConfig.twitter;
+
+//console.log ('&lt;------twitterConfig', twitterConfig);
+
+	
+// - - -
+
+var twitter = module.exports = function(config) {
+
+	this.init (config);		
+
+};
+
+util.inherits (twitter, task);
+
+util.extend (twitter.prototype, {
+
+	run: function() {
+		
+		var self = this;
+		self.failed('use method [login|callback|profile]');
+		
+	},
+	
+	login: function () {
+		
+		var self = this;
+		var req = self.req;
+		var res = self.res;
+		
+		var query = req.url.query;
+		
+		var oa = new OAuth(twitterConfig.requestTokenUrl,
+			twitterConfig.accessTokenUrl,
+			twitterConfig.consumerKey,
+			twitterConfig.consumerSecret,
+			&quot;1.0&quot;,
+			twitterConfig.callbackUrl,
+			&quot;HMAC-SHA1&quot;);
+
+		oa.getOAuthRequestToken(function(error, oauth_token, oauth_token_secret, oauth_authorize_url, additionalParameters ) {
+		
+          if (error) {
+            
+			self.failed(error);
+          
+		  } else {
+		  
+            req.twitter_redirect_url = req.url;
+            req.twitter_oauth_token_secret = oauth_token_secret;
+            req.twitter_oauth_token = oauth_token;
+            
+			self.completed(&quot;http://twitter.com/oauth/authenticate?oauth_token=&quot; + oauth_token);
+          }
+        
+		});
+	},
+	
+	callback: function() {
+		
+		var self = this;
+		var req = self.req;
+		var query = req.url.query;
+		var tokens = req.user.tokens;
+		
+		var oa = new OAuth(twitterConfig.requestTokenUrl,
+			twitterConfig.accessTokenUrl,
+			twitterConfig.consumerKey,
+			twitterConfig.consumerSecret,
+			&quot;1.0&quot;,
+			twitterConfig.callbackUrl,
+			&quot;HMAC-SHA1&quot;);
+
+		oa.getOAuthAccessToken(query.oauth_token, tokens.twitter_oauth_token_secret,
+			function(error, oauth_token, oauth_token_secret, additionalParameters ) {
+				if (error) {
+					self.failed(error);
+				} else {
+					
+					tokens.oauth_token_secret = oauth_token_secret;
+					tokens.oauth_token = oauth_token;
+					
+					self.completed(additionalParameters.user_id);
+			}
+		});
+	},
+	
+	profile: function() {
+		var self = this;
+		var req = self.req;
+		var tokens = req.user.tokens;
+		
+		var oa = new OAuth(twitterConfig.requestTokenUrl,
+			twitterConfig.accessTokenUrl,
+			twitterConfig.consumerKey,
+			twitterConfig.consumerSecret,
+			&quot;1.0&quot;,
+			twitterConfig.callbackUrl,
+			&quot;HMAC-SHA1&quot;);
+		
+		oa.getProtectedResource(
+			&quot;https://api.twitter.com/1/users/show.json?id=&quot;+self.userId, 
+			&quot;GET&quot;, 
+			tokens.oauth_token, 
+			tokens.oauth_token_secret,
+			
+			function (error, data, response) {
+				
+				if (error) {
+					self.failed(error.message);
+				} else {
+					try {
+						var user = JSON.parse(data);
+						
+						//console.log ('&lt;---------user', user);
+						
+						self.completed(self.mappingUser(user));
+					} catch (e) {
+						self.failed(e);
+					}
+				}
+			}
+		);
+	},
+	
+	mappingUser: function(user) {
+		
+		return {
+			name: user.name,
+			email: user.screen_name+&quot;@twitter.com&quot;,
+			avatar: user.profile_image_url,
+			link: &quot;https://twitter.com/?id=&quot;+user.id
+		};
+		
+	}
+});</pre>
+</body>
+</html>

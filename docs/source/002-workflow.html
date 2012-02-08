@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>The source code</title>
+  <link href="../resources/prettify/prettify.css" type="text/css" rel="stylesheet" />
+  <script type="text/javascript" src="../resources/prettify/prettify.js"></script>
+  <style type="text/css">
+    .highlight { display: block; background-color: #ddd; }
+  </style>
+  <script type="text/javascript">
+    function highlight() {
+      document.getElementById(location.hash.replace(/#/, "")).className = "highlight";
+    }
+  </script>
+</head>
+<body onload="prettyPrint(); highlight();">
+  <pre class="prettyprint lang-js">var test     = require('utest');
+var assert   = require('assert');
+
+var util     = require ('util');
+
+var common   = require ('../common');
+var workflow = require ('../workflow');
+
+clearInterval ($stash.currentDateInterval);
+
+var verbose = true;
+
+var tests = [];
+
+var failure = function (desc) {
+	return function () {
+		test (desc, {'failure test': function () {
+			if (verbose) console.log ('failure, ' + desc);
+			assert.equal (true, false);
+		}});
+	}
+}
+
+var ok = function (desc) {
+	return function () {
+		var tests = {};
+		tests[desc + 'ok test'] = function () {
+			if (verbose) console.log ('ok, ' + desc);
+			assert.equal (true, true);
+		};
+		test (desc, tests);
+	};
+}
+
+//process.on('uncaughtException', failure ('unhadled exception'));
+
+var workflows = [{
+	description: &quot;task failed at constructor call&quot;,
+	config: {
+		tasks: [{
+			className: &quot;non-existent-task&quot;,
+			produce: &quot;data.ok&quot;
+		}]
+	},
+	request: {
+		test: true
+	},
+	completed: failure ('non-existent-task'),
+	failed: ok ('non-existent-task')
+}, {
+	description: &quot;one completed and one skipped task&quot;,
+	config: {
+		tasks: [{
+			className: &quot;./test/task/002-ok-task&quot;,
+			produce: &quot;data.ok&quot;
+		}, {
+			className: &quot;./test/task/002-skip-task&quot;,
+			requires: &quot;{$data.ok}&quot;,
+			produce: &quot;data.skip&quot;
+		}]
+	},
+	request: {
+		test: true
+	},
+	failed: failure ('complete + skipped task'),
+	completed: ok ('complete + skipped task')
+}, {
+	description: &quot;two skipped tasks&quot;,
+	config: {
+		tasks: [{
+			className: &quot;./test/task/002-skip-task&quot;,
+			produce: &quot;data.skip1&quot;
+		}, {
+			className: &quot;./test/task/002-skip-task&quot;,
+			produce: &quot;data.skip2&quot;
+		}]
+	},
+	request: {
+		test: true
+	},
+	failed: failure ('skipped + skipped task'),
+	completed: ok ('skipped + skipped task')
+}, {
+	description: &quot;it's ok to skip some tasks if requirements not satisfied&quot;,
+	config: {
+		tasks: [{
+			className: &quot;./test/task/002-ok-task&quot;,
+			produce: &quot;data.ok&quot;
+		}, {
+			className: &quot;./test/task/002-skip-task&quot;,
+			requires: &quot;{$data.nothing}&quot;,
+			produce: &quot;data.skip&quot;
+		}]
+	},
+	request: {
+		test: true
+	},
+	failed: failure ('complete + skipped by requirements task'),
+	completed: ok ('complete + skipped by requirements task')
+}, {
+	description: &quot;skipped important task&quot;,
+	config: {
+		tasks: [{
+			className: &quot;./test/task/002-ok-task&quot;,
+			produce: &quot;data.ok&quot;
+		}, {
+			className: &quot;./test/task/002-skip-task&quot;,
+			important: true,
+			requires: &quot;{$data.nothing}&quot;,
+			produce: &quot;data.skip&quot;
+		}]
+	},
+	request: {
+		test: true
+	},
+	failed: ok ('skipped important task'),
+	completed: failure ('skipped important task')
+}, {
+	description: &quot;important task decide itself fail or skip&quot;,
+	config: {
+		tasks: [{
+			className: &quot;./test/task/002-skip-task&quot;,
+			important: true,
+			produce: &quot;data.ok&quot;
+		}]
+	},
+	request: {
+		test: true
+	},
+	failed: ok ('failed itself important task'),
+	completed: failure ('failed itself important task')
+}, {
+	description: &quot;fail task&quot;,
+	config: {
+		tasks: [{
+			className: &quot;./test/task/002-fail-task&quot;,
+			produce: &quot;data.fail&quot;
+		}]
+	},
+	request: {
+		test: true
+	},
+	failed: ok ('fail task'),
+	completed: failure ('fail task')
+}, {
+	description: &quot;fail task is skipped by requirements&quot;,
+	config: {
+		tasks: [{
+			className: &quot;./test/task/002-ok-task&quot;,
+			produce: &quot;data.ok&quot;
+		}, {
+			className: &quot;./test/task/002-fail-task&quot;,
+			requires: &quot;{$data.ok}&quot;,
+			produce: &quot;data.fail&quot;
+		}]
+	},
+	request: {
+		test: true
+	},
+	failed: failure ('fail task'),
+	completed: ok ('fail task')
+//}, {
+
+}];
+
+var started = new Date ();
+
+var repeat = parseInt (process.argv[2]) || 1;
+
+repeat.times (function () {
+	
+	var independentConfig = {
+		description: &quot;1000 independent tasks&quot;,
+		config: {
+			tasks: []
+		},
+		request: {
+			test: true
+		},
+		failed: failure ('1000 independent tasks'),
+		completed: ok ('1000 independent tasks')
+
+	};
+	
+	1000..times (function (num) {
+		independentConfig.config.tasks.push ({
+			className: &quot;./test/task/002-ok-task&quot;,
+			produce: &quot;data.ok&quot;+num
+		});
+	});
+	
+	var independentWf = new workflow (
+		util.extend (true, {}, independentConfig.config),
+		{request: independentConfig.request}
+	);
+	
+	if (!independentWf.ready)
+		return independentConfig.failed ();
+	
+	independentWf.on ('completed', independentConfig.completed);
+
+	independentWf.on ('failed', independentConfig.failed);
+
+	if (independentConfig.autoRun || independentConfig.autoRun == void 0)
+		independentWf.run();
+
+	var dependentConfig = {
+		description: &quot;1000 dependent tasks&quot;,
+		config: {
+			tasks: []
+		},
+		request: {
+			test: true
+		},
+		failed: failure ('1000 dependent tasks'),
+		completed: ok ('1000 dependent tasks')
+
+	};
+
+	dependentConfig.config.tasks.push ({
+		className: &quot;./test/task/002-ok-task&quot;,
+		produce: &quot;data.ok0&quot;
+	});
+
+	999..times (function (num) {
+		dependentConfig.config.tasks.push ({
+			className: &quot;./test/task/002-ok-task&quot;,
+			produce: &quot;data.ok&quot;+(num+1),
+			require: &quot;{$data.ok&quot;+num+&quot;}&quot;
+		});
+	});
+	
+	var dependentWf = new workflow (
+		util.extend (true, {}, dependentConfig.config),
+		{request: dependentConfig.request}
+	);
+	
+	if (!dependentWf.ready)
+		return dependentConfig.failed ();
+	
+	dependentWf.on ('completed', dependentConfig.completed);
+
+	dependentWf.on ('failed', dependentConfig.failed);
+
+	if (dependentConfig.autoRun || dependentConfig.autoRun == void 0)
+		dependentWf.run();
+
+	
+	workflows.map (function (item) {
+
+		var wf = new workflow (
+			util.extend (true, {}, item.config),
+			{request: item.request}
+		);
+		
+		if (!wf.ready)
+			return item.failed ();
+		
+		wf.on ('completed', item.completed);
+
+		wf.on ('failed', item.failed);
+
+		if (item.autoRun || item.autoRun == void 0)
+			wf.run();
+
+	});
+	
+});
+
+process.on('exit', function () {
+	var finished = new Date ();
+	console.error ('finished in', finished.getTime () - started.getTime (), 'ms');
+});
+
+//test('check task requirements', {
+//	'expandFailNoThrow': function() {
+//		var result = checkTaskParams (data, dict);
+//		assert.deepEqual (result.failed, [
+//			&quot;checkFalse.falseExp&quot;,
+//			&quot;checkFalse.zeroExp&quot;,
+//			&quot;checkFalse.emptyExp&quot;,
+//			&quot;checkFalse.emptyArr&quot;,
+//			&quot;checkFalse.emptyObj&quot;,
+//			
+//			&quot;exception.stringExp2&quot;,
+//			&quot;exception.nothing&quot;
+//		]);
+//	},
+//
+//});
+</pre>
+</body>
+</html>
