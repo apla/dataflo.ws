@@ -161,20 +161,16 @@ util.extend (mongoRequestTask.prototype, {
 		
 		// open collection
 		self._openCollection (function (err, collection) {
+			var filter = self.filter,
+				options = self.options || {};
 			
 			if (self.verbose)
 				console.log ("collection.find", self.collection, self.filter);
-			
-			var filter = self.filter;
-			
-			var windowBegin, windowWidth;
-			var findArgs = [];
 
 			if (self.pager && self.pager.page && self.pager.limit && self.pager.limit < 100) {
-				windowBegin = self.pager.start;
-				windowWidth = self.pager.limit;
+				options.skip = self.pager.start;
+				options.limit = self.pager.limit;
 				filter = self.pager.filter;
-				findArgs.push ({}, windowBegin, windowWidth);
 			}
 
 			// find by filter or all records
@@ -193,12 +189,10 @@ util.extend (mongoRequestTask.prototype, {
 					}
 				}
 			}
-			
-			findArgs.unshift (filter || {});
-			
-			var options = self.options || {};
-			
-			collection.find.apply (collection, findArgs, options).toArray (function (err, docs) {
+
+			var fields = self.fields || {}
+			var cursor = collection.find(filter, fields, options);
+			cursor.toArray (function (err, docs) {
 			
 				if (self.verbose)
 					console.log ("findResult", docs);
@@ -211,11 +205,13 @@ util.extend (mongoRequestTask.prototype, {
 					});
 				}
 				
-				self.completed ({
-					success:	(err == null),
-					total:		(docs && docs.length) || 0,
-					err:		err,
-					data:		docs
+				cursor.count(function (err, n) {
+					self.completed ({
+						success:	(err == null),
+						total:		n || 0,
+						err:		err,
+						data:		docs
+					});
 				});
 			});
 		});
