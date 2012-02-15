@@ -109,14 +109,14 @@ util.extend (ldapRequestTask.prototype, {
 				
 			});
 			
+			var start = parseInt(self.pager.start, 10),
+				limit = parseInt(self.pager.limit, 10);
+			
 			self.completed ({
 				success: (docs.length > 0),
 				total: docs.length || 0,
 				err: null,
-				data: docs.slice(
-					self.pager.start,
-					self.pager.start + self.pager.limit
-				) 
+				data: docs.slice(start, start + limit) 
 			});
 		
 		});
