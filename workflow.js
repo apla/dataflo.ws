@@ -108,7 +108,10 @@ function checkTaskParams (params, dict, prefix) {
 		for (var key in params) {
 			var val = params[key];
 			var valCheck = val;
-			if (val.interpolate) { // val is string || number
+			if (key == 'bind' && prefix == '') {
+				// bind is a real js object. it can be circular
+				modifiedParams[key] = val;
+			} else if (val.interpolate) { // val is string || number
 				
 				try {
 					var tmp = modifiedParams[key] = val.interpolate (dict);
@@ -144,15 +147,30 @@ function checkTaskParams (params, dict, prefix) {
 	};
 }
 
+/**
+ * @class workflow
+ * @extends events.EventEmitter
+ *
+ * The heart of the framework. Parses task configurations, loads dependencies,
+ * launches tasks, stores their result. When all tasks are completed,
+ * notifies subscribers (inititators).
+ *
+ * @cfg {Object} config (required) Workflow configuration.
+ * @cfg {Object} reqParam (required) Workflow parameters.
+ */
 var workflow = module.exports = function (config, reqParam) {
 	
 	var self = this;
 	util.extend (true, this, config);
 	util.extend (true, this, reqParam);
-	
+
 	this.created = new Date().getTime();
-	this.id      = this.id || this.created % 1e6;
 	
+	// here we make sure workflow uid generated
+	// TODO: check for cpu load
+	var salt = (Math.random () * 1e6).toFixed(0);
+	this.id      = this.id || (this.started ^ salt) % 1e6;
+
 	if (!this.stage) this.stage = 'workflow';
 
 	//if (!this.stageMarkers[this.stage])
@@ -252,21 +270,23 @@ var workflow = module.exports = function (config, reqParam) {
 							failed = 'failed call function "'+taskParams.functionName+'" from ' + taskParams.bind + ' with ' + e;
 						}
 					} else if (taskParams.functionName) {
-						try {
-							if (process.mainModule.exports[taskParams.functionName]) {
-								this.completed (process.mainModule.exports[taskParams.functionName] (this));
+						var fn = $mainModule[taskParams.functionName];
+						if (fn && fn.constructor == Function) {
+							this.completed (fn (this));
+						} else {
+							// this is solution for nodejs scope:
+							// exports can be redefined
+							var mainExports = eval ($scope);
+							var fn = mainExports[taskParams.functionName];
+							if (fn && fn.constructor == Function) {
+								$mainModule = mainExports;
+								this.completed (fn (this));
 							} else {
+								// TODO: fix description for window
 								failed = "you defined functionName as " + taskParams.functionName
-								+ " but we cannot find this name in current scope.\nplease add 'module.exports = {"
-								+ taskParams.functionName + ": function (params) {...}}' in your main module";
-							}
-						} catch (e) {
-							if (window[taskParams.functionName]) {
-								this.completed (window[taskParams.functionName] (this));
-							} else {
-								failed = "you defined functionName as " + taskParams.functionName
-								+ " but we cannot find this name in current scope.\nplease add 'window["
-								+ taskParams.functionName + "] = function (params) {...}}' in your main module";
+								+ " but we cannot find this name in current scope (" + $scope
+								+ ").\nplease add " + ($isClientSide ? "'window." : "'module.exports.")
+								+ taskParams.functionName + " = function (params) {...}}' in your main module";
 							}
 						}
 					} else {
@@ -301,21 +321,21 @@ function pad(n) {
 }
 
 // one second low resolution timer
-global.currentDate = new Date ();
-global.currentDateInterval = setInterval (function () {
-	global.currentDate = new Date ();
+$stash.currentDate = new Date ();
+$stash.currentDateInterval = setInterval (function () {
+	$stash.currentDate = new Date ();
 }, 1000);
 
 function timestamp () {
 	var time = [
-		pad(currentDate.getHours()),
-		pad(currentDate.getMinutes()),
-		pad(currentDate.getSeconds())
+		pad($stash.currentDate.getHours()),
+		pad($stash.currentDate.getMinutes()),
+		pad($stash.currentDate.getSeconds())
 	].join(':');
 	var date = [
-		currentDate.getFullYear(),
-		pad(currentDate.getMonth() + 1),
-		pad(currentDate.getDate())
+		$stash.currentDate.getFullYear(),
+		pad($stash.currentDate.getMonth() + 1),
+		pad($stash.currentDate.getDate())
 	].join ('-');
 	return [date, time].join(' ');
 }
@@ -326,8 +346,11 @@ util.extend (workflow.prototype, {
 	taskRequirements: taskRequirements,
 	isIdle: true,
 	haveCompletedTasks: false,
-	run: function () {
 		
+	/**
+	 * @method run Initiators call this method to launch the workflow.
+	 */
+	run: function () {
 		if (!this.started)
 			this.started = new Date().getTime();
 		
@@ -382,9 +405,11 @@ util.extend (workflow.prototype, {
 		} else if (self.haveCompletedTasks) {
 			console.log ('have completed tasks');
 			// stack will be happy
-			setTimeout (function () {
-				self.run ();
-			}, 0);
+			if ($isClientSide) {
+				setTimeout (function () {self.run ();}, 0);
+			} else if ($isServerSide) {
+				process.nextTick (function () {self.run ()});
+			}
 			
 			self.isIdle = true;
 			
@@ -454,10 +479,11 @@ util.extend (workflow.prototype, {
 			toLog.push (arguments[i]);
 		}
 		
-		try {if (PhoneGap) {
+		// TODO: also check for bad clients (like ie9)
+		if ($isPhoneGap) {
 			toLog.shift();
 			toLog = [toLog.join (' ')];
-		}} catch (e) {};
+		}
 		
 		console.log.apply (console, toLog);
 	},
@@ -527,3 +553,4 @@ util.extend (workflow.prototype, {
 });
 
 });
+

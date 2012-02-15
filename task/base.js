@@ -30,27 +30,22 @@ for (var stateNum = 0; stateNum < taskStateList.length; stateNum++) {
 }
 
 /**
- * @author
- * @docauthor
  * @class task.task
- * @extends Object
+ * @extends events.EventEmitter
  *
  * Tasks are atomic synchronous/asynchronous entities that configure
  * what must be done, what prerequisitives must be satisfied before doing it,
- * and what to produce upon task completion.
- *
- * Tasks may only be either *succesful* or *failed*.
+ * and, optionally, where to store the task's result.
  *
  * `task` is an abstract base class that specific task types
  * should inherite from.
  *
- * The base `task` class provides methods to control task execution
- * (`run`, `cancel` &c) and cycles through a number of states
- * (`ready`, `running`, `idle` &c), publishes events (`complete`,
- * `skipped` &c).
+ * The base `task` class provides methods to control the task execution
+ * externally. These methods are called by the workflow.
+ * They cycle through a number of states ({@link #stateNames})
+ * and emit events.
  *
- * Example
- * =======
+ * ### Example
  *
  * A sequence of task configs
  * within the *RIA.Workflow* concept. `task` objects are instantiated
@@ -99,33 +94,20 @@ for (var stateNum = 0; stateNum < taskStateList.length; stateNum++) {
  * @cfg {Number} [timeout=1] The number of seconds between retries
  * to run the task.
  *
- * @cfg {String} produce (required) The name of the property to receive
+ * @cfg {String} produce The name of the workflow data field to receive
  * the result of the task.
  *
- * **Note**: The parameter is optional for {@link task#renderTask},
- * because the latter sends its result in {@link renderTask#output}.
- *
- * @cfg {Function|String|String[]} require Specifies task
- * requirements.
+ * @cfg {Function|String|String[]} require Lists requirements to check.
  *
  * Implementations might provide either a function that checks whether
  * the requirements are satisfied or an identifier or a list of identifiers,
- * representing required module objects.
+ * representing required objects.
  *
- * The task won't be launched until these modules are loaded.
- *
- * @cfg {Boolean} mustProduce Whether the task must produce
- * any result. Used in {@link #completed}.
+ * @returns {Boolean} If `require` is callable, it must return a boolean value.
  *
  * @cfg {Boolean} important If the task is marked important,
  * it may declare itself {@link #failed}.
  * Used in custom {@link #method} methods.
- *
- * @cfg {Function} cb The callback function. Is run before
- * the {@link #event-complete} event in {@link #completed}.
- *
- * @cfg {Object} cbScope The context in which to do
- * the {@link #cb} callback (value fo `this`).
  */
 
 var task = module.exports = function (config) {
@@ -238,11 +220,8 @@ util.extend (task.prototype, taskStateMethods, {
 
 	/**
 	 * @method completed
-	 * Checks if the task must produce any result
-	 * (as per {@link #mustProduce} param), calls the {@link #cb} function
-	 * and publishes {@link #event-complete}.
-	 *
-	 * Completed tasks are considered *successful*.
+	 * Publishes {@link #event-complete} with the result object
+	 * that will go into the {@link #produce} field of the workflow.
 	 *
 	 * @param {Object} result The product of the task.
 	 */
@@ -275,9 +254,9 @@ util.extend (task.prototype, taskStateMethods, {
 
 		/**
 		 * @event complete
-		 * Published upon successful task completion.
+		 * Published upon task completion.
 		 *
-		 * @param {task} task
+		 * @param {task.task} task
 		 * @param {Object} result
 		 */
 		this.emit ("complete", this, result);
@@ -286,8 +265,6 @@ util.extend (task.prototype, taskStateMethods, {
 	/**
 	 * @method skipped
 	 * Skips the task with a given result.
-	 *
-	 * **Note**: skipped tasks are still considered *successful*.
 	 *
 	 * Publishes {@link #event-skip}.
 	 *
@@ -301,7 +278,7 @@ util.extend (task.prototype, taskStateMethods, {
 		 * @event skip
 		 * Triggered when the task is {@link #skipped}.
 
-		 * @param {task} task
+		 * @param {task.task} task
 		 * @param {Object} result
 		 */
 		this.emit ("skip", this, result);
@@ -405,13 +382,17 @@ util.extend (task.prototype, taskStateMethods, {
 	/**
 	 * @enum stateNames
 	 *
-	 * An implementation-specific map of the task state codes
-	 * to human-readable state descriptions.
+	 * A map of the task state codes to human-readable state descriptions.
 	 *
-	 * The base states are: `scarce`, `ready`, `running`, `idle`,
-	 * `complete`, `failed` and `skipped`.
+	 * The states codes are:
 	 *
-	 * Any modification of this list will probably break base `task` methods.
+	 * - `scarce`
+	 * - `ready`
+	 * - `running`
+	 * - `idle`
+	 * - `complete`
+	 * - `failed`
+	 * - `skipped`
 	 */
 	stateNames: taskStateNames,
 
@@ -419,13 +400,12 @@ util.extend (task.prototype, taskStateMethods, {
 	 * @method failed
 	 * Emits an {@link #event-error}.
 	 *
-	 * Cancels (calls {@link #cancel}) the task if it was ready or running
-	 * or just emits {@link #event-cancel} if not.
-	 *
-	 * When the task fails the whole workflow sequence fails.
+	 * Cancels (calls {@link #method-cancel}) the task if it was ready
+	 * or running; or just emits {@link #event-cancel} if not.
 	 *
 	 * Sets the status to `failed`.
-	 * It *doesn't* fail the whole workflow sequence.
+	 *
+	 * Sidenote: when a task fails the whole workflow, that it belongs to, fails.
 	 *
 	 * @return {Boolean} Always true.
 	 * @param {Error} Error object.
@@ -437,6 +417,7 @@ util.extend (task.prototype, taskStateMethods, {
 
 		/**
 		 * @event error
+		 * Emitted on task fail and on internal errors.
 		 * @param {Error} e Error object.
 		 */
 		this.emit('error', e);
@@ -453,7 +434,7 @@ util.extend (task.prototype, taskStateMethods, {
 
 /**
  * @method EmitError
- * Implementation-specific method.
+ * Implementation-specific.
  * When an unexpected error occurs, the task is automatically {@link #failed}.
  */
 task.prototype.EmitError = task.prototype.failed;

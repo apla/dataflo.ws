@@ -71,6 +71,30 @@ util.extend = function extend () {
 }
 }
 
+try {
+	if (process.pid) {
+		global.$isClientSide = false;
+		global.$isServerSide = true;
+		global.$mainModule   = process.mainModule.exports;
+		global.$scope        = 'process.mainModule.exports';
+		global.$stash        = {};
+		global.$isPhoneGap   = false;
+	} else {
+		throw 'WTF?';
+	}
+} catch (e) {
+	window.$isClientSide = true;
+	window.$isServerSide = false;
+	window.$mainModule   = window;
+	window.$scope        = 'window';
+	window.$stash        = {};
+	try {
+		if (PhoneGap) window.$isPhoneGap = true;
+	} catch (e) {
+		window.$isPhoneGap = false;
+	}
+}
+
 Number.prototype.hours = Number.prototype.hour
 	= function () {return this * 60 * 60 * 1e3}
 Number.prototype.minutes = Number.prototype.minute
@@ -226,9 +250,7 @@ String.prototype.interpolate = function (dict, marks, checkOnly) {
 
 };
 
-try {
-	var _p = window;
-} catch (e) { if (process) {
+if ($isServerSide) {
 
 	var path = require ('path');
 
@@ -355,4 +377,4 @@ try {
 
 	global.project = new project ();
 
-}}
+}

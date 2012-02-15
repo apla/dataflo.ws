@@ -7,6 +7,14 @@ try {
 	// console.log ('jade not available');
 }
 
+/**
+ * @class task.presenterTask
+ * @extends task.task
+ *
+ * This is a type of task that sends a rendered template as an HTTP response.
+ *
+ * Implementation specific by definition.
+ */
 var presenterTask = module.exports = function (config) {
 	
 	this.init (config);
@@ -18,16 +26,52 @@ util.inherits (presenterTask, task);
 var cache = {};
 
 util.extend (presenterTask.prototype, {
+	/**
+	 * @private
+	 */
 	readTemplate: function (templateIO, cb) {
 		templateIO.readFile (function (err, data) {
 			cb.call (this, err, data);
 		});
 	
 	},
+
+	/**
+	 * @method run
+	 * Renders the template from {@link #file} and sends the result
+	 * as the content of the {@link #response}.
+	 */
 	run: function () {
 
 		var self = this;
 		
+		/**
+		 * @cfg {String} file (required) The template file name.
+		 */
+
+		/**
+		 * @cfg {String} type Template type. Tries to guess the type
+		 * by the {@link #file} extension.
+		 *
+		 * Possible values:
+		 *
+		 * - `jade`, Jade template
+		 * - `json`, JSON string
+		 * - `asis`, plain text.
+		 */
+
+		/**
+		 * @cfg {http.ClientResponse} response (required) The response object.
+		 *
+		 * This task doesn't populate the {@link #produce}
+		 * field of the workflow. Instead, it sends the result via HTTP.
+		 */
+
+		/**
+		 * @cfg {String} contentType The MIME type of the response content.
+		 *
+		 * Default values depend on the template {@link #type}.
+		 */
 		if (!this.type) {
 			// guess on file name
 			this.type = this.file.match(".*\\.(.*)$")[1];

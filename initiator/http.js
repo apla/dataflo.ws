@@ -11,6 +11,12 @@ try {
 	console.error ('cannot find mime module');
 };
 
+/**
+ * @class initiator.httpdi
+ * @extends events.EventEmitter
+ *
+ * Initiates HTTP server-related workflows.
+ */
 var httpdi = module.exports = function (config) {
 	// we need to launch httpd
 	

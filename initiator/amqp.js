@@ -5,9 +5,16 @@ var EventEmitter   = require ('events').EventEmitter,
 
 var amqp = require ('node-amqp/amqp.js');
 
+/**
+ * @class initiator.ampqi
+ * @extends events.EventEmitter
+ *
+ * Initiates message queues-related workflows.
+ *
+ * @cfg {Object} config Initiator configuration.
+ */
 var amqpi = module.exports = function (config) {
 	// we need to launch amqpi
-	
 	var self = this;
 	
 	if (!config.conf)
@@ -23,6 +30,9 @@ var amqpi = module.exports = function (config) {
 	// get an array of configs
 	this.config = (config.conf instanceof Array) ? (config.conf) : ([config.conf]);
 	
+	/**
+	 * @property {Array} workflows A list of workflow configurations.
+	 */
 	this.workflows = config.workflows;
 	
 	if(this.config) {
@@ -156,6 +166,11 @@ util.extend (amqpi.prototype, {
 		
 		});
 		
+		/**
+		 * @property {amqp.Connection} connection AMQP connection manager.
+		 *
+		 * When the connection is ready, the workflows are started.
+		 */
 		this.connection = amqp.createConnection (this.currentConfig);
 			
 		this.connection.on ('error', function (e) {
