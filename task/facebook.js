@@ -91,10 +91,8 @@ util.extend (facebook.prototype, {
 		var res = self.res;
 		var query = req.url.query;
 		
-		var scopes = [];
-		
-		self.scopes.map(function(scope) {
-			scopes.push (facebookScopes[scope]);
+		var scopes = self.scopes.map(function(scope) {
+			return facebookScopes[scope];
 		});
 		
 		var getParams = {
