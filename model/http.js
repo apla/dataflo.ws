@@ -1,7 +1,7 @@
 var HTTPClient		= require ('http'),
 	util			= require ('util'),
-	fs				= require ('fs')
-	querystring		= require ('querystring');
+	fs				= require ('fs'),
+	urlUtils		= require ('url');
 
 var pipeProgress = function (config) {
 	this.bytesTotal = 0;
@@ -102,4 +102,18 @@ httpModel.prototype = {
 	method: 'GET',
 	port: 80
 	
+};
+
+/**
+ * http.request requires the query part to be appended to the pathname.
+ */
+httpModel.prototype.prepareUrlParams = function (params) {
+	var q = params.query;
+	if (q && 'object' === typeof q) {
+		var queryStr = urlUtils.format({ query: q }),
+			newParams = Object.create(params);
+		newParams.path += queryStr;
+		return newParams
+	}
+	return params
 };
