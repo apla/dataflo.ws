@@ -43,12 +43,14 @@ var httpModel = module.exports = function (modelBase) {
 				'Authorization': 'Basic ' + new Buffer(self.auth).toString('base64')
 			};
 		}
-		var req = self.req = HTTPClient.request(this, function (res) {
+
+		var urlParams = this.prepareUrlParams(this)
+		var req = self.req = HTTPClient.request(urlParams, function (res) {
 						
 			self.res = res;
-			
+
 			if (res.statusCode != 200) {
-				modelBase.emit ('error', 'statusCode = '+res.statusCode);
+				modelBase.emit ('error', new Error('statusCode = ' + res.statusCode));
 				return;
 			}
 			
