@@ -359,21 +359,23 @@ util.extend (mongoRequestTask.prototype, {
 			
 			if (self.verbose)
 				console.log ('data for update', self.data);
-			
+				
 			var idList = self.data.map (function (item) {
 				
-				if (item._id && item._id != "") {
+				if (item._id) {
 					
 					var set = {};
 					
-					for (var k in item) {
+					Object.keys(item).forEach(function(k) {
 						if (k != '_id')
 							set[k] = item[k];
-					}
+					});
 					
 					if (self.timestamp) set.updated = new Date().getTime();
 					
-					collection.update ({_id: self._objectId(item._id)}, {$set: set});
+					var newObj = (self.replace) ? set : {$set: set};
+					
+					collection.update ({_id: self._objectId(item._id)}, newObj);
 						
 					return item._id;
 					
@@ -384,6 +386,40 @@ util.extend (mongoRequestTask.prototype, {
 			});
 			
 			self.completed ({_id: {$in: idList}});
+		});
+	},
+	
+	remove: function () {
+		var self = this;
+		
+		if (self.verbose) {
+			self.emit('log', 'remove called ', self.data);
+		}
+		
+		self._openCollection (function (err, collection) {
+			
+			if (self.data.constructor != Array) {
+				self.data = [self.data];
+			}
+			
+			if (self.verbose) {
+				console.log ('data for update', self.data);
+			}
+				
+			var idList = self.data.map(function (item) {
+				if (item._id) {
+					collection.remove({
+						_id: self._objectId(item._id)
+					}/*, options, callback */);
+						
+					return item._id;
+				} else {
+					// something wrong. this couldn't happen
+					self.emit('log', 'strange things with _id: "'+item._id+'"');
+				}
+			});
+			
+			self.completed({ _id: { $in: idList } });
 		});
 	},
 	
