@@ -147,7 +147,16 @@ util.extend (mongoRequestTask.prototype, {
 		
 		var ObjectID = project.connectors[this.connector].bson_serializer.ObjectID;
 		
-		return new ObjectID (hexString);
+		var id;
+		
+		try {
+			id = new ObjectID(hexString);
+		} catch (e) {
+			console.error(hexString);
+			throw e;
+		}
+		
+		return id;
 	},
 	
 	// actually, it's a fetch function
@@ -163,20 +172,21 @@ util.extend (mongoRequestTask.prototype, {
 		
 		// open collection
 		self._openCollection (function (err, collection) {
+			var filter = self.filter,
+				options = self.options || {},
+				sort = self.sort || [];
 			
 			if (self.verbose)
 				console.log ("collection.find", self.collection, self.filter);
-			
-			var filter = self.filter;
-			
-			var windowBegin, windowWidth;
-			var findArgs = [];
 
-			if (self.pager && self.pager.page && self.pager.limit && self.pager.limit < 100) {
-				windowBegin = self.pager.start;
-				windowWidth = self.pager.limit;
+			if (self.pager) {
+				if (self.pager.page && self.pager.limit && self.pager.limit < 100) {
+					options.skip = self.pager.start;
+					options.limit = self.pager.limit;
+				}
+				
 				filter = self.pager.filter;
-				findArgs.push ({}, windowBegin, windowWidth);
+				//sort = self.pager.sort;
 			}
 
 			// find by filter or all records
@@ -196,12 +206,13 @@ util.extend (mongoRequestTask.prototype, {
 				}
 			}
 			
-			findArgs.unshift (filter || {});
-			
-			var options = self.options || {};
-			
-			collection.find.apply (collection, findArgs, options).toArray (function (err, docs) {
-			
+			console.log('MONGO REQUEST', 'filter', filter)
+			console.log('MONGO REQUEST', 'sort', sort)
+			console.log('MONGO REQUEST', 'options', options)
+
+			var cursor = collection.find(filter, sort, options);
+			cursor.toArray (function (err, docs) {
+				
 				if (self.verbose)
 					console.log ("findResult", docs);
 				
@@ -213,11 +224,13 @@ util.extend (mongoRequestTask.prototype, {
 					});
 				}
 				
-				self.completed ({
-					success:	(err == null),
-					total:		(docs && docs.length) || 0,
-					err:		err,
-					data:		docs
+				cursor.count(function (err, n) {
+					self.completed ({
+						success:	(err == null),
+						total:		n || 0,
+						err:		err,
+						data:		docs
+					});
 				});
 			});
 		});

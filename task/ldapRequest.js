@@ -5,7 +5,7 @@ var EventEmitter = require ('events').EventEmitter,
 	urlUtil      = require ('url'),
 	spawn        = require('child_process').spawn;
 
-var command = 'ldapsearch';
+var COMMAND = 'ldapsearch';
 
 // TODO: docs
 
@@ -26,25 +26,30 @@ util.extend (ldapRequestTask.prototype, {
 
 		var self = this;
 		
-//		console.log ('run', self);
+		//console.log ('run', self.pager);
 		
-		self.emit ('log', 'requested '+this.searchString);
+		self.emit ('log', 'requested ' + self.pager.filter);
 		
 		// TODO: error handling
 		var connector = project.config.db[this.connector];
 		
-		var connectorString = "-LLL -z 50 -x -H "+connector.host+" -b "+connector.base+" -D "+connector.user+" -w "+connector.pass;
+		var connectorTpl = "-LLL -x -H {$host} -b {$base} -D {$user} -w {$pass}";
+		//var windowTpl = "-E vlv=0/0/{$start}/{$limit}";
+		var connectorString = connectorTpl.interpolate(connector);
+		//var windowString = windowTpl.interpolate(self.pager);
+		
+		var searchString = self.pager.filter;
 		
 		// params preparation
 		var args = [
 			connectorString,
-			this.searchPattern.replace (/\{\}/g, this.searchString),
+			this.searchPattern.replace (/\{\}/g, searchString),
 			this.fields
 		].join (' ').split (' ');
 		
-//		console.log (args);
+		//console.log (args.join(' '));
 		
-		var fork  = spawn(command, args);
+		var fork  = spawn(COMMAND, args);
 		
 		var stderr = '';
 		var stdout = '';
@@ -103,12 +108,15 @@ util.extend (ldapRequestTask.prototype, {
 				}
 				
 			});
-		
+			
+			var start = parseInt(self.pager.start, 10),
+				limit = parseInt(self.pager.limit, 10);
+			
 			self.completed ({
 				success: (docs.length > 0),
 				total: docs.length || 0,
 				err: null,
-				data: docs
+				data: docs.slice(start, start + limit) 
 			});
 		
 		});
