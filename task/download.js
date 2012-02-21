@@ -43,8 +43,21 @@ util.extend (downloadTask.prototype, {
 			});
 			
 			self.model.on ('end', function () {
+				
+				var originalHeaders = (self.model &&
+					self.model.dataSource &&
+					self.model.dataSource.res &&
+					self.model.dataSource.res.headers) ?
+					self.model.dataSource.res.headers : {};
+				
+				var contentType = originalHeaders['content-type'];
+				
+				if (contentType) {
+					self.download.contentType = contentType.split(';')[0];
+				}
+				
 				self.clearOperationTimeout();
-				self.completed (self.download.data);				
+				self.completed (self.download);				
 			});
 			
 		}
