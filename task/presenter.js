@@ -3,6 +3,7 @@ var task         = require ('task/base'),
 
 try {
 	var jade         = require ('jade');
+	var ejs         = require ('ejs');
 } catch (e) {
 	// console.log ('jade not available');
 }
@@ -35,6 +36,79 @@ util.extend (presenterTask.prototype, {
 		});
 	
 	},
+	
+	/**
+	 * @private
+	 */
+	 
+	renderCompile: function() {
+
+		var self = this;
+		
+		var render = cache[self.file];
+		
+		if (render) {
+			
+			self.renderProcess(render);
+			
+		} else {
+		
+			var templateIO = project.root.fileIO (this.file);
+		
+			self.readTemplate (templateIO, function (err, tpl) {
+				
+				if (err) {
+					console.error ("can't access " + self.file + " file. create one and define project id");
+					process.kill ();
+					return;
+				};
+				
+				var tplStr = tpl.toString();
+				
+				switch (self.type) {
+
+					case 'jade':
+						render = jade.compile(tplStr, {});
+						break;
+					
+					case 'ejs':						
+						render = ejs.compile(tplStr, {});
+						break;
+				
+				}
+				
+				cache[self.file] = render;
+				
+				self.renderProcess(render);
+			
+			});		
+		}
+	},
+	
+	/**
+	 * @private
+	 */
+	 
+	renderProcess: function(render) {
+		
+		this.renderResult (
+			this.contentType || 'text/html' + '; charset=utf-8',
+			render(this.vars)
+		);
+	
+	},
+	 
+	/**
+	 * @private
+	 */
+	 
+	renderResult: function(contentType, result) {
+		
+		this.output.setHeader ("Content-Type", contentType);
+		this.output.end (result);
+		this.completed ();
+		
+	},
 
 	/**
 	 * @method run
@@ -56,6 +130,7 @@ util.extend (presenterTask.prototype, {
 		 * Possible values:
 		 *
 		 * - `jade`, Jade template
+		 * - `ejs`, EJS template
 		 * - `json`, JSON string
 		 * - `asis`, plain text.
 		 */
@@ -72,39 +147,32 @@ util.extend (presenterTask.prototype, {
 		 *
 		 * Default values depend on the template {@link #type}.
 		 */
-		if (!this.type) {
+		if (!self.type) {
 			// guess on file name
-			this.type = this.file.match(".*\\.(.*)$")[1];
-			console.log ('guessed ' + this.type + ' presenter type from filename: ' + this.file);
+			self.type = self.file.match(".*\\.(.*)$")[1];
+			console.log ('guessed ' + self.type + ' presenter type from filename: ' + self.file);
 		}
+		
+		switch (self.type) {
 
-		if (this.type == 'jade') {
-			self.response.setHeader ("Content-Type", (this.contentType || 'text/html') + '; charset=utf-8');
-			var templateIO = project.root.fileIO (this.file);
-			// TODO
-			//if (cache {this.template}) {
-			//	templateIO.stat
-			//}
-			self.readTemplate (templateIO, function (err, data) {
-				if (err) {
-					console.error ("can't access " + self.file + " file. create one and define project id");
-					process.kill ();
-					return;
-				};
-				var fn = jade.compile(data, {});
-				self.response.end (fn (self.vars));
-				self.completed ();
-
-			});
-
-		} else if (this.type == 'json') {
-			self.response.setHeader ("Content-Type", 'application/json; charset=utf-8');
-			self.response.end (JSON.stringify (self.vars));
-			self.completed ();
-		} else  if (this.type == 'asis') {
-			self.response.setHeader ("Content-Type", self.contentType);
-			self.response.end (self.vars);
-			self.completed ();
-		}		
+			case 'jade':
+			case 'ejs':
+				self.renderCompile();
+				break;
+			
+			case 'json':
+				self.renderResult (
+					'application/json; charset=utf-8',
+					JSON.stringify (self.vars)
+				);
+				break;
+				
+			case 'asis':
+				self.renderResult (
+					'application/json; charset=utf-8',
+					self.vars
+				);
+				break;
+		}
 	}
 });
