@@ -344,7 +344,7 @@ if ($isServerSide) {
 					// TODO: error handling
 
 					if (fixupParser == 'json') {
-						var config = JSON.parse (configData[0]);
+						var config = JSON.parse (fixupData[0]);
 						
 						util.extend (true, self.config, config);
 					} else {
