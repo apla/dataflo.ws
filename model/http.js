@@ -1,7 +1,7 @@
 var HTTPClient		= require ('http'),
 	util			= require ('util'),
-	fs				= require ('fs')
-	querystring		= require ('querystring');
+	fs				= require ('fs'),
+	urlUtils		= require ('url');
 
 var pipeProgress = function (config) {
 	this.bytesTotal = 0;
@@ -43,12 +43,14 @@ var httpModel = module.exports = function (modelBase) {
 				'Authorization': 'Basic ' + new Buffer(self.auth).toString('base64')
 			};
 		}
-		var req = self.req = HTTPClient.request(this, function (res) {
+
+		var urlParams = this.prepareUrlParams(this)
+		var req = self.req = HTTPClient.request(urlParams, function (res) {
 						
 			self.res = res;
-			
+
 			if (res.statusCode != 200) {
-				modelBase.emit ('error', 'statusCode = '+res.statusCode);
+				modelBase.emit ('error', new Error('statusCode = ' + res.statusCode));
 				return;
 			}
 			
@@ -102,4 +104,18 @@ httpModel.prototype = {
 	method: 'GET',
 	port: 80
 	
+};
+
+/**
+ * http.request requires the query part to be appended to the pathname.
+ */
+httpModel.prototype.prepareUrlParams = function (params) {
+	var q = params.query;
+	if (q && 'object' === typeof q) {
+		var queryStr = urlUtils.format({ query: q }),
+			newParams = Object.create(params);
+		newParams.path += queryStr;
+		return newParams
+	}
+	return params
 };
