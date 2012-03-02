@@ -1,10 +1,9 @@
-var task         = require ('task/base'),
-	util         = require ('util'),
-	mime		 = require ('mime');
+var task = require ('task/base'),
+	util = require ('util');
 
 try {
-	var jade         = require ('jade');
-	var ejs         = require ('ejs');
+	var jade = require ('jade');
+	var ejs  = require ('ejs');
 } catch (e) {
 	// console.log ('jade not available');
 }
