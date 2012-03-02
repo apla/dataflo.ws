@@ -40,7 +40,7 @@ util.extend (presenterTask.prototype, {
 	/**
 	 * @private
 	 */
-	 
+	// TODO: add cache management
 	renderCompile: function() {
 
 		var self = this;
@@ -68,11 +68,11 @@ util.extend (presenterTask.prototype, {
 				switch (self.type) {
 
 					case 'jade':
-						render = jade.compile(tplStr, {});
+						render = jade.compile (tplStr, {});
 						break;
 					
 					case 'ejs':						
-						render = ejs.compile(tplStr, {});
+						render = ejs.compile (tplStr, {});
 						break;
 				
 				}
@@ -93,7 +93,7 @@ util.extend (presenterTask.prototype, {
 		
 		this.renderResult (
 			this.contentType || 'text/html' + '; charset=utf-8',
-			render(this.vars)
+			render (this.vars);
 		);
 	
 	},
@@ -149,7 +149,7 @@ util.extend (presenterTask.prototype, {
 		 */
 		if (!self.type) {
 			// guess on file name
-			self.type = self.file.match(".*\\.(.*)$")[1];
+			self.type = self.file.substring (self.file.lastIndexOf ('.') + 1);;
 			console.log ('guessed ' + self.type + ' presenter type from filename: ' + self.file);
 		}
 		
@@ -168,12 +168,10 @@ util.extend (presenterTask.prototype, {
 				break;
 				
 			case 'asis':
-				var contentType = (self.contentType) ? self.contentType : mime.lookup('html');
-				
-				self.renderResult (
-					contentType + '; charset=utf-8',
-					self.vars
-				);
+				var contentType = (self.contentType) ? self.contentType : 'text/plain';
+				if (!self.noUTF8 || contentType.indexOf ('application/') != 0)
+					contentType += '; charset=utf-8';
+				self.renderResult (contentType, self.vars);
 				break;
 		}
 	}
