@@ -170,14 +170,22 @@ util.extend (facebook.prototype, {
 	},
 	
 	mappingUser: function(user) {
-		
-		return {
+		var mapped = {
 			name: user.name,
-			email: user.username + "@facebook.com",
-			avatar: "http://graph.facebook.com/" + user.username + "/picture",
 			link: user.link
 		};
-		
+
+        var emailName;
+        if (user.username) {
+            emailName = user.username
+            mapped.avatar = 'http://graph.facebook.com/' + user.username + '/picture';
+        } else {
+            emailName = user.id;
+            mapped.avatar = '';
+        }
+        mapped.email = emailName + '@facebook.com';
+
+        return mapped;
 	},
 	
 	grouplist: function() {
