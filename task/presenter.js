@@ -1,5 +1,6 @@
 var task         = require ('task/base'),
-	util         = require ('util');
+	util         = require ('util'),
+	mime		 = require ('mime');
 
 try {
 	var jade         = require ('jade');
@@ -168,8 +169,10 @@ util.extend (presenterTask.prototype, {
 				break;
 				
 			case 'asis':
+				var contentType = (self.contentType) ? self.contentType : mime.lookup('html');
+				
 				self.renderResult (
-					'application/json; charset=utf-8',
+					contentType + '; charset=utf-8',
 					self.vars
 				);
 				break;
