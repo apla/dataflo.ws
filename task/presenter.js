@@ -20,8 +20,6 @@ var presenterTask = module.exports = function (config) {
 	
 	this.init (config);
 	
-	console.log ('<----------------presenterTask', config);
-	
 };
 
 util.inherits (presenterTask, task);
@@ -120,8 +118,6 @@ util.extend (presenterTask.prototype, {
 	run: function () {
 
 		var self = this;
-		
-		console.log ('<-----------------presenter.run', self)
 		
 		/**
 		 * @cfg {String} file (required) The template file name.
