@@ -20,6 +20,8 @@ var presenterTask = module.exports = function (config) {
 	
 	this.init (config);
 	
+	console.log ('<----------------presenterTask', config);
+	
 };
 
 util.inherits (presenterTask, task);
@@ -93,7 +95,7 @@ util.extend (presenterTask.prototype, {
 		
 		this.renderResult (
 			this.contentType || 'text/html' + '; charset=utf-8',
-			render (this.vars);
+			render (this.vars)
 		);
 	
 	},
@@ -104,8 +106,8 @@ util.extend (presenterTask.prototype, {
 	 
 	renderResult: function(contentType, result) {
 		
-		this.output.setHeader ("Content-Type", contentType);
-		this.output.end (result);
+		this.response.setHeader ("Content-Type", contentType);
+		this.response.end (result);
 		this.completed ();
 		
 	},
@@ -118,6 +120,8 @@ util.extend (presenterTask.prototype, {
 	run: function () {
 
 		var self = this;
+		
+		console.log ('<-----------------presenter.run', self)
 		
 		/**
 		 * @cfg {String} file (required) The template file name.
