@@ -155,7 +155,9 @@ util.extend (mongoRequestTask.prototype, {
 			id = new ObjectID(hexString);
 		} catch (e) {
 			console.error(hexString);
-			throw e;
+			//!!!: for update with options = {upsert: true}
+			id = hexString.toString();
+			// throw e;
 		}
 		
 		return id;
@@ -344,6 +346,8 @@ util.extend (mongoRequestTask.prototype, {
 		
 		var self = this;
 		
+		var options = self.options;
+		
 		if (self.verbose)
 			self.emit ('log', 'update called ', self.data);
 		
@@ -362,16 +366,16 @@ util.extend (mongoRequestTask.prototype, {
 					
 					var set = {};
 					
+					if (self.timestamp) item.updated = ~~(new Date().getTime()/1000);
+					
 					Object.keys(item).forEach(function(k) {
 						if (k != '_id')
 							set[k] = item[k];
 					});
 					
-					if (self.timestamp) set.updated = ~~(new Date().getTime()/1000);
-					
 					var newObj = (self.replace) ? set : {$set: set};
 					
-					collection.update ({_id: self._objectId(item._id)}, newObj);
+					collection.update ({_id: self._objectId(item._id)}, newObj, options);
 						
 					return item._id;
 					
