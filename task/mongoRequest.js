@@ -91,8 +91,6 @@ util.extend (mongoRequestTask.prototype, {
 		
 		var connectorConfig = project.config.db[this.connector];
 		
-		//console.log (connectorConfig);
-		
 		// create connector
 		
 		var connector = new mongo.Db (
@@ -123,7 +121,6 @@ util.extend (mongoRequestTask.prototype, {
 		// if collection cahed - return through callback this collection
 		if (project.connections[self.connector][self.collection]) {
 			cb.call (self, false, project.connections[self.connector][self.collection]);
-			// console.log ('%%%%%%%%%% cached');
 			return;
 		}
 		
@@ -139,7 +136,6 @@ util.extend (mongoRequestTask.prototype, {
 						console.log ('storing project.connections', self.connector, self.collection);
 					project.connections[self.connector][self.collection] = collection;
 				}
-				// console.log ('%%%%%%%%%% not cached');
 				cb.call (self, err, collection);
 			});
 		});
@@ -180,7 +176,7 @@ util.extend (mongoRequestTask.prototype, {
 		self._openCollection (function (err, collection) {
 			var filter = self.filter,
 				options = self.options || {},
-				sort = self.sort || [];
+				sort = self.sort || self.pager && self.pager.sort || {};
 			
 			if (self.verbose)
 				console.log ("collection.find", self.collection, self.filter);
@@ -192,7 +188,7 @@ util.extend (mongoRequestTask.prototype, {
 				}
 				
 				filter = self.pager.filter;
-				//sort = self.pager.sort;
+				options.sort = sort;
 			}
 
 			// find by filter or all records
@@ -215,11 +211,7 @@ util.extend (mongoRequestTask.prototype, {
 				}
 			}
 			
-			console.log('MONGO REQUEST', 'filter', filter)
-			console.log('MONGO REQUEST', 'sort', sort)
-			console.log('MONGO REQUEST', 'options', options)
-
-			var cursor = collection.find(filter, sort, options);
+			var cursor = collection.find(filter, options);
 			cursor.toArray (function (err, docs) {
 				
 				if (self.verbose)
@@ -262,7 +254,7 @@ util.extend (mongoRequestTask.prototype, {
 			
 			self.data.map(function(item) {
 				
-				if (self.timestamp) item.created = item.updated = new Date().getTime();
+				if (self.timestamp) item.created = item.updated = ~~(new Date().getTime()/1000);
 				if (item._id && item._id != '') docsId.push(item._id);
 				
 			});
@@ -273,7 +265,6 @@ util.extend (mongoRequestTask.prototype, {
 				
 				collection.find({_id: {$in: docsId}}).toArray(function(err, alreadyStoredDocs) {
 					
-					//console.log("alreadyStoredDocs", alreadyStoredDocs);
 					var alreadyStoredDocsObj = {};
 					
 					alreadyStoredDocs.map (function(item) {
@@ -288,8 +279,6 @@ util.extend (mongoRequestTask.prototype, {
 						if (!alreadyStoredDocsObj[item._id]) dataToInsert.push(item);
 						
 					});
-					
-					//console.log ("dataToInsert", dataToInsert);
 										
 					if (dataToInsert.length == 0) {
 						
@@ -304,8 +293,6 @@ util.extend (mongoRequestTask.prototype, {
 					}
 					
 					collection.insert (dataToInsert, {safe: true}, function (err, docs) {
-						
-						//console.log ('collection.insert', docs, err);
 						
 						if (docs) docs.map (function (item) {
 							if (self.mapping) {
@@ -380,7 +367,7 @@ util.extend (mongoRequestTask.prototype, {
 							set[k] = item[k];
 					});
 					
-					if (self.timestamp) set.updated = new Date().getTime();
+					if (self.timestamp) set.updated = ~~(new Date().getTime()/1000);
 					
 					var newObj = (self.replace) ? set : {$set: set};
 					
