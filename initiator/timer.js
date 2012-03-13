@@ -10,17 +10,15 @@ var timeri = module.exports = function (config) {
 	// 2. once after timeout, in milliseconds (timeout: 2000)
 	// 3. using interval, in milliseconds (every: 1000)
 	
-	if (!config.conf)
-		throw "you must define 'config' for timer initiator";
-	
 	this.workflows = config.workflows;
+	this.wfRequire = config.wfRequire || {time: new Date()};
 	
 	this.ready ();
 }
 
-util.inherits (amqpi, EventEmitter);
+util.inherits (timeri, EventEmitter);
 
-util.extend (amqpi.prototype, {
+util.extend (timeri.prototype, {
 	
 	ready: function () {
 		
@@ -28,11 +26,9 @@ util.extend (amqpi.prototype, {
 				
 		self.workflows.map(function (workflowParams) {
 			
-			// TODO: workflow manager for workflows running more time than interval
-
 			var workflow = new Workflow (
 				util.extend (true, {}, workflowParams),
-				{request: {time: new Date()}}
+				this.wfRequire
 			);
 			
 			if (workflowParams.interval) {
@@ -46,5 +42,6 @@ util.extend (amqpi.prototype, {
 			}
 		});
 		
+		self.emit ('ready', this);		
 	}
 });

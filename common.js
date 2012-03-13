@@ -291,7 +291,7 @@ if ($isServerSide) {
 				try {
 					var config = JSON.parse (configData[0]);
 				} catch (e) {
-					console.log ('WARNING: http config cannon parsed');
+					console.log ('WARNING: project config cannot parsed');
 					throw e;
 				}
 				
