@@ -41,7 +41,8 @@ var EventEmitter = require ('events').EventEmitter,
 		}]
 	}
  *
- * @cfg {String} connector (required) The config name in the project object.
+ * @cfg {String} connector (required) The **config name** for connector
+ * in the project configuration object or prepared **MongoDB.Db connection**
  *
  * @cfg {String} collection (required) The collection name from MongoDB.
  *
@@ -56,7 +57,9 @@ var EventEmitter = require ('events').EventEmitter,
  *
  * @cfg {String} filter (required) The name of the property of the workflow
  * instance or the identifier of an object with filter fields for `select`,
- * `insert` or `update` methods (see {@link #method}).
+ * `insert` or `update` methods (see {@link #method}). Filter can be mongo's
+ * ObjectID, ObjectID array (in such case mongo requested with {$in: []})
+ * or real {@link http://www.mongodb.org/display/DOCS/Querying mongo query}
  */
 var mongoRequestTask = module.exports = function (config) {
 	
@@ -74,9 +77,12 @@ util.extend (mongoRequestTask.prototype, {
 	// private method get connector
 	
 	_getConnector: function () {
-	
-		// get connector config from project if it created
 		
+		// connector is real connector object
+		if (!this.connector.substring && this.connector.open)
+			return this.connector;
+		
+		// get connector config from project if it created
 		if (project.connectors[this.connector]) {
 			return project.connectors[this.connector];
 		}
@@ -189,10 +195,13 @@ util.extend (mongoRequestTask.prototype, {
 
 			// find by filter or all records
 			if (filter) {
+				if (filter.constructor === Array)
+					filter = {_id: {'$in': filter}};
 				// filter is string
-				if (filter.substring) filter = {_id: self._objectId (filter)};
+				if (filter.substring) {
+					filter = {_id: self._objectId (filter)};
 				// filter is hash
-				if (filter._id) {
+				} else if (filter._id) {
 					// filter._id is string
 					if (filter._id.substring) filter._id = self._objectId (filter._id);
 					// filter._id is hash with $in quantificators
