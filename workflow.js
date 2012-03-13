@@ -207,7 +207,17 @@ var workflow = module.exports = function (config, reqParam) {
 
 		var checkRequirements = function () {
 			
-			var result = checkTaskParams (taskParams, self);
+			var dict = {
+				request:  self.request,
+				response: self.response,
+				data:     self.data
+			};
+			
+			if ($isServerSide) {
+				dict.project = project
+			}
+			
+			var result = checkTaskParams (taskParams, dict);
 			
 			if (result.failed && result.failed.length > 0) {
 				this.unsatisfiedRequirements = result.failed;
