@@ -362,20 +362,19 @@ util.extend (mongoRequestTask.prototype, {
 				
 			var idList = self.data.map (function (item) {
 				
-				if (item._id) {
-					
-					var set = {};
+				if (item._id || options.upsert) {
 					
 					if (self.timestamp) item.updated = ~~(new Date().getTime()/1000);
 					
-					Object.keys(item).forEach(function(k) {
-						if (k != '_id')
-							set[k] = item[k];
-					});
+					var set = {};
+					util.extend(true, set, item);
 					
 					var newObj = (self.replace) ? set : {$set: set};
+					var criteriaObj = (self.criteria) ? self.criteria : (item._id) ? {_id: self._objectId(item._id)} : {};
 					
-					collection.update ({_id: self._objectId(item._id)}, newObj, options);
+					console.log ('<----------mongo.update', newObj, item);
+					
+					collection.update (criteriaObj, newObj, options);
 						
 					return item._id;
 					

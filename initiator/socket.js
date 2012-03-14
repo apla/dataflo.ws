@@ -51,6 +51,7 @@ util.extend (socket.prototype, {
 		
 		var socketIo = self.socketIo = SocketIo.listen(self.port);
 		
+		socketIo.set('transports', ['websocket']);
 		socketIo.disable('log');
 		
 		socketIo.sockets.on('connection', function (socket) {
@@ -167,9 +168,11 @@ util.extend (socket.prototype, {
 		if (!wf.presenter) return;
 		
 		var presenter = wf.presenter,
-			header = (presenter.header.interpolate(wf, true) == void 0) ? 
+			header = (presenter.header.interpolate(wf, false, true).length == 0) ? 
 				presenter.header : presenter.header.interpolate(wf),
 			vars = presenter.vars.interpolate(wf);
+			
+		console.log ('<-----------socket.runPresenter', vars, wf, presenter.header.interpolate(wf, false, true));
 		
 		if (state == 'completed') {
 			
