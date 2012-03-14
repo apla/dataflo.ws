@@ -291,13 +291,12 @@ if ($isServerSide) {
 				try {
 					var config = JSON.parse (configData[0]);
 				} catch (e) {
-					console.log ('WARNING: http config cannon parsed');
+					console.log ('WARNING: http config cannot be parsed');
 					throw e;
 				}
 				
 				self.id     = config.id;
 				self.config = config;
-				
 				
 				// TODO: read config fixup
 			} else {
