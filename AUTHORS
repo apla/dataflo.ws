@@ -1,0 +1,7 @@
+git log --all --format='<li>%aN</li>' | sort -u
+<li>apla</li>
+<li>ivan baktsheev</li>
+<li>katspaugh</li>
+<li>my@example.om</li>
+<li>unknown</li>
+<li>xoxulin</li>

@@ -1,5 +1,7 @@
 var util = require ('util');
 
+var root;
+
 if (!util.inherits) {
 	util.inherits = function (ctor, superCtor) {
 		ctor.super_ = superCtor;
@@ -122,6 +124,70 @@ var pathToVal = module.exports.pathToVal = function (dict, path, value) {
 	return pathToVal (dict[chunks.shift()], chunks.join('.'), value)
 }
 
+function loadIncludes(config, cb) {
+	var DEFAULT_ROOT = 'etc/';
+
+	var tagRe = /<([^>]+)>/;
+
+	var cnt = 0;
+	var len = 0;
+
+	var onLoad = function () {
+		cnt += 1;
+		if (cnt >= len) {
+			cb(null, config);
+		}
+	};
+
+	var onError = function (err) {
+		cb(err, config);
+	};
+
+	iterateTree(config, function (node, key) {
+		var value = node[key];
+		if ('string' === typeof value) {
+			var match = value.match(tagRe);
+			if (match) {
+				len += 1;
+
+				var path = match[1];
+
+				if (0 !== path.indexOf('/')) {
+					path = DEFAULT_ROOT + path;
+				}
+
+				delete node[key];
+
+				/* TODO: cache by path */
+				root.fileIO(path).readFile(function (err, data) {
+					if (err) {
+						onError(err);
+					} else {
+						node[key] = JSON.parse(data);
+						onLoad();
+					}
+				});
+			}
+		}
+	});
+}
+
+function iterateTree(tree, cb) {
+	if (null == tree) { return; }
+
+	var step = function (node, key, tree) {
+		cb(tree, key);
+		iterateTree(node, cb);
+	};
+
+	if (Array === tree.constructor) {
+		tree.forEach(step);
+	} else if (Object === tree.constructor) {
+		Object.keys(tree).forEach(function (key) {
+			step(tree[key], key, tree)
+		});
+	}
+}
 
 var findInterpolation = module.exports.findInterpolation = function (params, prefix) {
 	
@@ -155,8 +221,6 @@ var findInterpolation = module.exports.findInterpolation = function (params, pre
 		
 	} else { // params is hash
 	
-		modifiedParams = {};
-		
 		for (var key in params) {
 			var val = params[key];
 
@@ -187,7 +251,8 @@ if (typeof define === "undefined")
 define (function (require, exports, module) {
 	return {
 		pathToVal: pathToVal,
-		findInterpolation: findInterpolation
+		findInterpolation: findInterpolation,
+		loadIncludes: loadIncludes
 	};
 });
 
@@ -268,7 +333,7 @@ if ($isServerSide) {
 		if (!rootPath)
 			return;
 		
-		var root = new io (rootPath[1]);
+		root = new io (rootPath[1]);
 		
 		this.root = root;
 		var self = this;
@@ -295,10 +360,6 @@ if ($isServerSide) {
 					throw e;
 				}
 				
-				self.id     = config.id;
-				self.config = config;
-				
-				
 				// TODO: read config fixup
 			} else {
 				console.error ('parser ' + parser + ' unknown');
@@ -307,55 +368,68 @@ if ($isServerSide) {
 			}
 
 
-			root.fileIO ('var/instance').readFile (function (err, data) {
-				
+			self.id     = config.id;
+
+			loadIncludes(config, function (err, config) {
 				if (err) {
-					console.error ("PROBABLY HARMFUL: can't access var/instance: "+err);
+					console.error(err);
+					console.warn("Couldn't load inlcudes.");
 					self.emit ('ready');
 					return;
 				}
-				
-				var instance = (""+data).split (/\n/)[0];
-				
-				self.instance = instance;
-				
-				console.log ('instance is: ', instance);
-			
-				root.fileIO ('etc/' + instance + '/fixup').readFile (function (err, data) {
+
+				self.config = config;
+
+				root.fileIO ('var/instance').readFile (function (err, data) {
+					
 					if (err) {
-						console.error ("PROBABLY HARMFUL: can't access "+'etc/' + instance + '/fixup'+" file. "
-							+ "create one and define local configuration fixup. "
-						);
+						console.error ("PROBABLY HARMFUL: can't access var/instance: "+err);
 						self.emit ('ready');
-						// process.kill ();
-						return;
-						
-					}
-					
-					var fixupData = (""+data).match (/(\w+)(\W[^]*)/);
-					fixupData.shift ();
-					var fixupParser = fixupData.shift ();
-
-					var fixupData = (""+data).match (/(\w+)(\W[^]*)/);
-					fixupData.shift ();
-					var fixupParser = fixupData.shift ();
-
-					// console.log ('parsing etc/' + instance + '/fixup using "' + fixupParser + '" parser');
-					// TODO: error handling
-
-					if (fixupParser == 'json') {
-						var config = JSON.parse (fixupData[0]);
-						
-						util.extend (true, self.config, config);
-					} else {
-						console.log ('parser ' + fixupParser + ' unknown');
-						// process.kill ();
 						return;
 					}
 					
-					console.log ('project ready');
+					var instance = (""+data).split (/\n/)[0];
 					
-					self.emit ('ready');
+					self.instance = instance;
+					
+					console.log ('instance is: ', instance);
+					
+					root.fileIO ('etc/' + instance + '/fixup').readFile (function (err, data) {
+						if (err) {
+							console.error ("PROBABLY HARMFUL: can't access "+'etc/' + instance + '/fixup'+" file. "
+										   + "create one and define local configuration fixup. "
+										  );
+							self.emit ('ready');
+							// process.kill ();
+							return;
+							
+						}
+						
+						var fixupData = (""+data).match (/(\w+)(\W[^]*)/);
+						fixupData.shift ();
+						var fixupParser = fixupData.shift ();
+
+						var fixupData = (""+data).match (/(\w+)(\W[^]*)/);
+						fixupData.shift ();
+						var fixupParser = fixupData.shift ();
+
+						// console.log ('parsing etc/' + instance + '/fixup using "' + fixupParser + '" parser');
+						// TODO: error handling
+
+						if (fixupParser == 'json') {
+							var config = JSON.parse (fixupData[0]);
+							
+							util.extend (true, self.config, config);
+						} else {
+							console.log ('parser ' + fixupParser + ' unknown');
+							// process.kill ();
+							return;
+						}
+						
+						console.log ('project ready');
+						
+						self.emit ('ready');
+					});
 				});
 			});
 		});
