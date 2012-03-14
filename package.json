@@ -1,0 +1,23 @@
+{
+    "name": "workflow",
+    "description": "Zero-code workflows engine for Node, PhoneGap and browser."
+    "version": "0.0.1",
+    "keywords" : ["workflow", "flow-control", "flow", "tasks", "dependencies"],
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/apla/workflow.js.git"
+    },
+    "dependencies" : {
+    },
+    "devDependencies" : {
+    },
+    "homepage": "http://apla.github.com/workflow.js/",
+    "author": "http://apla.github.com/",
+    "main": "index.js",
+    "directories": {
+        "test": "test"
+    },
+    "engines": {
+        "node": ">= 0.6.1"
+    }
+}
