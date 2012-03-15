@@ -52,18 +52,18 @@ util.extend (socket.prototype, {
 		var socketIo = self.socketIo = SocketIo.listen(self.port);
 		
 		socketIo.set('transports', ['websocket']);
-		socketIo.disable('log');
+		if (!self.log) socketIo.disable('log');
 		
 		socketIo.sockets.on('connection', function (socket) {
   
-			console.log('Socket server connection ' + socket.id);
+			if (self.log) console.log('Socket server connection ' + socket.id);
 
 			socket.on('message', function(msg) {
 				self.processMessage(socket, msg);
 			});
  
 			socket.on('disconnect', function () {
-				console.log('Socket server disconnection ' + socket.id);
+				if (self.log) console.log('Socket server disconnection ' + socket.id);
 			});
 		});
 		
@@ -155,24 +155,26 @@ util.extend (socket.prototype, {
 	
 	runPresenter: function (wf, state, socket) {
 
-//		{
-//			"presenter": {
-//				"broadcast": true,
-//				"header": "/entity/states/get"
-//				"vars": "{$query.data}"
-//			}
-//		}
-
 		var self = this;
 
 		if (!wf.presenter) return;
 		
 		var presenter = wf.presenter,
+			header,
+			vars,
+			err;
+		
+		try {		
+			
 			header = (presenter.header.interpolate(wf, false, true).length == 0) ? 
-				presenter.header : presenter.header.interpolate(wf),
+					presenter.header : presenter.header.interpolate(wf);
+			
 			vars = presenter.vars.interpolate(wf);
 			
-		console.log ('<-----------socket.runPresenter', vars, wf, presenter.header.interpolate(wf, false, true));
+		} catch (e) {
+			err = {error: 'No message'};
+			state = 'failed';
+		}
 		
 		if (state == 'completed') {
 			
@@ -186,7 +188,7 @@ util.extend (socket.prototype, {
 			
 		} else {
 			
-			socket.send('error');
+			socket.send('error:'+ JSON.stringify(err));
 		}
 	}
 });

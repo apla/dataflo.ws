@@ -346,7 +346,7 @@ util.extend (mongoRequestTask.prototype, {
 		
 		var self = this;
 		
-		var options = self.options;
+		var options = self.options || {};
 		
 		if (self.verbose)
 			self.emit ('log', 'update called ', self.data);
@@ -368,11 +368,13 @@ util.extend (mongoRequestTask.prototype, {
 					
 					var set = {};
 					util.extend(true, set, item);
+					delete set._id;
 					
 					var newObj = (self.replace) ? set : {$set: set};
-					var criteriaObj = (self.criteria) ? self.criteria : (item._id) ? {_id: self._objectId(item._id)} : {};
+					var criteriaObj = (self.criteria) ? self.criteria :
+						(item._id) ? {_id: self._objectId(item._id)} : {};
 					
-					console.log ('<----------mongo.update', newObj, item);
+					//console.log ('<----------mongo.update', criteriaObj, newObj, options);
 					
 					collection.update (criteriaObj, newObj, options);
 						
