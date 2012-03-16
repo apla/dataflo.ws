@@ -164,30 +164,94 @@ util.extend (httpdi.prototype, {
 				
 				if (!wf) return;
 
-				wf = new workflow (
-					util.extend (true, {}, item),
-					{request: req, response: res}
-				);
-				
-				wf.on ('completed', function (wf) {
-					self.runPresenter (wf, 'completed', res);
-				});
-
-				wf.on ('failed', function (wf) {
-					self.runPresenter (wf, 'failed', res);
-				});
-
-				self.emit ("detected", req, res, wf);
-				
-				if (!item.prepare && wf.ready) wf.run();
+				wf = self.createWorkflow(item, req, res);
 				
 				return;
-
 			});
 		}
 		
 		return wf;
 	},
+
+	// hierarchical router
+	hierarchical: function (req, res) {
+		var self = this;
+
+		var pathes = req.url.pathname.split(/\/+/),
+			maxLevel = pathes.length - 1,
+			wf = null;
+
+		if ('' === pathes[maxLevel]) {
+			maxLevel -= 1;
+		}
+
+		var findPath = function (tree, level) {
+			var path = pathes[level];
+
+			var checkPath = function (item) {
+				var match;
+
+				/* Exact match. */
+				if ('path' in tree) {
+					match = (path === tree.path);
+				}
+
+				/* Pattern match. */
+				if (!match && 'pattern' in tree) {
+					match = new RegExp(tree.pattern).test(path);
+				}
+
+				if (match) {
+					if (level === maxLevel) {
+						wf = self.createWorkflow(item, req, res);
+					} else {
+						findPath(item, level + 1);
+					}
+				}
+			};
+
+			if (tree.workflows) {
+				tree.workflows.forEach(checkPath);
+			} else {
+				checkPath(tree);
+			}
+		};
+
+		findPath({
+			path: '',
+			workflows: this.workflows
+		}, 0);
+
+		return wf;
+	},
+
+	createWorkflow: function (cfg, req, res) {
+		var self = this;
+
+		console.log('httpdi match: ' + req.method + ' to ' + req.url.pathname);
+
+		var wf = new workflow(
+			util.extend (true, {}, cfg),
+			{ request: req, response: res }
+		);
+
+		wf.on('completed', function (wf) {
+			self.runPresenter(wf, 'completed', res);
+		});
+
+		wf.on('failed', function (wf) {
+			self.runPresenter(wf, 'failed', res);
+		});
+
+		self.emit('detected', req, res, wf);
+
+		if (!cfg.prepare && wf.ready) {
+			wf.run();
+		}
+
+		return wf;
+	},
+
 	listen: function () {
 		
 		var self = this;
