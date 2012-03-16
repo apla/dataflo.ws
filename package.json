@@ -1,6 +1,6 @@
 {
     "name": "workflow",
-    "description": "Zero-code workflows engine for Node, PhoneGap and browser."
+    "description": "Zero-code workflows engine for Node, PhoneGap and browser.",
     "version": "0.0.1",
     "keywords" : ["workflow", "flow-control", "flow", "tasks", "dependencies"],
     "repository": {

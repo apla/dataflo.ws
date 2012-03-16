@@ -161,9 +161,10 @@ function checkTaskParams (params, dict, prefix) {
 var workflow = module.exports = function (config, reqParam) {
 	
 	var self = this;
+	
 	util.extend (true, this, config);
 	util.extend (true, this, reqParam);
-
+	
 	this.created = new Date().getTime();
 	
 	// here we make sure workflow uid generated
@@ -207,11 +208,8 @@ var workflow = module.exports = function (config, reqParam) {
 
 		var checkRequirements = function () {
 			
-			var dict = {
-				request:  self.request,
-				response: self.response,
-				data:     self.data
-			};
+			var dict = util.extend(true, {}, reqParam);
+			dict.data = self.data;
 			
 			if ($isServerSide) {
 				dict.project = project
