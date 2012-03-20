@@ -74,7 +74,7 @@ util.extend (socket.prototype, {
 	
 	processMessage: function (socket, message) {
 	
-		console.log('processMessage', socket.id, message);
+		if (this.log) console.log('processMessage', socket.id, message);
 		
 		var re = /^([A-Z0-9a-z\/]+)(:(.+))?$/;
 		var match = message.match(re);
@@ -101,7 +101,7 @@ util.extend (socket.prototype, {
 			this.router(query, socket);
 			
 		} else {
-			console.log('Socket initiator: Strange formatted message');
+			if (self.log) console.log('Socket initiator: Strange formatted message');
 		}		
 	},
 		
@@ -119,7 +119,7 @@ util.extend (socket.prototype, {
 				
 				if (match && match[0] == route) { //exact match
 					
-					console.log ('socket match to ' + route);
+					if (self.log) console.log ('socket match to ' + route);
 
 					wf = new workflow (
 						util.extend (true, {}, item),

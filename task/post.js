@@ -54,8 +54,6 @@ util.extend (postTask.prototype, {
 					fields = qs.parse (self.data);
 				}
 				
-				console.log('<---------------post',fields);
-				
 				var body = {fields: fields};
 				
 				self.request.body = body;
