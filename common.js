@@ -170,6 +170,8 @@ function loadIncludes(config, cb) {
 			}
 		}
 	});
+
+	!len && cb(null, config);
 }
 
 function iterateTree(tree, cb) {
