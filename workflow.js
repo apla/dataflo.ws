@@ -108,7 +108,7 @@ function checkTaskParams (params, dict, prefix) {
 		for (var key in params) {
 			var val = params[key];
 			var valCheck = val;
-			if (key == 'bind' && prefix == '') {
+			if ((key == '$bind' || key == 'bind') && prefix == '') {
 				// bind is a real js object. it can be circular
 				modifiedParams[key] = val;
 			} else if (val.interpolate) { // val is string || number
@@ -228,30 +228,36 @@ var workflow = module.exports = function (config, reqParam) {
 		
 		//console.log (taskParams);
 		
-		if (taskParams.className) {
+		var taskClassName = taskParams.className || taskParams.$class;
+		var taskFnName = taskParams.functionName || taskParams.$function;
+		
+		if (taskClassName && taskFnName)
+			self.logError ('defined both className and functionName, using className');
+		
+		if (taskClassName) {
 //			self.log (taskParams.className + ': initializing task from class');
 			var xTaskClass;
 			
 			// TODO: need check all task classes, because some compile errors may be there
 //			console.log ('task/'+taskParams.className);
 			try {
-				xTaskClass = require (taskParams.className);
+				xTaskClass = require (taskClassName);
 			} catch (e) {
-				console.log ('require '+taskParams.className+':', e);
+				console.log ('require '+taskClassName+':', e);
 				self.ready = false;
 				return;
 			}
 			
 			task = new xTaskClass ({
-				className: taskParams.className,
-				method:    taskParams.method,
+				className: taskClassName,
+				method:    taskParams.method || taskParams.$method,
 				require:   checkRequirements,
-				important: taskParams.important
+				important: taskParams.important || taskParams.$important
 			});
-		} else if (taskParams.coderef || taskParams.functionName) {
+		} else if (taskParams.coderef || taskFnName) {
 		
 //			self.log ((taskParams.functionName || taskParams.logTitle) + ': initializing task from function');
-			if (!taskParams.functionName && !taskParams.logTitle)
+			if (!taskFnName && !taskParams.logTitle)
 				throw "task must have a logTitle when using call parameter";
 			
 			var xTaskClass = function (config) {
@@ -263,38 +269,38 @@ var workflow = module.exports = function (config, reqParam) {
 			util.extend (xTaskClass.prototype, {
 				run: function () {
 					var failed = false;
-					if (taskParams.bind && taskParams.functionName) {
+					if ((taskParams.$bind || taskParams.bind) && taskFnName) {
 						try {
-							var functionRef = taskParams.bind;
+							var functionRef = taskParams.bind || taskParams.$bind;
 							// TODO: use pathToVal
-							var fSplit = taskParams.functionName.split (".");
+							var fSplit = taskFnName.split (".");
 							while (fSplit.length) {
 								var fChunk = fSplit.shift();
 								functionRef = functionRef[fChunk];
 							}
 							
-							this.completed (functionRef.call (taskParams.bind, this));
+							this.completed (functionRef.call (taskParams.bind || taskParams.$bind, this));
 						} catch (e) {
-							failed = 'failed call function "'+taskParams.functionName+'" from ' + taskParams.bind + ' with ' + e;
+							failed = 'failed call function "'+taskFnName+'" from ' + (taskParams.bind || taskParams.$bind) + ' with ' + e;
 						}
-					} else if (taskParams.functionName) {
-						var fn = $mainModule[taskParams.functionName];
+					} else if (taskFnName) {
+						var fn = $mainModule[taskFnName];
 						if (fn && fn.constructor == Function) {
 							this.completed (fn (this));
 						} else {
 							// this is solution for nodejs scope:
 							// exports can be redefined
 							var mainExports = eval ($scope);
-							var fn = mainExports[taskParams.functionName];
+							var fn = mainExports[taskFnName];
 							if (fn && fn.constructor == Function) {
 								$mainModule = mainExports;
 								this.completed (fn (this));
 							} else {
 								// TODO: fix description for window
-								failed = "you defined functionName as " + taskParams.functionName
+								failed = "you defined functionName as " + taskFnName
 								+ " but we cannot find this name in current scope (" + $scope
 								+ ").\nplease add " + ($isClientSide ? "'window." : "'module.exports.")
-								+ taskParams.functionName + " = function (params) {...}}' in your main module";
+								+ taskFnName + " = function (params) {...}}' in your main module";
 							}
 						}
 					} else {
@@ -307,10 +313,10 @@ var workflow = module.exports = function (config, reqParam) {
 			});
 			
 			task = new xTaskClass ({
-				functionName: taskParams.functionName,
-				logTitle:     taskParams.logTitle,
+				functionName: taskFnName,
+				logTitle:     taskParams.logTitle || taskParams.$logTitle,
 				require:      checkRequirements,
-				important:    taskParams.important
+				important:    taskParams.important || taskParams.$important
 			});
 			
 		}
@@ -501,6 +507,10 @@ util.extend (workflow.prototype, {
 	logTaskError: function (task, msg, options) {
 		// TODO: fix by using console.error
 		this.log(task.logTitle, "("+task.state+") \x1B[0;31m" + msg, options || '', "\x1B[0m");
+	},
+	logError: function (task, msg, options) {
+		// TODO: fix by using console.error
+		this.log(" \x1B[0;31m" + msg, options || '', "\x1B[0m");
 	},
 	addEventListenersToTask: function (task) {
 		var self = this;
