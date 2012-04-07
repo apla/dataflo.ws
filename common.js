@@ -111,17 +111,34 @@ Number.prototype.times = function (cb) {
 	return a;
 }
 
-var pathToVal = module.exports.pathToVal = function (dict, path, value) {
+// overwrite subject with values from object (merge object with subject)
+var mergeObjects = module.exports.mergeObjects = function (object, subjectParent, subjectKey) {
+	// subject parent here for js's lack of pass by reference
+	
+	if (subjectParent[subjectKey] === void 0)
+		subjectParent[subjectKey] = {};
+	var subject = subjectParent[subjectKey];
+	for (var objectField in object) {
+		subject[objectField] = object[objectField];
+	}
+}
+
+var pathToVal = module.exports.pathToVal = function (dict, path, value, method) {
 //	console.log ('pathToVal ('+ dict + ', '+ path + ', '+value+')');
-	var chunks = path.split ('.');
+	var chunks = (path.constructor === Array ? path : path.split ('.'));
 	if (chunks.length == 1) {
 		var oldValue = dict[chunks[0]];
-		if (value !== void(0))
-			dict[chunks[0]] = value;
+		if (value !== void(0)){
+			if (method !== void 0) {
+				method (value, dict, chunks[0]);
+			} else {
+				dict[chunks[0]] = value;
+			}
+		}
 //		console.log (''+oldValue);
 		return oldValue;
 	}
-	return pathToVal (dict[chunks.shift()], chunks.join('.'), value)
+	return pathToVal (dict[chunks.shift()], chunks, value, method)
 }
 
 function loadIncludes(config, cb) {
@@ -252,7 +269,8 @@ define (function (require, exports, module) {
 	return {
 		pathToVal: pathToVal,
 		findInterpolation: findInterpolation,
-		loadIncludes: loadIncludes
+		loadIncludes: loadIncludes,
+		mergeObjects: mergeObjects
 	};
 });
 

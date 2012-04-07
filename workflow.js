@@ -546,8 +546,13 @@ util.extend (workflow.prototype, {
 		
 		task.on ('complete', function (t, result) {
 			
-			if (t.produce && result)
-				common.pathToVal (self, t.produce, result);
+			if (result) {
+				if (t.produce || t.$set) {
+					common.pathToVal (self, t.produce || t.$set, result);
+				} else if (t.$mergeWith) {
+					common.pathToVal (self, t.$mergeWith, result, common.mergeObjects);
+				}
+			}
 			
 			self.logTask (task, 'task completed');
 			
