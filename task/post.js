@@ -24,7 +24,9 @@ util.extend (postTask.prototype, {
 		if (self.request.method != 'POST' && self.request.method != 'PUT')
 			return self.skipped ();
 			
-		if (self.request.headers['content-type'] == 'application/json') {
+		var contentType = self.request.headers['content-type'];
+			
+		if (contentType != 'application/octet-stream') {
 			
 			var self = this;
 			 
@@ -47,17 +49,21 @@ util.extend (postTask.prototype, {
 				if (self.dumpData) {
 					self.emit ('log', self.data);
 				}
-				 
-				try {
-					fields = JSON.parse (self.data);
-				} catch (e) {
-					fields = qs.parse (self.data);
+				
+				var body;
+				
+				if (contentType == 'application/json') {
+				 	try {
+						fields = JSON.parse (self.data);
+					} catch (e) {
+						fields = qs.parse (self.data);
+					}
+					body = {fields: fields};
+				} else {
+					body = self.data;
 				}
 				
-				var body = {fields: fields};
-				
-				self.request.body = body;
-				 
+				self.request.body = body;				 
 				self.completed (body);
 			});
 			

@@ -20,6 +20,18 @@ util.extend (downloadTask.prototype, {
 		
 		self.download = {};
 		self.activityCheck ('task run');
+		
+		// attach post body to parsed url
+		
+		self.url = urlUtil.parse(self.url);
+		
+		if (self.post) {
+			self.url.body = self.post;
+		}
+		
+		if (self.headers) {
+			self.url.headers = self.headers;
+		}
 				
 		// create model and listen
 		
@@ -49,15 +61,13 @@ util.extend (downloadTask.prototype, {
 					self.model.dataSource.res &&
 					self.model.dataSource.res.headers) ?
 					self.model.dataSource.res.headers : {};
-				
-				var contentType = originalHeaders['content-type'];
-				
-				if (contentType) {
-					self.download.contentType = contentType.split(';')[0];
-				}
-				
+					
+				self.download.headers = originalHeaders;
 				self.clearOperationTimeout();
-				self.completed (self.download);				
+				
+				console.log ('<<<<<<<<<<<<',self.download.data.toString());
+				
+				self.completed (self.download);
 			});
 			
 		}
