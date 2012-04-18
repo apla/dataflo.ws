@@ -65,8 +65,6 @@ util.extend (downloadTask.prototype, {
 				self.download.headers = originalHeaders;
 				self.clearOperationTimeout();
 				
-				console.log ('<<<<<<<<<<<<',self.download.data.toString());
-				
 				self.completed (self.download);
 			});
 			
