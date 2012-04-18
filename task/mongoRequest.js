@@ -70,6 +70,58 @@ var mongoRequestTask = module.exports = function (config) {
 	
 };
 
+mongo.Db.prototype.open = function (callback) {
+	var self = this; 
+	
+	if (self._state == 'connected') {
+		return callback (null, self);
+	}
+	
+	// Set the status of the server
+	if (this.openCalled)
+		self._state = 'connecting';
+
+	// Set up connections
+	if(self.serverConfig instanceof mongo.Server || self.serverConfig instanceof mongo.ReplSet) {
+		if (!this._openCallbacks) this._openCallbacks = [];
+		
+		if (callback)
+			this._openCallbacks.push (callback);
+		
+		if (!this.openCalled) self.serverConfig.connect(self, {firstCall: true}, function(err, result) {
+			
+			console.log (123);
+			
+			if(err != null) {
+				// Return error from connection
+				self.emit ('error', err);
+				self._openCallbacks.map (function (item) {
+					item (err, null);
+				});
+				self._openCallbacks = [];
+				return;
+			}
+			// Set the status of the server
+			self._state = 'connected';      
+			// Callback
+			self.emit ('open', self);
+			self._openCallbacks.map (function (item) {
+				item (null, self);
+			});
+			self._openCallbacks = [];
+			return;
+		});
+
+		// Set that db has been opened
+		this.openCalled = true;
+	} else {
+		var err = new Error ("Server parameter must be of type Server or ReplSet");
+		self.emit ('error', err);
+		return callback(err, null);
+	}
+};
+
+
 util.inherits (mongoRequestTask, task);
 
 util.extend (mongoRequestTask.prototype, {
@@ -115,10 +167,13 @@ util.extend (mongoRequestTask.prototype, {
 		var client = self._getConnector ();
 		
 		if (this.verbose)
-			console.log ('checking project.connections', self.connector, self.collection);
+			console.log (
+				'checking project.connections', self.connector, self.collection,
+				project.connections[self.connector][self.collection] === void 0 ? 'not cached' : 'cached'
+			);
 		
 		// check collection existing in cache
-		// if collection cahed - return through callback this collection
+		// if collection cached - return through callback this collection
 		if (project.connections[self.connector][self.collection]) {
 			cb.call (self, false, project.connections[self.connector][self.collection]);
 			return;
@@ -127,7 +182,7 @@ util.extend (mongoRequestTask.prototype, {
 		// otherwise open db connection
 		client.open (function (err, p_client) {
 			// get collection
-			client.collection(self.collection, function (err, collection) {
+			client.collection (self.collection, function (err, collection) {
 				if (err) {
 					console.log (err);
 				} else {
