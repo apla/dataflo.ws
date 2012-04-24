@@ -44,24 +44,30 @@ util.extend (postTask.prototype, {
 			 
 			self.request.on("end", function () {
 				 
-				var fields;
+				var fields, err;
 				 
 				if (self.dumpData) {
 					self.emit ('log', self.data);
 				}
 				
-				var body;
-				
-				if (contentType == 'application/json') {
-				 	try {
-						fields = JSON.parse (self.data);
-					} catch (e) {
-						fields = qs.parse (self.data);
-					}
-					body = {fields: fields};
-				} else {
-					body = self.data;
+				try {
+					fields = JSON.parse (self.data);
+				} catch (e) {
+					err = e;
 				}
+				
+				if (err) {
+					
+					err = null;
+					
+					try {
+						fields = qs.parse (self.data);
+					} catch (e) {
+						err == e;
+					}
+				}
+				
+				var body = (err) ? self.data : {fields: fields};
 				
 				self.request.body = body;				 
 				self.completed (body);
@@ -80,8 +86,6 @@ util.extend (postTask.prototype, {
 			
 			var body = {fields: fields, files: files};
 			self.request.body = body;
-			
-			//console.log ('<---------', body);
 			
 			self.completed (body);
 		});
