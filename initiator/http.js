@@ -31,6 +31,16 @@ var httpdi = module.exports = function (config) {
 	this.workflows = config.workflows;
 	this.static    = config.static;
 	
+	// - change static root by path
+	if (this.static.root && this.static.root.substring) {
+		this.static.root = project.root.fileIO (this.static.root);
+	}
+	
+	// - - - prepare configs
+	this.prepare = config.prepare;
+	
+	//
+	
 	this.router    = config.router;
 	// router is function in main module or initiator method
 	if (config.router === void 0) {
@@ -64,7 +74,69 @@ util.extend (httpdi.prototype, {
 		this.emit ('ready', this.server);
 		
 	},
-	runPresenter: function (wf, state, res) {
+	
+	runPrepare: function(wf) {
+		
+		var prepareCfg = wf.prepare,
+			request = wf.request,
+			response = wf.response,
+			prepare = this.prepare;
+		
+		if (prepare) {
+			
+			var wfChain = [];
+			
+			// create chain of wfs
+		
+			prepareCfg.forEach(function(p, index, arr) {
+				
+				var innerWfConfig = prepare[p];
+				
+				var innerWf = new workflow(innerWfConfig, {
+					request: request,
+					response: response,
+					stage: 'prepare'}
+				);
+				
+				wfChain.push(innerWf);
+				
+			});
+			
+			// push basic wf to chain
+			
+			wfChain.push(wf)
+			
+			// subscribe they
+			
+			for (var i = 0; i < wfChain.length-1; i++) {
+			
+				var currentWf = wfChain[i];
+				currentWf.nextWf = wfChain[i+1];
+				
+				currentWf.on('completed', function(cWF) {
+					
+					setTimeout(cWF.nextWf.run.bind (cWF.nextWf), 0);
+				
+				});
+				
+				currentWf.on('failed', function(cWF) {
+				
+					this.runPresenter(cWF, 'failed');
+				
+				})
+			
+			}
+			
+			wfChain[0].run();
+		
+		} else {
+			
+			throw "Config doesn't contain such prepare type: " + wf.prepare;
+			
+		}
+	},
+
+	runPresenter: function (wf, state) {
 		var self = this;
 		// presenter can be:
 		// {success: ..., failed: ..., failedRequire: ...} — succeeded or failed tasks in workflow or failed require step
@@ -115,12 +187,12 @@ util.extend (httpdi.prototype, {
 
 		var presenterWf = new workflow ({
 			id:    wf.id,
-			data:  wf.data,
 			tasks: tasks,
 			stage: 'presentation'
 		}, {
-			vars:  wf,
-			response: res
+			data:  wf.data,
+			request: wf.request,
+			response: wf.response
 		});
 
 		presenterWf.on ('completed', function () {
@@ -228,19 +300,21 @@ util.extend (httpdi.prototype, {
 			util.extend (true, {}, cfg),
 			{ request: req, response: res }
 		);
-
+		
 		wf.on('completed', function (wf) {
-			self.runPresenter(wf, 'completed', res);
+			self.runPresenter(wf, 'completed');
 		});
 
 		wf.on('failed', function (wf) {
-			self.runPresenter(wf, 'failed', res);
+			self.runPresenter(wf, 'failed');
 		});
 
 		self.emit('detected', req, res, wf);
 
 		if (!cfg.prepare && wf.ready) {
 			wf.run();
+		} else {
+			self.runPrepare(wf);
 		}
 
 		return wf;
