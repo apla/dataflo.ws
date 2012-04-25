@@ -139,7 +139,7 @@ util.extend (httpdi.prototype, {
 	runPresenter: function (wf, state) {
 		var self = this;
 		// presenter can be:
-		// {success: ..., failed: ..., failedRequire: ...} — succeeded or failed tasks in workflow or failed require step
+		// {completed: ..., failed: ..., failedRequire: ...} — succeeded or failed tasks in workflow or failed require step
 		// "template.name" — template file for presenter
 		// {"type": "json"} — presenter config
 		// TODO: [{...}, {...}] — presentation workflow
@@ -147,11 +147,11 @@ util.extend (httpdi.prototype, {
 		if (!wf.presenter) return;
 		// TODO: emit SOMETHING
 
-		// self.log ('running presenter');
-		
 		var presenter = wf.presenter;
+		
+		console.log ('running presenter on state: ', state, presenter[state]);
 
-		// {success: ..., failed: ..., failedRequire: ...}
+		// {completed: ..., failed: ..., failedRequire: ...}
 		if (presenter[state])
 			presenter = presenter[state];
 		
@@ -191,6 +191,7 @@ util.extend (httpdi.prototype, {
 			stage: 'presentation'
 		}, {
 			data:  wf.data,
+			error: wf.error,
 			request: wf.request,
 			response: wf.response
 		});

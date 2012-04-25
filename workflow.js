@@ -526,10 +526,9 @@ util.extend (workflow.prototype, {
 			self.logTaskError (task, message); 
 		});
 		
-		task.on ('error', function () {
-			self.logTaskError (task, 'error: ', arguments);// + '\n' + arguments[0].stack);
-			
-
+		task.on ('error', function (e) {
+			self.error = e;
+			self.logTaskError (task, 'error: ', e);// + '\n' + arguments[0].stack);
 		});
 
 		// states
