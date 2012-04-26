@@ -47,11 +47,12 @@ util.extend (basic.prototype, {
 			
 			if (password == self.user.tokens.password) {
 				self.render();
-				return;
+			} else {
+				self.failed({status: 401, err: "Invalid password", errCode: 2});
 			}
+		} else {
+			self.failed({status: 401, err: "User not found", errCode: 1});
 		}
-		
-		self.failed({status: 401, err: "User not authorized"});
 	},
 	
 	checkNoExistAndRender: function() {
@@ -75,7 +76,7 @@ util.extend (basic.prototype, {
 			
 		} else {
 		
-			self.failed({status: 401, err: "User not authorized"});
+			self.failed({status: 401, err: "User already exist", errCode: 3});
 		
 		}
 	},
@@ -86,13 +87,19 @@ util.extend (basic.prototype, {
 			user = self.user,
 			sessionUID = self.sessionUID;
 		
-		var index = user.sessionUIDs.indexOf(sessionUID);
+		if (user.sessionUIDs) {
 		
-		if (index == -1) {
-			user.sessionUIDs.splice(index, 1);
+			var index = user.sessionUIDs.indexOf(sessionUID);
+			
+			if (index != -1) {
+				user.sessionUIDs.splice(index, 1);
+			}
+			
+			self.completed(user);
+		
+		} else {
+			self.failed({err: 'User already logged out'});
 		}
-		
-		self.completed(user);
 	}
 	
 });
