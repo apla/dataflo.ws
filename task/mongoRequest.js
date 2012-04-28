@@ -126,6 +126,14 @@ util.inherits (mongoRequestTask, task);
 
 util.extend (mongoRequestTask.prototype, {
 	
+	
+	_log : function(){
+		var self = this;
+		if (self.verbose){
+			console.log.apply (console, arguments);
+		}
+	},
+	
 	// private method get connector
 	
 	_getConnector: function () {
@@ -308,7 +316,6 @@ util.extend (mongoRequestTask.prototype, {
 			}
 			
 			var docsId = [];
-			
 			self.data.map(function(item) {
 				
 				if (self.timestamp) item.created = item.updated = ~~(new Date().getTime()/1000);
@@ -316,11 +323,28 @@ util.extend (mongoRequestTask.prototype, {
 				
 			});
 			
+			// MODIFIED: optionally check if records already in collection by self.filter, otherwise by _id
+			// if records found :
+			//		if no self.update provided : skip the existing records
+			//		if self.update is provided : update records using self.action 
+			// if records not found : insert
+
+			var filter = self.filter || {_id: {$in: docsId}};
+			
+			self._log('Filter: ', filter, ', Update: ', self.update);
+
 			if (self.insertingSafe) {
 			
 				// find any records alredy stored in db
 				
-				collection.find({_id: {$in: docsId}}).toArray(function(err, alreadyStoredDocs) {
+				self._log('insertingSafe');
+				
+				self._log(self.data);
+				self._log(self.data[0].events);
+				
+				collection.find(filter).toArray(function (err, alreadyStoredDocs) {
+
+					self._log('Already stored: ', alreadyStoredDocs.length, ' docs');
 					
 					var alreadyStoredDocsObj = {};
 					
@@ -328,47 +352,72 @@ util.extend (mongoRequestTask.prototype, {
 						alreadyStoredDocsObj[item._id] = true;
 					});
 					
-					// build list of new records
-					var dataToInsert = [];
-					
-					self.data.map(function(item) {
-					
-						if (!alreadyStoredDocsObj[item._id]) dataToInsert.push(item);
-						
-					});
-										
-					if (dataToInsert.length == 0) {
-						
+					if (alreadyStoredDocs.length > 0 && self.update) {
+
+						self._log('Updating @filter: ', filter, ' with: ', self.update);
+
+						collection.update(filter, self.update, false, true);
+
 						self.completed ({
-							success:	(err == null),
+							success:	true,
 							total:		alreadyStoredDocs.length,
-							err:		err || null,
+							err:		false,
 							data:		alreadyStoredDocs
 						});
 						
 						return;
-					}
 					
-					collection.insert (dataToInsert, {safe: true}, function (err, docs) {
+					} else {
+					
+						// build list of new records
+
+						self._log('Really inserting');
+
+						var dataToInsert = [];
 						
-						if (docs) docs.map (function (item) {
-							if (self.mapping) {
-								self.mapFields (item);
-							}
+						self.data.map(function(item) {
+							if (!alreadyStoredDocsObj[item._id]) dataToInsert.push(item);
 						});
+											
+						if (dataToInsert.length == 0) {
+
+							self._log('Nothing to insert');
+							
+							self.completed ({
+								success:	(err == null),
+								total:		alreadyStoredDocs.length,
+								err:		err || null,
+								data:		alreadyStoredDocs
+							});
+							
+							return;
+						}
 						
-						var insertedRecords = alreadyStoredDocs.concat(docs);
-						
-						self.completed ({
-							success:	(err == null),
-							total:		(insertedRecords && insertedRecords.length) || 0,
-							err:		err || null,
-							data:		insertedRecords
+
+						self._log('Perform insert of ', dataToInsert.length, ' items');
+
+						collection.insert (dataToInsert, {safe: true}, function (err, docs) {
+							
+							if (docs) docs.map (function (item) {
+								if (self.mapping) {
+									self.mapFields (item);
+								}
+							});
+							
+							var insertedRecords = alreadyStoredDocs.concat(docs);
+							
+							self.completed ({
+								success:	(err == null),
+								total:		(insertedRecords && insertedRecords.length) || 0,
+								err:		err || null,
+								data:		insertedRecords
+							});
+							
 						});
-						
-					});
+					}
 				
-				});
+				}); //collection.find(filter).toArray
+				
 			} else {
 				
 				collection.insert (self.data, {safe: true}, function (err, docs) {
