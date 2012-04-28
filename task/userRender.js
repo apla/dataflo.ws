@@ -20,15 +20,28 @@ util.extend (userRender.prototype, {
 		var found = self.found;
 		var data = found.data;
 		
+		var user;
+		
 		if (data && data.length > 0) {
 			
-			var user = data[0];
+			user = data[0];
+
 			
-			self.request.user = user;
+			if(user.groupIds && user.groupIds.indexOf(project.config.consumerConfig.facebook.defaultSharingGroupId)>-1){
+				user.authorized=true;
+			}
+//			user.authorized=true; //remove
 			
-			self.completed(user);
+			console.info(user);
+			
 		} else {
-			self.completed({});
+			user={
+				anonymous: true
+			}
 		}
+
+			self.request.user = user;
+			self.completed(user);
+
 	}
 });
