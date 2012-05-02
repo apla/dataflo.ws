@@ -24,7 +24,7 @@ util.extend (postTask.prototype, {
 		if (self.request.method != 'POST' && self.request.method != 'PUT')
 			return self.skipped ();
 			
-		if (self.request.headers['content-type'] == 'application/json') {
+		if (self.request.headers['content-type'].indexOf('application/json') == 0 ) {
 			
 			var self = this;
 			 
