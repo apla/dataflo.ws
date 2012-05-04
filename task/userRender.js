@@ -28,9 +28,9 @@ util.extend (userRender.prototype, {
 
 			
 			if(user.groupIds && user.groupIds.indexOf(project.config.consumerConfig.facebook.defaultSharingGroupId)>-1){
-				user.authorized=true;
+				user.authorized = true;
 			}
-//			user.authorized=true; //remove
+			user.authenticated = true;
 			
 			console.info(user);
 			
