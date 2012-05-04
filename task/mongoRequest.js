@@ -323,40 +323,32 @@ util.extend (mongoRequestTask.prototype, {
 				
 			});
 			
-			// MODIFIED: optionally check if records already in collection by self.filter, otherwise by _id
-			// if records found :
-			//		if no self.update provided : skip the existing records
-			//		if self.update is provided : update records using self.action 
-			// if records not found : insert
+			/* MODIFIED: optionally check if records already in collection by self.filter, otherwise by _id
+			 * if records found :
+			 *		if no self.updateData provided : insert records that do not match filter
+			 *		if self.updateData is provided : update records using self.updateData 
+			 * if records not found : insert
+			 */
 
 			var filter = self.filter || {_id: {$in: docsId}};
 			
-			self._log('Filter: ', filter, ', Update: ', self.update);
+			self._log('Filter: ', filter, ', Update: ', self.updateData);
 
 			if (self.insertingSafe) {
 			
 				// find any records alredy stored in db
 				
-				self._log('insertingSafe');
-				
-				self._log(self.data);
-				self._log(self.data[0].events);
+				self._log('insertingSafe data = ', self.data);
 				
 				collection.find(filter).toArray(function (err, alreadyStoredDocs) {
 
 					self._log('Already stored: ', alreadyStoredDocs.length, ' docs');
 					
-					var alreadyStoredDocsObj = {};
-					
-					alreadyStoredDocs.map (function(item) {
-						alreadyStoredDocsObj[item._id] = true;
-					});
-					
-					if (alreadyStoredDocs.length > 0 && self.update) {
+					if (alreadyStoredDocs.length > 0 && self.updateData) {
 
-						self._log('Updating @filter: ', filter, ' with: ', self.update);
+						self._log('Updating @filter: ', filter, ' with: ', self.updateData);
 
-						collection.update(filter, self.update, false, true);
+						collection.update(filter, self.updateData, false, true);
 
 						self.completed ({
 							success:	true,
@@ -371,13 +363,51 @@ util.extend (mongoRequestTask.prototype, {
 					
 						// build list of new records
 
-						self._log('Really inserting');
+						self._log('Really inserting. Creating dataToInsert with unique = ', self.unique);
 
 						var dataToInsert = [];
 						
-						self.data.map(function(item) {
-							if (!alreadyStoredDocsObj[item._id]) dataToInsert.push(item);
-						});
+						/* if self.unique array is provided, its fields are used to check whether doc is already in collection
+						 *	doc is not inserted only if all unique fields of the new doc are equal to the same fields of the old doc
+						 *
+						 * if self.unique is not provided checks by _id
+						 */
+						
+						if (alreadyStoredDocs.length == 0) {
+
+							self.data.map(function (item) { dataToInsert.push(item) });
+
+						} else {
+
+							if (!self.unique) {
+
+								var alreadyStoredDocsIds = {};
+
+								alreadyStoredDocs.map (function(item) {
+									alreadyStoredDocsIds[item._id] = true;
+								});
+
+								self.data.map(function(item) {
+									if (!alreadyStoredDocsIds[item._id]) dataToInsert.push(item);
+								});
+
+							} else {
+								var unique = self.unique;
+								if ( !(unique instanceof Array) ) unique = [unique];
+
+								dataToInsert = self.data.filter(function(item) {
+									var uniqueField;
+									for ( k = 0; k < alreadyStoredDocs.length; k++) {
+										for (l = 0; l < unique.length; l++) {
+											uniqueField = unique[l];
+											if (alreadyStoredDocs[k][uniqueField] != item[uniqueField]) return true;
+										}
+									}
+									return false;
+								});
+
+							}
+						}
 											
 						if (dataToInsert.length == 0) {
 
