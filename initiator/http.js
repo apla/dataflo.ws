@@ -182,46 +182,39 @@ util.extend (httpdi.prototype, {
 			maxLevel = pathes.length - 1,
 			wf = null;
 
-		if ('' === pathes[maxLevel]) {
+		if (maxLevel > 0 && '' === pathes[maxLevel]) {
 			maxLevel -= 1;
 		}
 
 		var findPath = function (tree, level) {
-			var path = pathes[level];
+			var path = pathes[level], match;
 
-			var checkPath = function (item) {
-				var match;
-
-				/* Exact match. */
-				if ('path' in tree) {
-					match = (path === tree.path);
-				}
-
-				/* Pattern match. */
-				if (!match && 'pattern' in tree) {
-					match = new RegExp(tree.pattern).test(path);
-				}
-
-				if (match) {
-					if (level === maxLevel) {
-						wf = self.createWorkflow(item, req, res);
-					} else {
-						findPath(item, level + 1);
-					}
-				}
-			};
-
-			if (tree.workflows) {
-				tree.workflows.forEach(checkPath);
-			} else {
-				checkPath(tree);
+			/* Exact match. */
+			if ('path' in tree) {
+				match = (path === tree.path);
 			}
+
+			/* Pattern match. */
+			if (!match && 'pattern' in tree) {
+				match = new RegExp(tree.pattern).test(path);
+			}
+
+			if (match) {
+				if (level >= maxLevel) {
+					wf = self.createWorkflow(tree, req, res);
+				} else if (tree.workflows) {
+					tree.workflows.forEach(function (item) {
+						findPath(item, level + 1);
+					});
+				}
+			}
+
+			return match;
 		};
 
-		findPath({
-			path: '',
-			workflows: this.workflows
-		}, 0);
+		this.workflows.every(function (item) {
+			return !findPath(item, 1);
+		});
 
 		return wf;
 	},
