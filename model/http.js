@@ -57,7 +57,7 @@ var httpModel = module.exports = function (modelBase) {
 		}
 		if (this.params.headers) {
 			try {
-				util.extend(this.headers, JSON.parse(this.params.headers));
+				util.extend(this.headers, this.params.headers);
 				delete this.params.headers;
 			} catch (e) {
 				console.log ('headers is not correct');

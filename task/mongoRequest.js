@@ -90,8 +90,6 @@ mongo.Db.prototype.open = function (callback) {
 		
 		if (!this.openCalled) self.serverConfig.connect(self, {firstCall: true}, function(err, result) {
 			
-			console.log (123);
-			
 			if(err != null) {
 				// Return error from connection
 				self.emit ('error', err);

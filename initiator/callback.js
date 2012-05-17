@@ -1,7 +1,6 @@
-define(function(require, exports, module) {
-
 var EventEmitter = require ('events').EventEmitter,
-	workflow     = require ('workflow');
+	util         = require ('util'),
+	workflow     = require ('../workflow');
 
 var callbacki = module.exports = function (config) {
 	var self = this;
@@ -17,7 +16,7 @@ util.extend (callbacki.prototype, {
 		
 	},
 	
-	process: function (token, request) {
+	process: function (token, wfRequire) {
 		
 		var self = this;
 		
@@ -31,10 +30,10 @@ util.extend (callbacki.prototype, {
 				
 				wf = new workflow (
 					util.extend (true, {}, item),
-					{request: request}
+					wfRequire
 				);
 
-				self.emit ("detected", request, wf);
+				self.emit ("detected", wfRequire, wf);
 				if (item.autoRun || item.autoRun == void 0)
 					wf.run();
 				
@@ -47,8 +46,4 @@ util.extend (callbacki.prototype, {
 		
 		return wf;
 	}
-});
-
-return callbacki;
-
 });
