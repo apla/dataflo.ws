@@ -423,9 +423,30 @@ util.extend (mongoRequestTask.prototype, {
 					util.extend(true, set, item);
 					delete set._id;
 					
-					var newObj = (self.replace) ? set : {$set: set};
 					var criteriaObj = (self.criteria) ? self.criteria :
 						(item._id) ? {_id: self._objectId(item._id)} : {};
+					
+					var newObj;
+					
+					if (self.modify) {
+						
+						newObj = {};
+						var modify = self.modify;
+						
+						for (var m in modify) {
+							newObj[m] = {};
+							
+							modify[m].map(function(field) {
+								newObj[m][field] = set[field];
+								delete set[field];
+							});
+						}
+						
+						newObj.$set = set;
+						
+					} else {
+						newObj = (self.replace) ? (set) : ({$set: set});
+					}
 					
 					//console.log ('<----------mongo.update', criteriaObj, newObj, options);
 					

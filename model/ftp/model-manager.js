@@ -32,6 +32,7 @@ util.extend(FtpModelManager.prototype, {
 		var self = this;
 		
 		ftp.isDelivering = false;
+		ftp.timestamp = Date.now();
 		
 		// add to ftps list
 		

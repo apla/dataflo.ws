@@ -2,7 +2,8 @@ var HTTPClient		= require ('http'),
 	util			= require ('util'),
 	fs				= require ('fs'),
 	urlUtils		= require ('url'),
-	bufferTools		= require('buffertools');
+	bufferTools		= require('buffertools'),
+	httpManager     = require ('model/http/model-manager');
 
 var pipeProgress = function (config) {
 	this.bytesTotal = 0;
@@ -71,14 +72,28 @@ util.extend (httpModel.prototype, {
 	fetch: function (target) {
 		
 		var self = this;
+		self.target = target;
 		
-		var isStream = target.to instanceof fs.WriteStream;
-		if (!isStream) target.to.data = new Buffer('');
+		var urlParams = self.getUrlParams();
 		
-		var progress = new pipeProgress ({
+		self.isStream = target.to instanceof fs.WriteStream;
+		
+		if (!self.isStream) target.to.data = new Buffer('');
+		
+		self.progress = new pipeProgress ({
 			writer: target.to
 		});
-	  	
+		
+		// add self for watching into httpModelManager
+		project.httpModelManager.add(self, {url: urlParams, headers: self.headers, postBody: self.postBody});
+		
+		return self.progress;
+	},
+	
+	run: function () {
+		
+		var self = this;
+		
 		var urlParams = self.getUrlParams();
 		
 		var req = self.req = HTTPClient.request(urlParams, function (res) {
@@ -90,16 +105,16 @@ util.extend (httpModel.prototype, {
 				return;
 			}
 			
-			util.extend (progress, {
+			util.extend (self.progress, {
 				bytesTotal: res.headers['content-length'],
 				reader: res,
 				readerWatch: "data"
 			});
 			
-			progress.watch ();
+			self.progress.watch ();
 		
-			if (isStream) {
-				self.writeStream = target.to;
+			if (self.isStream) {
+				self.writeStream = self.target.to;
 				res.pipe(self.writeStream);
 			}
 			
@@ -108,7 +123,7 @@ util.extend (httpModel.prototype, {
 			});
 			
 			res.on ('data', function (chunk) {
-				if (!isStream) target.to.data = bufferTools.concat(target.to.data, chunk);
+				if (!self.isStream) self.target.to.data = bufferTools.concat(self.target.to.data, chunk);
 				self.modelBase.emit ('data', chunk);
 			});
 			
@@ -130,8 +145,6 @@ util.extend (httpModel.prototype, {
 		if (self.postBody) req.write(self.postBody);
 		
 		req.end();
-		
-		return progress;
 	},
 	
 	stop: function () {

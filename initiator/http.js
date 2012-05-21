@@ -149,7 +149,7 @@ util.extend (httpdi.prototype, {
 
 		var presenter = wf.presenter;
 		
-		console.log ('running presenter on state: ', state, presenter[state]);
+		//console.log ('running presenter on state: ', state, presenter[state]);
 
 		// {completed: ..., failed: ..., failedRequire: ...}
 		if (presenter[state])
