@@ -130,6 +130,39 @@ util.extend (twitter.prototype, {
 		);
 	},
 	
+	post : function () {
+		var self = this;
+		var req = self.req;
+		var tokens = req.user.tokens;
+		var msg = self.message;
+		
+		var oa = new OAuth(twitterConfig.requestTokenUrl,
+			twitterConfig.accessTokenUrl,
+			twitterConfig.consumerKey,
+			twitterConfig.consumerSecret,
+			"1.0",
+			twitterConfig.callbackUrl,
+			"HMAC-SHA1");
+		
+		oa.post(
+		  "http://api.twitter.com/1/statuses/update.json",
+		  tokens.oauth_token, 
+		  tokens.oauth_token_secret,
+		  
+		  {"status": msg},
+		  
+		  function(error, data) {
+			if (error) {
+				self.completed(JSON.parse(error.data));
+			} else {
+				self.completed(JSON.parse(data));
+			}
+
+		  }
+		);
+
+	},
+	
 	mappingUser: function(user) {
 		
 		return {
