@@ -355,13 +355,16 @@ util.extend (httpdi.prototype, {
 						pathName += self.static.index;
 					}
 					
-					var contentType;
+					var contentType, charset;
 					if (pathName.match (/\.html$/)) {
 						contentType = 'text/html';
+						charset = 'utf-8';
 					}
 					
 					if (mime && mime.lookup) {
 						contentType = mime.lookup (pathName);
+						charset = mime.charsets.lookup(contentType);
+						if (charset) contentType += '; charset='+charset;
 					} else if (!contentType) {
 						console.error ('sorry, there is no content type for ' + pathName);
 					}
@@ -380,7 +383,7 @@ util.extend (httpdi.prototype, {
 							} else if (stats.isFile() && readStream) {
 
 								res.writeHead (200, {
-									'Content-Type': contentType + '; charset=utf-8'
+									'Content-Type': contentType
 								});
 								readStream.pipe (res);
 								readStream.resume ();
