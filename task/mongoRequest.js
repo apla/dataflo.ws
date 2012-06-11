@@ -198,6 +198,8 @@ util.extend (mongoRequestTask.prototype, {
 	
 	_objectId: function (hexString) {
 		
+		if (!hexString) return null;
+		
 		if (!hexString.substring) return hexString;
 		
 		var ObjectID = project.connectors[this.connector].bson_serializer.ObjectID;
@@ -208,9 +210,7 @@ util.extend (mongoRequestTask.prototype, {
 			id = new ObjectID(hexString);
 		} catch (e) {
 			console.error(hexString);
-			//!!!: for update with options = {upsert: true}
 			id = hexString.toString();
-			// throw e;
 		}
 		
 		return id;
@@ -260,7 +260,7 @@ util.extend (mongoRequestTask.prototype, {
 					// filter._id is hash with $in quantificators
 					if (filter._id['$in']) {
 						filter._id['$in'] = filter._id['$in'].map(function(id) {
-							return self._objectId (id);
+							return self._objectId(id);
 						});
 					}
 				}
