@@ -233,9 +233,6 @@ util.extend (mongoRequestTask.prototype, {
 				options = self.options || {},
 				sort = self.sort || self.pager && self.pager.sort || {};
 			
-			if (self.verbose)
-				console.log ("collection.find", self.collection, self.filter);
-
 			if (self.pager) {
 				if (self.pager.page && self.pager.limit && self.pager.limit < 100) {
 					options.skip = self.pager.start;
@@ -265,6 +262,9 @@ util.extend (mongoRequestTask.prototype, {
 					}
 				}
 			}
+			
+			if (self.verbose)
+				console.log ("collection.find", self.collection, filter, options);
 			
 			var cursor = collection.find(filter, options);
 			cursor.toArray (function (err, docs) {
