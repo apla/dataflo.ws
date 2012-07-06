@@ -2,7 +2,8 @@ var EventEmitter = require ('events').EventEmitter,
 	task         = require ('task/base'),
 	util         = require ('util'),
 	urlUtil      = require ('url'),
-	urlModel     = require ('model/from-url');
+	urlModel     = require ('model/from-url'),
+	mime		 = require ('mime');
 
 var downloadTask = module.exports = function (config) {
 	
@@ -63,6 +64,10 @@ util.extend (downloadTask.prototype, {
 					self.model.dataSource.res.headers : {};
 					
 				self.download.headers = originalHeaders;
+				
+				var extentionMatch = self.url.pathname.match(/\.(\w+)$/) || ['','json'];				
+				self.download.contentType = originalHeaders['content-type'] || mime.lookup(extentionMatch[1]);
+				
 				self.clearOperationTimeout();
 				
 				self.completed (self.download);

@@ -3,7 +3,13 @@ var util     = require ('util')
 
 //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-var connectionLimits = project.config.outgoingLimits.http;
+var connectionLimits;
+
+try {
+	connectionLimits = project.config.outgoingLimits.http;
+} catch (e) {
+	connectionLimits = {};
+}
 
 function getConnectionLimits(urlParams) {
 	

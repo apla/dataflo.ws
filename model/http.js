@@ -4,7 +4,7 @@ var HTTPClient		= require ('http'),
 	urlUtils		= require ('url'),
 	bufferTools		= require('buffertools'),
 	httpManager     = require ('model/http/model-manager');
-
+	
 var pipeProgress = function (config) {
 	this.bytesTotal = 0;
 	this.bytesPass  = 0; // because bytes can be read and written
