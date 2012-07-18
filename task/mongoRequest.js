@@ -309,8 +309,14 @@ util.extend (mongoRequestTask.prototype, {
 			
 			self.data.map(function(item) {
 				
-				if (self.timestamp) item.created = item.updated = ~~(new Date().getTime()/1000);
-				if (item._id && item._id != '') docsId.push(item._id);
+				if (self.timestamp) {
+					item.created = item.updated = ~~(new Date().getTime()/1000);
+				}
+				if (item._id == null || item._id == '') {
+					delete item._id;
+				} else {
+					docsId.push(item._id);
+				}
 				
 			});
 			
