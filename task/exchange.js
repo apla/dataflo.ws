@@ -71,7 +71,7 @@ util.extend(exchange.prototype, {
 			};
 			
 			if (user.thumbnailphoto){
-				result.avatar = user.thumbnailphoto;
+				result.avatar = new Buffer(user.thumbnailphoto).toString('base64');
 			}
 			if (user.department){
 				result.department = user.department;
