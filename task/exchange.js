@@ -3,7 +3,9 @@
 var task = require('task/base'),
 	util = require('util'),
 	https = require('https'),
-	url	  = require('url');
+	url	= require('url'),
+	io = require ('io/easy'),
+	crypto = require ('crypto');
 
 var exchangeConfig = project.config.consumerConfig.exchange;
 
@@ -71,7 +73,13 @@ util.extend(exchange.prototype, {
 			};
 			
 			if (user.thumbnailphoto){
-				result.avatar = user.thumbnailphoto;
+				var shasum = crypto.createHash('sha1');
+				shasum.update(user.mail);
+				var filePath = 'images/avatars/'+shasum.digest('hex')+'.png';
+				var cacheFileStream = project.root.fileIO(filePath).writeStream({flags: 'w', encoding: null, mode: 0555});
+				cacheFileStream.write(user.thumbnailphoto);
+				
+				result.avatar = filePath;
 			}
 			if (user.department){
 				result.department = user.department;
