@@ -21,41 +21,20 @@ util.extend(exchange.prototype, {
 	},
 
 	login: function () {
-		var self = this;
-		var login = self.credentials.login,
-			password = self.credentials.password,
-			sessionUID = self.sessionUID;
+		var self = this,
+			login = self.credentials.login,
+			password = self.credentials.password;
 
-		var auth = 'Basic ' + new Buffer(login + ":" + password).toString('base64');
-
-		
-		var options = url.parse(wsdlUrl);
+		var auth = 'Basic ' + new Buffer(login + ":" + password).toString('base64'),
+			options = url.parse(wsdlUrl);
 		
 		options.method = 'GET';
-//		options.headers = {
-//			'Authorization' : auth,
-//			'Accept' : '*/*'
-//		};
 		options.auth = login + ":" + password;
-		
-		console.log(options);
-		
+				
 		var req = https.request(options, function(response){
-			console.log(response.statusCode);
 			if (response.statusCode == 200)
 			{
-				self.completed({
-					//TODO: find how to find avatar, username and link on portal
-					//"avatar" : "",
-					"email" : login+exchangeConfig.emailPostfix,
-					"name" : login,
-					"sessionUIDs" : [
-						sessionUID
-					],
-					"tokens" : {
-						"password":password
-					}
-				});
+				self.completed(true);
 			}
 			response.destroy();
 		});
@@ -65,6 +44,49 @@ util.extend(exchange.prototype, {
 		});
 		req.end();
 		
+		
+	},
+	
+	profile: function() {
+		var self = this,
+			ldapRequest = self.ldapResponse,
+			sessionUID = self.sessionUID,
+			user = ldapRequest.data && ldapRequest.data.length && ldapRequest.data[0],
+			credentials = self.credentials;
+			
+		if (user) {
+			user.memberof = user.memberof.map(function(item) {
+				return item.split(',')[0].split('=')[1];
+			});
+			
+			var result = {
+				"email" : user.mail,
+				"name" : user.cn,
+				"groupIds" : user.memberof,
+				"sessionUIDs" : sessionUID,
+				"tokens" : {
+					"login" : credentials.login, 
+					"password" : credentials.password
+				}
+			};
+			
+			if (user.thumbnailphoto){
+				result.avatar = user.thumbnailphoto;
+			}
+			if (user.department){
+				result.department = user.department;
+			}
+			if (user.division){
+				result.division = user.division;
+			}
+			
+			self.completed(result);
+		} else {
+			self.failed({
+				statusCode: 404,
+				msg: 'User Not Found!'
+			});
+		}
 		
 	}
 });
