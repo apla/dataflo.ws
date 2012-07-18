@@ -81,7 +81,7 @@ util.extend (ldapRequestTask.prototype, {
 					if (parts[0].charAt(parts[0].length - 1) == ':') {
 						parts[0] = parts[0].substr (0, parts[0].length - 1)
 						if (parts[0].indexOf('Photo') == -1) {
-							parts[1] = new Buffer(parts[1], 'base64').toString('utf-8')
+							parts[1] = new Buffer(parts[1], 'base64').toString('utf-8');
 						}
 					}
 					

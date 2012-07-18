@@ -1,5 +1,3 @@
-'use strict';
-
 var task = require('task/base'),
 	util = require('util'),
 	https = require('https'),
@@ -75,9 +73,9 @@ util.extend(exchange.prototype, {
 			if (user.thumbnailphoto){
 				var shasum = crypto.createHash('sha1');
 				shasum.update(user.mail);
-				var filePath = 'images/avatars/'+shasum.digest('hex')+'.png';
-				var cacheFileStream = project.root.fileIO(filePath).writeStream({flags: 'w', encoding: null, mode: 0555});
-				cacheFileStream.write(user.thumbnailphoto);
+				var filePath = '/images/avatars/'+shasum.digest('hex')+'.png';
+				var cacheFileStream = project.root.fileIO('htdocs'+filePath).writeStream({flags: 'w', mode: 0666});
+				cacheFileStream.write(new Buffer(user.thumbnailphoto, 'base64'));
 				
 				result.avatar = filePath;
 			}
