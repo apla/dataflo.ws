@@ -10,7 +10,7 @@ var exchangeConfig = project.config.consumerConfig.exchange;
 var wsdlUrl = exchangeConfig.wsdlUrl;
 
 var exchange = module.exports = function (config) {
-	this.init (config);		
+	this.init (config);	
 };
 
 util.inherits(exchange, task);
@@ -32,9 +32,22 @@ util.extend(exchange.prototype, {
 		options.auth = login + ":" + password;
 				
 		var req = https.request(options, function(response){
-			if (response.statusCode == 200)
+			switch (response.statusCode)
 			{
-				self.completed(true);
+				case 200: 
+					self.completed({
+						statusCode: 200, 
+						err: '', 
+						accessAllowed: true
+					});
+					break;
+				default: 
+					self.completed({
+						statusCode: 401, 
+						err: 'User not authorized', 
+						accessAllowed: false
+					});
+					break;
 			}
 			response.destroy();
 		});
@@ -43,8 +56,6 @@ util.extend(exchange.prototype, {
 		  console.error(e);
 		});
 		req.end();
-		
-		
 	},
 	
 	profile: function() {
