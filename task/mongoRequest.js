@@ -421,7 +421,7 @@ util.extend (mongoRequestTask.prototype, {
 				
 			var idList = self.data.map (function (item) {
 				
-				if (item._id || options.upsert) {
+				if (item._id || self.criteria || options.upsert) {
 					
 					if (self.timestamp) item.updated = ~~(new Date().getTime()/1000);
 					
