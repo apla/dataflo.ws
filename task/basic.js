@@ -16,7 +16,7 @@ util.extend (basic.prototype, {
 	run: function() {
 		
 		var self = this;
-		self.failed('use method [render|checkExistAndRender|checkNoExistAndRender|logout]');
+		self.failed('use method [render|checkExistAndRender|checkNoExistAndRender]');
 		
 	},
 	
@@ -79,27 +79,5 @@ util.extend (basic.prototype, {
 			self.failed({status: 401, err: "User already exist", errCode: 3});
 		
 		}
-	},
-	
-	logout: function () {
-		
-		var self = this,
-			user = self.user,
-			sessionUID = self.sessionUID;
-		
-		if (user.sessionUIDs) {
-		
-			var index = user.sessionUIDs.indexOf(sessionUID);
-			
-			if (index != -1) {
-				user.sessionUIDs.splice(index, 1);
-			}
-			
-			self.completed(user);
-		
-		} else {
-			self.failed({err: 'User already logged out'});
-		}
-	}
-	
+	}	
 });

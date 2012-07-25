@@ -17,7 +17,7 @@ util.inherits(exchange, task);
 
 util.extend(exchange.prototype, {
 	run: function () {
-		this.failed('use method [login|callback|profile]');
+		this.failed('use method [login|profile|check]');
 	},
 
 	login: function () {
@@ -71,13 +71,14 @@ util.extend(exchange.prototype, {
 			});
 			
 			var result = {
-				"email" : user.mail,
-				"name" : user.cn,
-				"groupIds" : user.memberof,
-				"sessionUIDs" : sessionUID,
-				"tokens" : {
-					"login" : credentials.login, 
-					"password" : credentials.password
+				email: user.mail,
+				name: user.cn,
+				groupIds: user.memberof,
+				sessionUIDs: sessionUID,
+				authType: 'exchange',
+				tokens: {
+					login: credentials.login, 
+					password: credentials.password
 				}
 			};
 			
@@ -105,5 +106,27 @@ util.extend(exchange.prototype, {
 			});
 		}
 		
+	},
+	
+	check: function() {
+		var self = this,
+			user = self.user;
+			
+		if (user && user.authType == 'exchange' && user.tokens && user.tokens.login && user.tokens.password) {
+			
+			self.credentials = {
+				login: user.tokens.login,
+				password: user.tokens.password
+			};
+			
+			self.login();
+			
+		} else {
+			
+			self.completed({
+				accessAllowed: true
+			});
+			
+		}
 	}
 });
