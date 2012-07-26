@@ -93,9 +93,9 @@ util.extend (google.prototype, {
 		});
 		
 		var getParams = {
-			client_id: googleConfig.appId,
+			client_id: googleConfig.clientId,
 			redirect_uri: googleConfig.callbackUrl,
-			response_type: 'token'
+			response_type: 'token',
 			state: 'profile',
 			scope: scopes.join('+'),
 		};
@@ -116,7 +116,7 @@ util.extend (google.prototype, {
 			self.failed (query.error_description || "token was not accepted");
 		}
 		
-		var oa = new OAuth2(googleConfig.appId,  googleConfig.appSecret,  googleConfig.baseUrl);
+		var oa = new OAuth2(googleConfig.clientId,  googleConfig.clientSecret,  googleConfig.baseUrl);
 		
 		oa.getOAuthAccessToken(
 			query.code,
@@ -144,7 +144,7 @@ util.extend (google.prototype, {
 		var req = self.req;
 		var tokens = req.user.tokens;
 		
-		var oa = new OAuth2(googleConfig.appId,  googleConfig.appSecret,  googleConfig.baseUrl);
+		var oa = new OAuth2(googleConfig.clientId,  googleConfig.clientpSecret,  googleConfig.baseUrl);
 		
 		oa.getProtectedResource(
 			googleConfig.baseUrl+"/userinfo/v2/me",
