@@ -104,11 +104,13 @@ util.extend (cookieParser.prototype, {
 			
 		// - - -
 		
-		var newCookie = {value: value}
+		var newCookie = {};
 		
 		for (var key in cookieTpl) {
 			newCookie[key] = cookieTpl[key];
 		}
+		
+		newCookie[value] = value;
 		
 		self.completed (newCookie);
 	},
