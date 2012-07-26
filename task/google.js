@@ -92,11 +92,10 @@ util.extend (google.prototype, {
 			client_id: googleConfig.clientId,
 			redirect_uri: googleConfig.callbackUrl,
 			response_type: 'token',
-			state: 'profile',
-			scope: scopes.join('+'),
+			state: 'profile'
 		};
 		
-		var redirectUrl = googleConfig.requestTokenUrl + "?" + querystring.stringify(getParams);
+		var redirectUrl = googleConfig.requestTokenUrl + "?" + querystring.stringify(getParams)+'&scope='+scopes.join('+');
 		
 		self.completed(redirectUrl);
 		
