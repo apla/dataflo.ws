@@ -88,10 +88,6 @@ util.extend (google.prototype, {
 			scopes.push(googleScopes[scope][1]);
 		});
 		
-		var scopes = self.scopes.map(function(scope) {
-			return googleScopes[scope];
-		});
-		
 		var getParams = {
 			client_id: googleConfig.clientId,
 			redirect_uri: googleConfig.callbackUrl,
