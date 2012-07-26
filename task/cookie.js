@@ -1,6 +1,12 @@
 var task         = require ('task/base'),
 	util         = require ('util');
 
+// - static
+
+var cookieConfig = project.config.consumerConfig.session;
+
+// - - -
+
 var cookieParser = module.exports = function (config) {
 	
 	this.init (config);
@@ -92,11 +98,12 @@ util.extend (cookieParser.prototype, {
 		delete reqCookies.length;
 		
 		//cookie template
-		var cookieTpl = self.cookieTpl;
+		var cookieTpl = self.cookieTpl || cookieConfig.cookieTpl || {},
+			secret = self.secret || cookieConfig.secret || '';
 		
 		// name of session cookie
 		var name = cookieTpl.name;
-		var value = (reqCookies[name]) ? reqCookies[name] : self.generate(self.secret);
+		var value = (reqCookies[name]) ? reqCookies[name] : self.generate(secret);
 		
 		// - - -
 		
