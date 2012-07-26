@@ -22,16 +22,17 @@ util.extend (userRender.prototype, {
 	
 	parse: function () {
 		
-		var self = this;
-		var request = self.request;
-		var user = request.user;
-		var groups = request.groups;
+		var self = this,
+			request = self.request,
+			user = request.user;
 		
 		var authUser = self.userData;
 		
 		util.extend (authUser, user);
 		
 		if (self.groupsData) authUser.groupIds = self.groupsData;
+		
+		authUser.sessionUIDs = request.sessionUID;
 		
 		self.completed(authUser);
 		
