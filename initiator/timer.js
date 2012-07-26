@@ -23,22 +23,29 @@ util.extend (timeri.prototype, {
 	ready: function () {
 		
 		var self = this;
-				
+		
 		self.workflows.map(function (workflowParams) {
-			
-			var workflow = new Workflow (
-				util.extend (true, {}, workflowParams),
-				this.wfRequire
-			);
+		
+			var closure = function () {
+		
+				var workflow = new Workflow (
+					util.extend (true, {}, workflowParams),
+					self.wfRequire
+				);
+				
+				workflow.run ();
+				
+			};
 			
 			if (workflowParams.interval) {
-				setInterval (function () {
-					workflow.run ();
-				}, workflowParams.interval);
+				
+				setInterval (closure, workflowParams.interval);
+				if (workflowParams.startRun) setTimeout(closure, 0);
+				
 			} else if (workflowParams.timeout) {
-				setTimeout (function () {
-					workflow.run ();
-				}, workflowParams.timeout);
+				
+				setTimeout (closure, workflowParams.timeout);
+				
 			}
 		});
 		

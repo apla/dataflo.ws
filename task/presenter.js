@@ -18,8 +18,10 @@ try {
  */
 var presenterTask = module.exports = function (config) {
 	
+	this.headers = {};
 	this.init (config);
 	
+	if (config.headers) util.extend (this.headers, config.headers);
 };
 
 util.inherits (presenterTask, task);
@@ -92,7 +94,6 @@ util.extend (presenterTask.prototype, {
 	renderProcess: function(render) {
 		
 		this.renderResult (
-			this.contentType || 'text/html' + '; charset=utf-8',
 			render (this.vars)
 		);
 	
@@ -102,9 +103,16 @@ util.extend (presenterTask.prototype, {
 	 * @private
 	 */
 	 
-	renderResult: function(contentType, result) {
+	renderResult: function(result) {
 		
-		this.response.setHeader ("Content-Type", contentType);
+		this.headers.connection = 'close';
+		
+		if (this.headers) {
+			for (var key in this.headers) {
+					this.response.setHeader(key, this.headers[key]);
+			}
+		}
+		
 		this.response.end (result);
 		this.completed ();
 		
@@ -157,22 +165,35 @@ util.extend (presenterTask.prototype, {
 
 			case 'jade':
 			case 'ejs':
+				this.setContentType('text/html; charset=utf-8');
 				self.renderCompile();
 				break;
 			
 			case 'json':
+				this.setContentType('application/json; charset=utf-8');
 				self.renderResult (
-					'application/json; charset=utf-8',
 					JSON.stringify (self.vars)
 				);
 				break;
 				
 			case 'asis':
-				var contentType = (self.contentType) ? self.contentType : 'text/plain';
-				if (!self.noUTF8 || contentType.indexOf ('application/') != 0)
-					contentType += '; charset=utf-8';
-				self.renderResult (contentType, self.vars);
+				
+				if (!this.headers['content-type']) {					
+					var contentType = (self.contentType) ? self.contentType : 'text/plain';
+					
+					if (!self.noUTF8 || contentType.indexOf ('application/') != 0) {
+						contentType += '; charset=utf-8';
+					}
+					
+					this.setContentType(contentType);
+				}
+				
+				self.renderResult (self.vars);
 				break;
 		}
+	},
+	
+	setContentType: function(value) {
+		this.headers['content-type'] = value;
 	}
 });

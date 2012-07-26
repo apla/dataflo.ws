@@ -90,8 +90,6 @@ mongo.Db.prototype.open = function (callback) {
 		
 		if (!this.openCalled) self.serverConfig.connect(self, {firstCall: true}, function(err, result) {
 			
-			console.log (123);
-			
 			if(err != null) {
 				// Return error from connection
 				self.emit ('error', err);
@@ -200,6 +198,8 @@ util.extend (mongoRequestTask.prototype, {
 	
 	_objectId: function (hexString) {
 		
+		if (!hexString) return null;
+		
 		if (!hexString.substring) return hexString;
 		
 		var ObjectID = project.connectors[this.connector].bson_serializer.ObjectID;
@@ -210,9 +210,7 @@ util.extend (mongoRequestTask.prototype, {
 			id = new ObjectID(hexString);
 		} catch (e) {
 			console.error(hexString);
-			//!!!: for update with options = {upsert: true}
 			id = hexString.toString();
-			// throw e;
 		}
 		
 		return id;
@@ -235,9 +233,6 @@ util.extend (mongoRequestTask.prototype, {
 				options = self.options || {},
 				sort = self.sort || self.pager && self.pager.sort || {};
 			
-			if (self.verbose)
-				console.log ("collection.find", self.collection, self.filter);
-
 			if (self.pager) {
 				if (self.pager.page && self.pager.limit && self.pager.limit < 100) {
 					options.skip = self.pager.start;
@@ -262,11 +257,14 @@ util.extend (mongoRequestTask.prototype, {
 					// filter._id is hash with $in quantificators
 					if (filter._id['$in']) {
 						filter._id['$in'] = filter._id['$in'].map(function(id) {
-							return self._objectId (id);
+							return self._objectId(id);
 						});
 					}
 				}
 			}
+			
+			if (self.verbose)
+				console.log ("collection.find", self.collection, filter, options);
 			
 			var cursor = collection.find(filter, options);
 			cursor.toArray (function (err, docs) {
@@ -311,8 +309,14 @@ util.extend (mongoRequestTask.prototype, {
 			
 			self.data.map(function(item) {
 				
-				if (self.timestamp) item.created = item.updated = ~~(new Date().getTime()/1000);
-				if (item._id && item._id != '') docsId.push(item._id);
+				if (self.timestamp) {
+					item.created = item.updated = ~~(new Date().getTime()/1000);
+				}
+				if (item._id == null || item._id == '') {
+					delete item._id;
+				} else {
+					docsId.push(item._id);
+				}
 				
 			});
 			
@@ -417,7 +421,7 @@ util.extend (mongoRequestTask.prototype, {
 				
 			var idList = self.data.map (function (item) {
 				
-				if (item._id || options.upsert) {
+				if (item._id || self.criteria || options.upsert) {
 					
 					if (self.timestamp) item.updated = ~~(new Date().getTime()/1000);
 					
@@ -425,9 +429,30 @@ util.extend (mongoRequestTask.prototype, {
 					util.extend(true, set, item);
 					delete set._id;
 					
-					var newObj = (self.replace) ? set : {$set: set};
 					var criteriaObj = (self.criteria) ? self.criteria :
 						(item._id) ? {_id: self._objectId(item._id)} : {};
+					
+					var newObj;
+					
+					if (self.modify) {
+						
+						newObj = {};
+						var modify = self.modify;
+						
+						for (var m in modify) {
+							newObj[m] = {};
+							
+							modify[m].map(function(field) {
+								newObj[m][field] = set[field];
+								delete set[field];
+							});
+						}
+						
+						newObj.$set = set;
+						
+					} else {
+						newObj = (self.replace) ? (set) : ({$set: set});
+					}
 					
 					//console.log ('<----------mongo.update', criteriaObj, newObj, options);
 					

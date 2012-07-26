@@ -2,7 +2,8 @@ var EventEmitter = require ('events').EventEmitter,
 	task         = require ('task/base'),
 	util         = require ('util'),
 	urlUtil      = require ('url'),
-	urlModel     = require ('model/from-url');
+	urlModel     = require ('model/from-url'),
+	mime		 = require ('mime');
 
 var downloadTask = module.exports = function (config) {
 	
@@ -20,6 +21,18 @@ util.extend (downloadTask.prototype, {
 		
 		self.download = {};
 		self.activityCheck ('task run');
+		
+		// attach post body to parsed url
+		
+		self.url = urlUtil.parse(self.url);
+		
+		if (self.post) {
+			self.url.body = self.post;
+		}
+		
+		if (self.headers) {
+			self.url.headers = self.headers;
+		}
 				
 		// create model and listen
 		
@@ -49,15 +62,15 @@ util.extend (downloadTask.prototype, {
 					self.model.dataSource.res &&
 					self.model.dataSource.res.headers) ?
 					self.model.dataSource.res.headers : {};
+					
+				self.download.headers = originalHeaders;
 				
-				var contentType = originalHeaders['content-type'];
-				
-				if (contentType) {
-					self.download.contentType = contentType.split(';')[0];
-				}
+				var extentionMatch = self.url.pathname.match(/\.(\w+)$/) || ['','json'];				
+				self.download.contentType = originalHeaders['content-type'] || mime.lookup(extentionMatch[1]);
 				
 				self.clearOperationTimeout();
-				self.completed (self.download);				
+				
+				self.completed (self.download);
 			});
 			
 		}

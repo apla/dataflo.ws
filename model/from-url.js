@@ -1,7 +1,6 @@
 // Require initiator.listener
 
 var events  = require ('events'),
-	http    = require ('http'),
 	urlUtil = require ('url'),
 	util    = require ('util');
 
@@ -23,8 +22,8 @@ var model = module.exports = function (url) {
 	
 	this.modelName = this.url.protocol.substr (0, this.url.protocol.length - 1);
 	
-//	console.log (this.modelName);
-	var requiredModel = require ('model/'+this.modelName);
+	// console.log (this.modelName);
+	var requiredModel = require ('../model/'+this.modelName);
 	this.dataSource = new  requiredModel (this);
 	
 	// fetch method

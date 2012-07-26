@@ -1,8 +1,10 @@
 var HTTPClient		= require ('http'),
 	util			= require ('util'),
 	fs				= require ('fs'),
-	urlUtils		= require ('url');
-
+	urlUtils		= require ('url'),
+	bufferTools		= require('buffertools'),
+	httpManager     = require ('model/http/model-manager');
+	
 var pipeProgress = function (config) {
 	this.bytesTotal = 0;
 	this.bytesPass  = 0; // because bytes can be read and written
@@ -23,99 +25,149 @@ pipeProgress.prototype.watch = function () {
 	}
 }
 
+/**
+ * @class httpModel
+ *
+ * Wrapper of HTTPClient for serverside requesting.
+ *
+ */
+
 var httpModel = module.exports = function (modelBase) {
 		
-	var self = this;
+	this.modelBase = modelBase;
 	
-	util.extend (this, modelBase.url);
+	this.params = {
+		method: 'GET',
+		port: 80
+	};
+	
+	util.extend (this.params, modelBase.url);
+	
+	if (this.params) {
 		
-	this.fetch = function (target) {
+		this.headers = {}
 		
-		var isStream = target.to instanceof fs.WriteStream;
-		if (!isStream) target.to.data = '';
+		if (this.params.auth) {
+			this.headers['Authorization'] = 'Basic ' + new Buffer(self.params.auth).toString('base64');
+		}
 		
-		var progress = new pipeProgress ({
+		if (this.params.body) {
+			this.params.method = 'POST';
+			this.postBody = this.params.body;
+			delete this.params.body;
+		}
+		if (this.params.headers) {
+			try {
+				util.extend(this.headers, this.params.headers);
+				delete this.params.headers;
+			} catch (e) {
+				console.log ('headers is not correct');
+			}
+		}
+	}
+}
+
+util.extend (httpModel.prototype, {
+
+	fetch: function (target) {
+		
+		var self = this;
+		self.target = target;
+		
+		var urlParams = self.getUrlParams();
+		
+		self.isStream = target.to instanceof fs.WriteStream;
+		
+		if (!self.isStream) target.to.data = new Buffer('');
+		
+		self.progress = new pipeProgress ({
 			writer: target.to
 		});
-	  	
-		if (self.auth) {
-			self.headers = {
-				'Authorization': 'Basic ' + new Buffer(self.auth).toString('base64')
-			};
-		}
-
-		var urlParams = this.prepareUrlParams(this)
+		
+		// add self for watching into httpModelManager
+		project.httpModelManager.add(self, {url: urlParams, headers: self.headers, postBody: self.postBody});
+		
+		return self.progress;
+	},
+	
+	run: function () {
+		
+		var self = this;
+		
+		var urlParams = self.getUrlParams();
+		
 		var req = self.req = HTTPClient.request(urlParams, function (res) {
 						
 			self.res = res;
 
 			if (res.statusCode != 200) {
-				modelBase.emit ('error', new Error('statusCode = ' + res.statusCode));
+				self.modelBase.emit ('error', new Error('statusCode = ' + res.statusCode));
 				return;
 			}
 			
-			if (!isStream) res.setEncoding('utf8');
-			
-			util.extend (progress, {
+			util.extend (self.progress, {
 				bytesTotal: res.headers['content-length'],
 				reader: res,
 				readerWatch: "data"
 			});
 			
-			progress.watch ();
+			self.progress.watch ();
 		
-			if (isStream) {
-				self.writeStream = target.to;
+			if (self.isStream) {
+				self.writeStream = self.target.to;
 				res.pipe(self.writeStream);
 			}
 			
 			res.on ('error', function (exception) {
-				modelBase.emit ('error', 'res : '+exception);
+				self.modelBase.emit ('error', 'res : '+exception);
 			});
 			
 			res.on ('data', function (chunk) {
-				if (!isStream) target.to.data += chunk;
-				modelBase.emit ('data', chunk);
+				if (!self.isStream) self.target.to.data = bufferTools.concat(self.target.to.data, chunk);
+				self.modelBase.emit ('data', chunk);
 			});
 			
 			res.on ('end', function () {
-				modelBase.emit ('end');
+				self.modelBase.emit ('end');
 			});
 		});
 		
 		req.on('error', function(e) {
-			modelBase.emit ('error', 'req : '+e);
+			self.modelBase.emit ('error', 'req : '+e);
 		});
-				
-		req.end();
 		
-		return progress;
-	}
+		if (self.headers) {
+			for (var key in self.headers) {
+				req.setHeader(key, self.headers[key]);
+			}
+		}
+		
+		if (self.postBody) req.write(self.postBody);
+		
+		req.end();
+	},
 	
-	this.stop = function () {
+	stop: function () {
 		if (this.req) this.req.abort();
 		if (this.res) this.res.destroy();
+	},
+	
+	/**
+	 * http.request requires the query part to be appended to the pathname.
+	 */
+	getUrlParams: function () {
+	
+		var params = this.params;
+		var q = params.query;
+		
+		if (q && 'object' === typeof q) {
+			var queryStr = urlUtils.format({ query: q }),
+				newParams = Object.create(params);
+			newParams.path += queryStr;
+			return newParams
+		}
+		
+		return params;
 	}
 	
-}
-
-httpModel.prototype = {
-	
-	method: 'GET',
-	port: 80
-	
-};
-
-/**
- * http.request requires the query part to be appended to the pathname.
- */
-httpModel.prototype.prepareUrlParams = function (params) {
-	var q = params.query;
-	if (q && 'object' === typeof q) {
-		var queryStr = urlUtils.format({ query: q }),
-			newParams = Object.create(params);
-		newParams.path += queryStr;
-		return newParams
-	}
-	return params
-};
+});
