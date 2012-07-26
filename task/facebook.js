@@ -103,18 +103,18 @@ util.extend (facebook.prototype, {
 		
 		var redirectUrl = facebookConfig.requestTokenUrl + "?" + querystring.stringify(getParams);
 		
-		//req._requestUrl			= redirectUrl;
-		//req._authorize_callback = facebookConfig.redirectUrl + ( query.action && query.action != "" ? "?action="+querystring.escape(query.action) : "" );
-			
 		self.completed(redirectUrl);
 	},
 	
 	callback: function() {
 		
-		var self = this;
-		var req = self.req;
-		var query = req.url.query;
-		var tokens = req.user.tokens;
+		var self = this,
+			req = self.req;
+			query = req.url.query;
+		
+		req.user  = {
+			tokens : {}
+		};
 		
 		if (query.error || !query.code) {
 			self.failed (query.error_description || "token was not accepted");
@@ -133,8 +133,8 @@ util.extend (facebook.prototype, {
 				
 				} else {
 					
-					tokens.oauth_access_token = access_token;
-					if (refresh_token) tokens.oauth_refresh_token = refresh_token;
+					req.user.tokens.oauth_access_token = access_token;
+					if (refresh_token) req.user.tokens.oauth_refresh_token = refresh_token;
 					
 					var redirectUrl = (query.action && query.action != "") ? query.action : "/";
 					self.completed (redirectUrl)
