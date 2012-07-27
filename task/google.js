@@ -111,7 +111,7 @@ util.extend (google.prototype, {
 			self.failed (query.error_description || "token was not accepted");
 		}
 		
-		var oa = new OAuth2(googleConfig.clientId,  googleConfig.clientSecret,  googleConfig.baseUrl);
+		var oa = new OAuth2(googleConfig.clientId,  googleConfig.clientSecret,  googleConfig.requestTokenUrl);
 		
 		oa.getOAuthAccessToken(
 			query.code,
