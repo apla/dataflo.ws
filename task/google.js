@@ -91,7 +91,7 @@ util.extend (google.prototype, {
 		var getParams = {
 			client_id: googleConfig.clientId,
 			redirect_uri: googleConfig.callbackUrl,
-			response_type: 'token',
+			response_type: 'code',
 			state: 'profile'
 		};
 		
