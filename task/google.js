@@ -108,11 +108,13 @@ util.extend (google.prototype, {
 			req = self.req,
 			query = req.url.query;
 		
+		req.user  = {
+			tokens : {}
+		};
+		
 		if (query.error || !query.code) {
 			self.failed (query.error_description || "token was not accepted");
 		}
-		
-		console.log(this.oa);
 		
 		this.oa.getOAuthAccessToken(
 			query.code,
