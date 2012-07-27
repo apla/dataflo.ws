@@ -116,6 +116,7 @@ util.extend (google.prototype, {
 			query.code,
 			{
 				redirect_uri: googleConfig.callbackUrl,
+				response_type: 'code',
 				grant_type: 'authorization_code'
 			},
 			function( error, access_token, refresh_token ){
@@ -142,7 +143,7 @@ util.extend (google.prototype, {
 		var tokens = req.user.tokens;
 		
 		this.oa.getProtectedResource(
-			googleConfig.baseUrl+"/userinfo/v2/me",
+			googleConfig.apiUrl+"/userinfo/v2/me",
 			tokens.oauth_access_token,
 			function (error, data, response) {
 				
