@@ -62,7 +62,8 @@ var google = module.exports = function(config) {
 		"userinfo"
 	];
 
-	this.init (config);		
+	this.init (config);
+	this.oa = new OAuth2(googleConfig.clientId,  googleConfig.clientSecret,  googleConfig.baseUrl, googleConfig.authorizePath, googleConfig.requestTokenUrl);		
 
 };
 
@@ -95,7 +96,7 @@ util.extend (google.prototype, {
 			state: 'profile'
 		};
 		
-		var redirectUrl = googleConfig.requestTokenUrl + "?" + querystring.stringify(getParams)+'&scope='+scopes.join('+');
+		var redirectUrl = this.oa.getAuthorizeUrl(getParams)+'&scope='+scopes.join('+');
 		
 		self.completed(redirectUrl);
 		
@@ -111,11 +112,12 @@ util.extend (google.prototype, {
 			self.failed (query.error_description || "token was not accepted");
 		}
 		
-		var oa = new OAuth2(googleConfig.clientId,  googleConfig.clientSecret,  googleConfig.baseUrl, googleConfig.requestTokenUrl, googleConfig.requestTokenUrl);
-		
-		oa.getOAuthAccessToken(
+		this.oa.getOAuthAccessToken(
 			query.code,
-			{redirect_uri: googleConfig.callbackUrl},
+			{
+				redirect_uri: googleConfig.callbackUrl,
+				grant_type: 'authorization_code'
+			},
 			function( error, access_token, refresh_token ){
 				
 				if (error) {
@@ -139,9 +141,7 @@ util.extend (google.prototype, {
 		var req = self.req;
 		var tokens = req.user.tokens;
 		
-		var oa = new OAuth2(googleConfig.clientId,  googleConfig.clientpSecret,  googleConfig.baseUrl);
-		
-		oa.getProtectedResource(
+		this.oa.getProtectedResource(
 			googleConfig.baseUrl+"/userinfo/v2/me",
 			tokens.oauth_access_token,
 			function (error, data, response) {
