@@ -112,7 +112,7 @@ util.extend (google.prototype, {
 			self.failed (query.error_description || "token was not accepted");
 		}
 		
-		consol.log(this.oa);
+		console.log(this.oa);
 		
 		this.oa.getOAuthAccessToken(
 			query.code,
