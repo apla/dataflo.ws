@@ -112,11 +112,12 @@ util.extend (google.prototype, {
 			self.failed (query.error_description || "token was not accepted");
 		}
 		
+		consol.log(this.oa);
+		
 		this.oa.getOAuthAccessToken(
 			query.code,
 			{
 				redirect_uri: googleConfig.callbackUrl,
-				response_type: 'code',
 				grant_type: 'authorization_code'
 			},
 			function( error, access_token, refresh_token ){
