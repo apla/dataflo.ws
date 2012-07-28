@@ -1,3 +1,11 @@
+var define;
+if (typeof define === "undefined")
+	define = function (classInstance) {
+		classInstance (require, exports, module);
+	}
+
+define (function (require, exports, module) {
+
 var EventEmitter = require ('events').EventEmitter,
 	util         = require ('util'),
 	workflow     = require ('../workflow');
@@ -46,4 +54,6 @@ util.extend (callbacki.prototype, {
 		
 		return wf;
 	}
+});
+
 });
