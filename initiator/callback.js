@@ -40,10 +40,10 @@ util.extend (callbacki.prototype, {
 					util.extend (true, {}, item),
 					wfRequire
 				);
-
+				
 				self.emit ("detected", wfRequire, wf);
 				if (item.autoRun || item.autoRun == void 0)
-					wf.run();
+					wf.run ();
 				
 				return;
 			}
