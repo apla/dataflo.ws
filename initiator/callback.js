@@ -1,3 +1,11 @@
+var define;
+if (typeof define === "undefined")
+	define = function (classInstance) {
+		classInstance (require, exports, module);
+	}
+
+define (function (require, exports, module) {
+
 var EventEmitter = require ('events').EventEmitter,
 	util         = require ('util'),
 	workflow     = require ('../workflow');
@@ -32,10 +40,10 @@ util.extend (callbacki.prototype, {
 					util.extend (true, {}, item),
 					wfRequire
 				);
-
+				
 				self.emit ("detected", wfRequire, wf);
 				if (item.autoRun || item.autoRun == void 0)
-					wf.run();
+					wf.run ();
 				
 				return;
 			}
@@ -46,4 +54,6 @@ util.extend (callbacki.prototype, {
 		
 		return wf;
 	}
+});
+
 });
