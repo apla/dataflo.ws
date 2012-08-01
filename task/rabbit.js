@@ -24,21 +24,22 @@ util.extend(rabbit.prototype, {
 			data = self.data;
 
 		var connection = amqp.createConnection(
-			{url: url},
-			{defaultExchangeName: defaultExchangeName}
+			{'url': url},
+			{'defaultExchangeName': defaultExchangeName}
 		);
 
 		connection.on('ready', function () {
 			connection.publish(queue, data);
+			//connection.destroySoon();
 			self.completed({
 				ok: true,
 				msg: 'Message sent'
 			});
 		});
 		
-		connection.on('drain', function(){
+		/*connection.on('drain', function(){
 			connection.end();
-		});
+		});*/
 		
 		connection.on('error', function(e){
 			console.log('connection.error ' + e, e.stack);
