@@ -1,4 +1,4 @@
-var OAuth = require('lib/node-oauth').OAuth,
+var OAuth2 = require('lib/node-oauth').OAuth2,
 	querystring = require('querystring'),
 	task = require('task/base'),
 	util = require('util');
@@ -62,7 +62,8 @@ var google = module.exports = function(config) {
 		"userinfo"
 	];
 
-	this.init (config);		
+	this.init (config);
+	this.oa = new OAuth2(googleConfig.clientId,  googleConfig.clientSecret,  googleConfig.baseUrl, googleConfig.authorizePath, googleConfig.requestTokenUrl);		
 
 };
 
@@ -88,81 +89,55 @@ util.extend (google.prototype, {
 			scopes.push(googleScopes[scope][1]);
 		});
 		
-		// TODO: move callback path to config
+		var getParams = {
+			client_id: googleConfig.clientId,
+			redirect_uri: googleConfig.callbackUrl,
+			response_type: 'code',
+			state: 'profile'
+		};
 		
-		var query = req.url.query;
+		var redirectUrl = this.oa.getAuthorizeUrl(getParams)+'&scope='+scopes.join('+');
 		
-		var oa = new OAuth(googleConfig.requestTokenUrl+"?scope="+scopes.join('+'),
-			googleConfig.requestTokenUrl,
-			googleConfig.clientId,
-			googleConfig.clientSecret,
-			"1.0",
-			googleConfig.callbackUrl + ( query.action && query.action != "" ? "?action="+querystring.escape(query.action) : "" ),
-			"HMAC-SHA1");
-
-		oa.getOAuthRequestToken(function(error, oauth_token, oauth_token_secret, results){
-		  
-			if(error) {
+		self.completed(redirectUrl);
 		
-				self.failed(error);
-			
-			} else { 
-				
-				// store the oa config in the session
-				
-				req._requestUrl			= oa._requestUrl;
-				req._authorize_callback = oa._authorize_callback;
-				
-				// - - - and tokens
-				
-				req.oauth_token = oauth_token;
-				req.oauth_token_secret = oauth_token_secret;
-				
-				var redirectUrl = "https://www.google.com/accounts/OAuthAuthorizeToken?oauth_token="+oauth_token;
-				
-				self.completed(redirectUrl);
-			}
-		  
-		});
 	},
 	
 	callback: function() {
 		
-		var self = this;
-		var req = self.req;
-		var query = req.url.query;
-		var tokens = req.user.tokens;
+		var self = this,
+			req = self.req,
+			query = req.url.query;
 		
-		var oa = new OAuth(tokens._requestUrl,
-			googleConfig.accessTokenUrl,
-			googleConfig.clientId,
-			googleConfig.clientSecret,
-			"1.0",
-			tokens._authorize_callback,
-			"HMAC-SHA1");
-
-		oa.getOAuthAccessToken(
-
-			tokens.oauth_token, 
-			tokens.oauth_token_secret, 
-			query['oauth_verifier'], 
-			function(error, oauth_access_token, oauth_access_token_secret, results) {
-
+		req.user  = {
+			tokens : {}
+		};
+		
+		if (query.error || !query.code) {
+			self.failed (query.error_description || "token was not accepted");
+		}
+		
+		this.oa.getOAuthAccessToken(
+			query.code,
+			{
+				redirect_uri: googleConfig.callbackUrl,
+				grant_type: 'authorization_code'
+			},
+			function( error, access_token, refresh_token ){
+				
 				if (error) {
 					
 					self.failed(error);
-					
+				
 				} else {
-
-					// store the access token in the session
-					tokens.oauth_access_token = oauth_access_token;
-					tokens.oauth_access_token_secret = oauth_access_token_secret;
 					
-					var redirectUrl = (query.action && query.action != "") ? query.action : "/"
-					self.completed(redirectUrl);
+					req.user.tokens.oauth_access_token = access_token;
+					if (refresh_token) req.user.tokens.oauth_refresh_token = refresh_token;
+					
+					var redirectUrl = (query.action && query.action != "") ? query.action : "/";
+					self.completed (redirectUrl)
+					
 				}
-			}
-		);
+		});
 	},
 	
 	profile: function() {
@@ -170,25 +145,13 @@ util.extend (google.prototype, {
 		var req = self.req;
 		var tokens = req.user.tokens;
 		
-		var oa = new OAuth(tokens._requestUrl,
-			googleConfig.accessTokenUrl,
-			googleConfig.clientId,
-			googleConfig.clientSecret,
-			"1.0",
-			tokens._authorize_callback,
-			"HMAC-SHA1");
-		
-		oa._headers['GData-Version'] = '2'; 
-		
-		oa.getProtectedResource(
-			"https://www.googleapis.com/oauth2/v1/userinfo", 
-			"GET", 
-			tokens.oauth_access_token, 
-			tokens.oauth_access_token_secret,
+		this.oa.getProtectedResource(
+			googleConfig.apiUrl+"/userinfo/v2/me",
+			tokens.oauth_access_token,
 			function (error, data, response) {
 				
 				if (error) {
-					self.failed(error.message);
+					self.failed(error);
 				} else {
 					try {
 						var user = JSON.parse(data);
@@ -197,8 +160,7 @@ util.extend (google.prototype, {
 						self.failed(e);
 					}
 				}
-			}
-		);
+		});
 	},
 	
 	mappingUser: function(user) {
