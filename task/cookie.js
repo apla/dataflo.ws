@@ -117,7 +117,7 @@ util.extend (cookieParser.prototype, {
 			newCookie[key] = cookieTpl[key];
 		}
 		
-		newCookie[value] = value;
+		newCookie.value = value;
 		
 		self.completed (newCookie);
 	},

@@ -62,7 +62,8 @@ var google = module.exports = function(config) {
 		"userinfo"
 	];
 
-	this.init (config);		
+	this.init (config);
+	this.oa = new OAuth2(googleConfig.clientId,  googleConfig.clientSecret,  googleConfig.baseUrl, googleConfig.authorizePath, googleConfig.requestTokenUrl);		
 
 };
 
@@ -88,19 +89,14 @@ util.extend (google.prototype, {
 			scopes.push(googleScopes[scope][1]);
 		});
 		
-		var scopes = self.scopes.map(function(scope) {
-			return googleScopes[scope];
-		});
-		
 		var getParams = {
 			client_id: googleConfig.clientId,
 			redirect_uri: googleConfig.callbackUrl,
-			response_type: 'token',
-			state: 'profile',
-			scope: scopes.join('+'),
+			response_type: 'code',
+			state: 'profile'
 		};
 		
-		var redirectUrl = googleConfig.requestTokenUrl + "?" + querystring.stringify(getParams);
+		var redirectUrl = this.oa.getAuthorizeUrl(getParams)+'&scope='+scopes.join('+');
 		
 		self.completed(redirectUrl);
 		
@@ -112,15 +108,20 @@ util.extend (google.prototype, {
 			req = self.req,
 			query = req.url.query;
 		
+		req.user  = {
+			tokens : {}
+		};
+		
 		if (query.error || !query.code) {
 			self.failed (query.error_description || "token was not accepted");
 		}
 		
-		var oa = new OAuth2(googleConfig.clientId,  googleConfig.clientSecret,  googleConfig.baseUrl);
-		
-		oa.getOAuthAccessToken(
+		this.oa.getOAuthAccessToken(
 			query.code,
-			{redirect_uri: googleConfig.callbackUrl},
+			{
+				redirect_uri: googleConfig.callbackUrl,
+				grant_type: 'authorization_code'
+			},
 			function( error, access_token, refresh_token ){
 				
 				if (error) {
@@ -144,10 +145,8 @@ util.extend (google.prototype, {
 		var req = self.req;
 		var tokens = req.user.tokens;
 		
-		var oa = new OAuth2(googleConfig.clientId,  googleConfig.clientpSecret,  googleConfig.baseUrl);
-		
-		oa.getProtectedResource(
-			googleConfig.baseUrl+"/userinfo/v2/me",
+		this.oa.getProtectedResource(
+			googleConfig.apiUrl+"/userinfo/v2/me",
 			tokens.oauth_access_token,
 			function (error, data, response) {
 				
