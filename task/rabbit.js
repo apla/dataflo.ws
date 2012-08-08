@@ -4,7 +4,7 @@ var task = require('task/base'),
 
 var rabbitConfig = project.config.consumerConfig.rabbit,
 	url = rabbitConfig.url,
-	defaultExchangeName = rabbitConfig.defaultExchangeName;
+	exchangeName = rabbitConfig.exchangeName;
 
 
 var rabbit = module.exports = function (config) {
@@ -20,7 +20,7 @@ util.extend(rabbit.prototype, {
 
 	publish: function () {
 		var self = this,
-			queue = self.queue,
+			routingKey = self.routingKey,
 			data = self.data;
 
 		var connection = amqp.createConnection(
@@ -29,8 +29,14 @@ util.extend(rabbit.prototype, {
 		);
 
 		connection.on('ready', function () {
-			connection.publish(queue, data);
-			//connection.destroySoon();
+			var exchange = connection.exchange(
+				exchangeName,
+                {type: 'topic',passive: true},
+                function (exchange) {
+                        // Exchange is open and ready
+                        exchange.publish(routingKey, data);
+                }
+			);
 			self.completed({
 				ok: true,
 				msg: 'Message sent'
