@@ -20,39 +20,54 @@ util.extend(rabbit.prototype, {
 
 	publish: function () {
 		var self = this,
-			routingKey = self.routingKey,
-			data = self.data;
-
-		var connection = amqp.createConnection(
-			{'url': url},
-			{'defaultExchangeName': defaultExchangeName}
-		);
-
-		connection.on('ready', function () {
-			var exchange = connection.exchange(
-				exchangeName,
-                {type: 'topic',passive: true},
-                function (exchange) {
-                        // Exchange is open and ready
-                        exchange.publish(routingKey, data);
-                }
+			queue = self.queue,
+			data = self.data,
+			mongoResponseSuccess = self.mongoResponse.success;
+			
+		if(mongoResponseSuccess) {
+			var connection = amqp.createConnection(
+				{'url': url},
+				{'defaultExchangeName': exchangeName}
 			);
-			self.completed({
-				ok: true,
-				msg: 'Message sent'
+			connection.on('error', function(e){
+				console.log('rabbit connection.error ' + e, e.stack);
+				self.failed({
+					ok: false,
+					msg: 'Rabbit connection error!'
+				});
 			});
-		});
-		
-		/*connection.on('drain', function(){
-			connection.end();
-		});*/
-		
-		connection.on('error', function(e){
-			console.log('connection.error ' + e, e.stack);
+			
+			var tags = data.tags;
+			var messages = [];
+			tags.forEach(function(tag){
+				if(tag.type == '@'){
+					messages.push({
+						"queue": tag._id,
+						"data": data.content
+					});
+				}
+			});
+			
+			connection.on('ready', function () {
+				var exchange = connection.exchange(exchangeName,
+					{type: 'topic',passive: false},
+					function (exchange) {
+							messages.forEach(function(message){
+								exchange.publish(message.queue, {text:message.data});
+							});
+					}
+				);
+				//connection.publish(message.queue, message.data);
+				self.completed({
+					ok: true,
+					msg: 'Message sent'
+				});
+			});
+		} else {
 			self.failed({
-				ok: false,
-				msg: 'Rabbit connection error!'
-			});
-		});
+					ok: false,
+					msg: 'mongoResponse failed!'
+				});
+		}
 	}
 });
