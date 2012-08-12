@@ -110,3 +110,11 @@ io.prototype.readFile = function (cb) {
 		cb.call (self, err, data);
 	});
 }
+
+io.prototype.writeFile = function (data, cb) {
+	var self = this;
+	FS.writeFile(this.path, data, function (err) {
+		if (cb)
+			cb.call (self, err);
+	});
+}
