@@ -73,7 +73,9 @@ util.extend (socket.prototype, {
 	},
 	
 	processMessage: function (socket, message) {
-	
+
+		var self = this;
+
 		if (this.log) console.log('processMessage', socket.id, message);
 		
 		var re = /^([A-Z0-9a-z\/]+)(:(.+))?$/;
