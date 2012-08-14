@@ -125,7 +125,10 @@ util.extend (socket.prototype, {
 
 					wf = new workflow (
 						util.extend (true, {}, item),
-						{query: query}
+						{
+							query: query,
+							socket: socket
+						}
 					);
 					
 					wf.on ('completed', function (wf) {

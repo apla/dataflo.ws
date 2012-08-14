@@ -1,6 +1,7 @@
 var task = require('task/base'),
 	util = require('util'),
-	amqp = require('node-amqp/amqp.js');
+	amqp = require('node-amqp/amqp'),
+	rabbitManager = require('rabbit-manager/rabbit-manager');
 
 var rabbitConfig = project.config.consumerConfig.rabbit,
 	url = rabbitConfig.url,
@@ -19,50 +20,85 @@ util.extend(rabbit.prototype, {
 	},
 
 	publish: function () {
-		var self = this,
-			queue = self.queue,
-			data = self.data;
-			
-		var connection = amqp.createConnection(
-			{'url': url},
-			{'defaultExchangeName': exchangeName}
+		rabbitManager.getOrCreate(
+			rabbitConfig,
+			this.onPublishConnect.bind(this),
+			this.onError.bind(this)
 		);
-		connection.on('error', function (e) {
-			console.log('rabbit connection.error %s', e, e.stack);
-			self.failed({
-				ok: false,
-				msg: 'Rabbit connection error!'
-			});
+	},
+	
+	subscribe: function () {
+		rabbitManager.getOrCreate(
+			rabbitConfig,
+			this.onSubscribeConnect.bind(this),
+			this.onError.bind(this)
+		);
+	},
+	
+	onError: function (connection) {
+		console.log('rabbit connection.error');
+		this.failed({
+			ok: false,
+			msg: 'Rabbit connection error!'
 		});
-		
-		var tags = data.tags;
-		var messages = [];
-		tags.forEach(function (tag) {
-			if (tag.type == '@') {
-				messages.push({
-					"queue": tag._id,
-					"data": data.content
+	},
+	
+	onPublishConnect: function (connection) {
+		var messages = this.data;
+		var exchange = connection.exchange(
+			exchangeName,
+			{ type: 'topic', passive: false },
+			function (exchange) {
+				messages.forEach(function (message) {
+					exchange.publish(
+						message.queue,
+						message.data
+					);
 				});
 			}
-		});
-		
-		connection.on('ready', function () {
-			var exchange = connection.exchange(exchangeName,
-				{type: 'topic', passive: false},
-				function (exchange) {
-					messages.forEach(function (message) {
-						exchange.publish(message.queue, {
-							text: message.data
-						});
-					});
-				}
-			);
+		);
 
-			//connection.publish(message.queue, message.data);
-			self.completed({
-				ok: true,
-				msg: 'Message sent'
-			});
+		this.completed({
+			ok: true,
+			msg: 'Message sent'
 		});
+	},
+	
+	onSubscribeConnect: function (conn) {
+		var self = this;
+		var socket = this.socket;
+		console.log('onSubscribeConnect 0 -------------->',socket);
+		console.log('-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=->',this.queueName);
+		var queueName = this.queueName;
+		var exchange = conn.exchange(
+			exchangeName,
+			{type: 'topic'},
+			function (exchange) {
+				//console.log('Exchange ' + exchange.name + ' is open');
+				conn.queue(
+					queueName,
+					{ durable: true },
+					function (q) {
+						console.log('-------------------------------->', queueName);
+						q.bind(exchangeName, queueName);
+						q.subscribe({ ack: true }, function (message) {
+							console.log('onSubscribeConnect EMIT ----------------->');
+							socket.emit('message', message);
+
+							self.completed({
+								ok: true,
+								msg: message
+							});
+						});
+					}
+				);
+			}
+		);
+		
+		this.completed({
+			ok: true,
+			msg: 'Subscribed to queue'
+		});
+
 	}
 });
