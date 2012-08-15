@@ -81,7 +81,7 @@ util.extend(rabbit.prototype, {
 					function (q) {
 						console.log('-------------------------------->', queueName);
 						q.bind(exchangeName, queueName);
-						q.subscribe({ ack: true }, function (message) {
+						q.subscribe({ ack: false }, function (message) {
 							console.log('onSubscribeConnect EMIT ----------------->');
 							socket.emit('message', message);
 
