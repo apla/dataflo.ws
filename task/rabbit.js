@@ -66,30 +66,23 @@ util.extend(rabbit.prototype, {
 	
 	onSubscribeConnect: function (conn) {
 		var self = this;
-		var socket = this.socket;
-		console.log('onSubscribeConnect 0 -------------->',socket);
-		console.log('-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=->',this.queueName);
 		var queueName = this.queueName;
+
+		console.log('-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=->', queueName);
+
 		var exchange = conn.exchange(
 			exchangeName,
 			{type: 'topic'},
 			function (exchange) {
-				//console.log('Exchange ' + exchange.name + ' is open');
 				conn.queue(
 					queueName,
 					{ durable: true },
 					function (q) {
-						console.log('-------------------------------->', queueName);
 						q.bind(exchangeName, queueName);
-						q.subscribe({ ack: false }, function (message) {
-							console.log('onSubscribeConnect EMIT ----------------->');
-							socket.emit('message', message);
-
-							self.completed({
-								ok: true,
-								msg: message
-							});
-						});
+						q.subscribe(
+							{ ack: false },
+							self.onMessage.bind(self)
+						);
 					}
 				);
 			}
@@ -100,5 +93,19 @@ util.extend(rabbit.prototype, {
 			msg: 'Subscribed to queue'
 		});
 
+	},
+	
+	onMessage: function (message) {
+		console.log(
+			'onSubscribeConnect EMIT ------>',
+			message
+		);
+
+		this.socket.emit('message', message);
+
+		this.completed({
+			ok: true,
+			msg: message
+		});
 	}
 });
