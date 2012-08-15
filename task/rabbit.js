@@ -9,12 +9,14 @@ var rabbitConfig = project.config.consumerConfig.rabbit,
 
 
 var rabbit = module.exports = function (config) {
-	this.init (config);	
+	this.init (config);
 };
 
 util.inherits(rabbit, task);
 
 util.extend(rabbit.prototype, {
+	openSockets: {},
+	
 	run: function () {
 		this.failed('use method [publish|subsribe]');
 	},
@@ -67,6 +69,7 @@ util.extend(rabbit.prototype, {
 	onSubscribeConnect: function (conn) {
 		var self = this;
 		var queueName = this.queueName;
+		var socket = this.socket;
 
 		console.log('-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=->', queueName);
 
@@ -78,6 +81,8 @@ util.extend(rabbit.prototype, {
 					queueName,
 					{ durable: true },
 					function (q) {
+						self.addSocket(queueName, q, socket);
+
 						q.bind(exchangeName, queueName);
 						q.subscribe(
 							{ ack: false },
@@ -95,13 +100,41 @@ util.extend(rabbit.prototype, {
 
 	},
 	
-	onMessage: function (message) {
-		console.log(
-			'onSubscribeConnect EMIT ------>',
-			message
-		);
+	addSocket: function (queueName, q, socket) {
+		this.openSockets[queueName] = this.openSockets[queueName] || [];
+		this.openSockets[queueName].push(socket);
+		this.openSockets[queueName].queue = q;
+		
+		socket.on('disconnect', this.onSocketDisconnect.bind(this, socket));
+	},
+	
+	onSocketDisconnect: function (socket) {
+		var self = this;
+		var sockets = this.openSockets[this.queueName];
 
-		this.socket.emit('message', message);
+		if (sockets) {
+			var index = sockets.indexOf(socket);
+
+			if (index >= 0) {
+				sockets.splice(index, 1);
+				
+				if (!sockets.length) {
+					console.log('DESTROY QUEUE %s', sockets.queue.name);
+
+					sockets.queue.destroy();
+					delete this.openSockets[this.queueName];
+				}
+			}
+		}
+	},
+	
+	onMessage: function (message) {
+		console.log('onSubscribeConnect EMIT %s', message);
+
+		var sockets = this.openSockets[this.queueName];
+		sockets && sockets.forEach(function (socket) {
+			socket.emit('message', message);
+		});
 
 		this.completed({
 			ok: true,
