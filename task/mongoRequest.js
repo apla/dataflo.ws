@@ -218,57 +218,7 @@ util.extend (mongoRequestTask.prototype, {
 		
 		return id;
 	},
-	
-	findOne: function (dbMethod) {
-		var dbMethod = dbMethod || 'find';
-		var self = this;
-		
-		if (this.verbose)
-			self.emit ('log', 'run called');
-		
-		// primary usable by Ext.data.Store
-		// we need to return {data: []}
-		
-		// open collection
-		self._openCollection (function (err, collection) {
-			var filter = self.filter,
-				options = self.options || {};
 
-			// find by filter or all records
-			if (filter) {
-				if (filter.constructor === Array)
-					filter = {_id: {'$in': filter}};
-				// filter is string
-				if (filter.substring) {
-					filter = {_id: self._objectId (filter)};
-				// filter is hash
-				} else if (filter._id) {
-					// filter._id is string
-					if (filter._id.substring) filter._id = self._objectId (filter._id);
-					// filter._id is hash with $in quantificators
-					if (filter._id['$in']) {
-						filter._id['$in'] = filter._id['$in'].map(function(id) {
-							return self._objectId(id);
-						});
-					}
-				}
-			}
-			
-			if (self.verbose)
-				console.log ("collection.findOne", self.collection, filter, options);
-			
-			collection.findOne(filter, options, function (err, doc) {
-				self.completed ({
-					success:	err != null,
-					total:		err ? 0 : 1,
-					err:		err,
-					data:		doc
-				});
-
-			});
-		});
-	},
-	
 	// actually, it's a fetch function
 	
 	run: function () {
@@ -553,7 +503,7 @@ util.extend (mongoRequestTask.prototype, {
 				}
 			});
 			
-			self.completed({ _id: { $in: idList } });
+			self.completed(idList);
 		});
 	},
 	
