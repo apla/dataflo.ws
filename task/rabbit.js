@@ -12,10 +12,12 @@ var rabbit = module.exports = function (config) {
 	this.init (config);
 };
 
+var OpenSockets = {};
+
 util.inherits(rabbit, task);
 
 util.extend(rabbit.prototype, {
-	openSockets: {},
+	DESTROY_DELAY: 5 * 60 * 1000,
 	
 	run: function () {
 		this.failed('use method [publish|subsribe]');
@@ -101,16 +103,15 @@ util.extend(rabbit.prototype, {
 	},
 	
 	addSocket: function (queueName, q, socket) {
-		this.openSockets[queueName] = this.openSockets[queueName] || [];
-		this.openSockets[queueName].push(socket);
-		this.openSockets[queueName].queue = q;
+		OpenSockets[queueName] = OpenSockets[queueName] || [];
+		OpenSockets[queueName].push(socket);
+		OpenSockets[queueName].queue = q;
 		
 		socket.on('disconnect', this.onSocketDisconnect.bind(this, socket));
 	},
 	
 	onSocketDisconnect: function (socket) {
-		var self = this;
-		var sockets = this.openSockets[this.queueName];
+		var sockets = OpenSockets[this.queueName];
 
 		if (sockets) {
 			var index = sockets.indexOf(socket);
@@ -118,20 +119,38 @@ util.extend(rabbit.prototype, {
 			if (index >= 0) {
 				sockets.splice(index, 1);
 				
-				if (!sockets.length) {
-					console.log('DESTROY QUEUE %s', sockets.queue.name);
-
-					sockets.queue.destroy();
-					delete this.openSockets[this.queueName];
-				}
+				this.delayedDestroyQueue();
 			}
 		}
+	},
+	
+	delayedDestroyQueue: function () {
+		var self = this;
+		var sockets = OpenSockets[this.queueName];
+		
+		if (!sockets) {
+			return;
+		}
+		
+		if (sockets.destroyTimeout) {
+			clearTimeout(sockets.destroyTimeout);
+		}
+		
+		sockets.destroyTimeout = setTimeout(function () {
+			if (!sockets.length) {
+				console.log('DESTROY QUEUE DUE TIMEOUT %s', sockets.queue.name);
+
+				sockets.queue.destroy();
+				delete OpenSockets[self.queueName];
+			}
+		}, this.DESTROY_DELAY);
+		
 	},
 	
 	onMessage: function (message) {
 		console.log('onSubscribeConnect EMIT %s', message);
 
-		var sockets = this.openSockets[this.queueName];
+		var sockets = OpenSockets[this.queueName];
 		sockets && sockets.forEach(function (socket) {
 			socket.emit('message', message);
 		});
