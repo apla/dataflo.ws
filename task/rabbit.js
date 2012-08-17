@@ -81,15 +81,15 @@ util.extend(rabbit.prototype, {
 			function (exchange) {
 				conn.queue(
 					queueName,
-					{ durable: true },
+					{ durable: true, autoDelete: false },
 					function (q) {
-						self.addSocket(queueName, q, socket);
-
 						q.bind(exchangeName, queueName);
 						q.subscribe(
-							{ ack: false },
 							self.onMessage.bind(self)
-						);
+						).addCallback(function (ok) {
+							var ctag = ok.consumerTag;
+							self.addSocket(queueName, q, socket, ctag);
+						});
 					}
 				);
 			}
@@ -102,9 +102,12 @@ util.extend(rabbit.prototype, {
 
 	},
 	
-	addSocket: function (queueName, q, socket) {
+	addSocket: function (queueName, q, socket, ctag) {
 		OpenSockets[queueName] = OpenSockets[queueName] || [];
-		OpenSockets[queueName].push(socket);
+		OpenSockets[queueName].push({
+			socket: socket,
+			ctag: ctag
+		});
 		OpenSockets[queueName].queue = q;
 		
 		socket.on('disconnect', this.onSocketDisconnect.bind(this, socket));
@@ -112,13 +115,17 @@ util.extend(rabbit.prototype, {
 	
 	onSocketDisconnect: function (socket) {
 		var sockets = OpenSockets[this.queueName];
-
+		var queue = sockets.queue;
+		
 		if (sockets) {
-			var index = sockets.indexOf(socket);
+			sockets.forEach(function (obj, index) {
+				if (obj.socket == socket) {
+					queue.unsubscribe(obj.ctag);
+					sockets.splice(index, 1);
+				}
+			});
 
-			if (index >= 0) {
-				sockets.splice(index, 1);
-				
+			if (sockets.length == 0) {
 				this.delayedDestroyQueue();
 			}
 		}
@@ -151,8 +158,8 @@ util.extend(rabbit.prototype, {
 		console.log('onSubscribeConnect EMIT %s', message);
 
 		var sockets = OpenSockets[this.queueName];
-		sockets && sockets.forEach(function (socket) {
-			socket.emit('message', message);
+		sockets && sockets.forEach(function (obj) {
+			obj.socket.emit('message', message);
 		});
 
 		this.completed({
