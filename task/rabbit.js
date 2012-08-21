@@ -48,7 +48,9 @@ util.extend(rabbit.prototype, {
 	},
 	
 	onPublishConnect: function (connection) {
+		var self = this;
 		var messages = this.data;
+
 		var exchange = connection.exchange(
 			exchangeName,
 			{ type: 'direct', passive: false },
@@ -59,13 +61,13 @@ util.extend(rabbit.prototype, {
 						message.data
 					);
 				});
+
+				self.completed({
+					ok: true,
+					msg: 'Message sent'
+				});
 			}
 		);
-
-		this.completed({
-			ok: true,
-			msg: 'Message sent'
-		});
 	},
 	
 	onSubscribeConnect: function (conn) {
@@ -77,7 +79,7 @@ util.extend(rabbit.prototype, {
 
 		var exchange = conn.exchange(
 			exchangeName,
-			{type: 'topic'},
+			{ type: 'direct' },
 			function (exchange) {
 				conn.queue(
 					queueName,
@@ -89,17 +91,16 @@ util.extend(rabbit.prototype, {
 						).addCallback(function (ok) {
 							var ctag = ok.consumerTag;
 							self.addSocket(queueName, q, socket, ctag);
+
+							self.completed({
+								ok: true,
+								msg: 'Subscribed to queue'
+							});
 						});
 					}
 				);
 			}
 		);
-		
-		this.completed({
-			ok: true,
-			msg: 'Subscribed to queue'
-		});
-
 	},
 	
 	addSocket: function (queueName, q, socket, ctag) {
