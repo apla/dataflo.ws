@@ -83,7 +83,7 @@ util.extend(rabbit.prototype, {
 			function (exchange) {
 				conn.queue(
 					queueName,
-					{ durable: true, autoDelete: false },
+					{ autoDelete: false },
 					function (q) {
 						q.bind(exchangeName, queueName);
 						q.subscribe(
@@ -156,7 +156,7 @@ util.extend(rabbit.prototype, {
 	},
 	
 	onMessage: function (message) {
-		console.log('onSubscribeConnect EMIT %s', message);
+		console.log('onSubscribeConnect EMIT %o', message);
 
 		var sockets = OpenSockets[this.queueName];
 		sockets && sockets.forEach(function (obj) {
