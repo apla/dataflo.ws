@@ -146,7 +146,10 @@ util.extend(rabbit.prototype, {
 		
 		sockets.destroyTimeout = setTimeout(function () {
 			if (!sockets.length) {
-				console.log('DESTROY QUEUE DUE TIMEOUT %s', sockets.queue.name);
+				console.log(
+					'DESTROY QUEUE DUE TIMEOUT %s',
+					sockets.queue.name
+				);
 
 				sockets.queue.destroy();
 				delete OpenSockets[self.queueName];
@@ -156,7 +159,7 @@ util.extend(rabbit.prototype, {
 	},
 	
 	onMessage: function (message) {
-		console.log('onSubscribeConnect EMIT %o', message);
+		//console.log('onSubscribeConnect EMIT %o', message);
 
 		var sockets = OpenSockets[this.queueName];
 		sockets && sockets.forEach(function (obj) {
