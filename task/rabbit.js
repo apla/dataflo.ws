@@ -51,7 +51,7 @@ util.extend(rabbit.prototype, {
 		var messages = this.data;
 		var exchange = connection.exchange(
 			exchangeName,
-			{ type: 'topic', passive: false },
+			{ type: 'direct', passive: false },
 			function (exchange) {
 				messages.forEach(function (message) {
 					exchange.publish(
