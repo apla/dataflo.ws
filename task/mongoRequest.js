@@ -242,9 +242,8 @@ util.extend (mongoRequestTask.prototype, {
 			var filter = self.filter,
 				options = self.options || {},
 				sort = self.sort || self.pager && self.pager.sort || {};
-			
 			if (self.verbose)
-				console.log ("collection.find", self.collection, self.filter);
+				console.log ("collection.find", self.collection, self.filter, self.pager);
 
 			if (self.pager) {
 				if (self.pager.page && self.pager.limit && self.pager.limit < 100) {
@@ -305,7 +304,11 @@ util.extend (mongoRequestTask.prototype, {
 	insert: function () {
 		
 		var self = this;
-		
+	
+		if (!self.data) self.data = {};
+
+		console.log('INSERT');
+
 		if (self.verbose)
 			self.emit ('log', 'insert called ' + self.data);
 		
@@ -350,9 +353,11 @@ util.extend (mongoRequestTask.prototype, {
 
 						collection.update(filter, self.updateData, false, true);
 
+						self._log(alreadyStoredDocs);
+
 						self.completed ({
 							success:	true,
-							total:		alreadyStoredDocs.length,
+							total:	alreadyStoredDocs.length,
 							err:		false,
 							data:		alreadyStoredDocs
 						});

@@ -26,18 +26,17 @@ util.extend (userRender.prototype, {
 			
 			user = data[0];
 
-			
-			if(user.groupIds && user.groupIds.indexOf(project.config.consumerConfig.facebook.defaultSharingGroupId)>-1){
-				user.authorized = true;
+			if(!user.authorized){
+				user.authorized = 0;
 			}
 			user.authenticated = true;
 			
 			console.info(user);
 			
 		} else {
-			user={
+			user = {
 				anonymous: true
-			}
+			};
 		}
 
 			self.request.user = user;
