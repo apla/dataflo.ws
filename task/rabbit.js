@@ -165,10 +165,5 @@ util.extend(rabbit.prototype, {
 		sockets && sockets.forEach(function (obj) {
 			obj.socket.emit('message', message);
 		});
-
-		this.completed({
-			ok: true,
-			msg: message
-		});
 	}
 });
