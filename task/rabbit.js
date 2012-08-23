@@ -55,12 +55,15 @@ util.extend(rabbit.prototype, {
 			exchangeName,
 			{ type: 'direct', passive: false },
 			function (exchange) {
-				messages.forEach(function (message) {
-					exchange.publish(
-						message.queue,
-						message.data
-					);
-				});
+				var publish = function (message) {
+					exchange.publish(message.queue, message.data);
+				};
+
+				if (messages.forEach) {
+					messages.forEach(publish);
+				} else {
+					publish(messages);
+				}
 
 				self.completed({
 					ok: true,
