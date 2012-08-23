@@ -516,5 +516,52 @@ util.extend (mongoRequestTask.prototype, {
 		} else {
 			return false;
 		}
+	},
+	
+	writeGridFS: function () {
+		// @README: https://github.com/christkv/node-mongodb-native/blob/master/docs/gridfs.md
+		// @README: http://www.mongodb.org/display/DOCS/GridFS+Tools
+		/*
+			{
+				"className": "task/mongoRequest",
+				"connector": "mongo",
+				"method": "writeGridFS",
+				"fileName": "blah.txt",
+				"data": "blah-blah-blah!"
+			}
+		*/
+		
+		var self = this;
+		
+		var options = self.options || {};
+		var fileName = self.fileName;
+		var data = self.data;
+		
+		var db = self._getConnector();
+		var gs = new mongo.GridStore(db, fileName, "w", options);
+		gs.open(function(err, gs){
+			if (err == null) {
+				gs.write(data, function (err, gs) {
+					if (err == null) {
+						gs.close(function(err, gs){
+							self.completed({
+								ok: true,
+								msg: 'File Saved'
+							});
+						});
+					} else {
+						self.failed({
+							ok: false,
+							msg: 'GridFS write() failed'
+						});
+					}
+				});
+			} else {
+				self.failed({
+					ok: false,
+					msg: 'GridFS open() failed'
+				});
+			}
+		});
 	}
 });
