@@ -537,17 +537,28 @@ util.extend (mongoRequestTask.prototype, {
 		var options = self.options || {};
 		var fileName = self.fileName;
 
-		var db = self._getConnector();
-		var gs = new mongo.GridStore(db, fileName, mode, options);
+		//var db = self._getConnector();
+		var connectorConfig = project.config.db[this.connector];
+		
+		// create connector
+		
+		var db = new mongo.Db (
+			connectorConfig.database,
+			new mongo.Server (connectorConfig.host, connectorConfig.port),
+			{native_parser: true}
+		);
+		db.open(function (err, db) {
+			var gs = new mongo.GridStore(db, fileName, mode, options);
 
-		gs.open(function (err, gs) {
-			if (err) {
-				gs.close();
-				self.failed(err);
-			} else {
-				(mode == 'r') && gs.pause();
-				self.completed(gs);
-			}
+			gs.open(function (err, store) {
+				if (err) {
+					self.failed(err);
+				} else {
+					(mode == 'r') && store.pause();
+					self.completed(store);
+				}
+			});
+		
 		});
 	}
 });
