@@ -517,45 +517,54 @@ util.extend (mongoRequestTask.prototype, {
 			return false;
 		}
 	},
-	
-	// @README: https://github.com/christkv/node-mongodb-native/blob/master/docs/gridfs.md
-	// @README: http://www.mongodb.org/display/DOCS/GridFS+Tools
-	/*
-		{
-			"className": "task/mongoRequest",
-			"connector": "mongo",
-			"method": "writeGridFS",
-			"fileName": "blah.txt",
-			"data": "blah-blah-blah!"
-		}
-	*/
-	
-	openGridFS: function () {
+
+	readGridFS: function () {
 		var self = this;
-		
-		var mode = self.mode || 'r';
-		var options = self.options || {};
-		var fileName = self.fileName;
+		this.openGridFS('r', function (gs) {
+			gs.read(function (err, data) {
+				gs.close();
 
-		//var db = self._getConnector();
-		var connectorConfig = project.config.db[this.connector];
-		
-		// create connector
-		
-		var db = new mongo.Db (
-			connectorConfig.database,
-			new mongo.Server (connectorConfig.host, connectorConfig.port),
-			{native_parser: true}
-		);
-		db.open(function (err, db) {
-			var gs = new mongo.GridStore(db, fileName, mode, options);
-
-			gs.open(function (err, store) {
 				if (err) {
 					self.failed(err);
 				} else {
-					(mode == 'r') && store.pause();
-					self.completed(store);
+					self.completed(data);
+				}
+			});
+		});
+	},
+
+	writeGridFS: function () {
+		var self = this;
+
+		this.openGridFS('w', function (gs) {
+			gs.write(self.data, function (err) {
+				gs.close();
+
+				if (err) {
+					self.failed(err);
+				} else {
+					self.completed(true);
+				}
+			});
+		});
+	},
+	
+	openGridFS: function (mode, cb) {
+		var self = this;
+		var options = this.options || {};
+		var fileName = this.fileName;
+
+		this.connector = 'mongo';
+		var db = this._getConnector();
+
+		db.open(function (err, db) {
+			var gs = new mongo.GridStore(db, fileName, mode, options);
+
+			gs.open(function (err, gs) {
+				if (err) {
+					self.failed(err);
+				} else {
+					cb(gs);
 				}
 			});
 		
