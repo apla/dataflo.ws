@@ -531,6 +531,25 @@ util.extend (mongoRequestTask.prototype, {
 		});
 	},
 
+	pipeGridFS: function () {
+		var self = this;
+		var toStream = this.toStream;
+
+		this.openGridFS('r', function (gs) {
+			var stream = gs.stream(true);
+
+			stream.on('end', function () {
+				self.completed(stream);
+			});
+
+			stream.on('error', function (err) {
+				self.failed(err);
+			});
+
+			stream.pipe(toStream);
+		});
+	},
+
 	writeGridFS: function () {
 		var self = this;
 		var data = this.fileData;
