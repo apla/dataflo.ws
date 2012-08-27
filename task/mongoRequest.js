@@ -522,8 +522,6 @@ util.extend (mongoRequestTask.prototype, {
 		var self = this;
 		this.openGridFS('r', function (gs) {
 			gs.read(function (err, data) {
-				gs.close();
-
 				if (err) {
 					self.failed(err);
 				} else {
@@ -535,15 +533,20 @@ util.extend (mongoRequestTask.prototype, {
 
 	writeGridFS: function () {
 		var self = this;
+		var data = this.fileData;
 
 		this.openGridFS('w', function (gs) {
-			gs.write(self.data, function (err) {
-				gs.close();
-
+			gs.write(data, function (err) {
 				if (err) {
 					self.failed(err);
 				} else {
-					self.completed(true);
+					gs.close(function (err, result) {
+						if (err) {
+							self.failed(err);
+						} else {
+							self.completed(result);
+						}
+					});
 				}
 			});
 		});
@@ -551,7 +554,7 @@ util.extend (mongoRequestTask.prototype, {
 	
 	openGridFS: function (mode, cb) {
 		var self = this;
-		var options = this.options || {};
+		var options = this.options;
 		var fileName = this.fileName;
 
 		this.connector = 'mongo';
