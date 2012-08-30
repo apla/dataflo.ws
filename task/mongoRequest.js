@@ -405,10 +405,19 @@ util.extend (mongoRequestTask.prototype, {
 	},
 	
 	update: function () {
-		
 		var self = this;
-		
 		var options = self.options || {};
+		var idList;
+
+		var callback = function (err) {
+			if (err) {
+				self.failed(err);
+			} else {
+				self.completed ({
+					_id: { $in: idList }
+				});
+			}
+		};
 		
 		if (self.verbose)
 			self.emit ('log', 'update called ', self.data);
@@ -422,7 +431,7 @@ util.extend (mongoRequestTask.prototype, {
 			if (self.verbose)
 				console.log ('data for update', self.data);
 				
-			var idList = self.data.map (function (item) {
+			idList = self.data.map (function (item) {
 				
 				if (item._id || self.criteria || options.upsert) {
 					
@@ -456,10 +465,10 @@ util.extend (mongoRequestTask.prototype, {
 					} else {
 						newObj = (self.replace) ? (set) : ({$set: set});
 					}
-					
-					//console.log ('<----------mongo.update', criteriaObj, newObj, options);
-					
-					collection.update (criteriaObj, newObj, options);
+
+					options.safe = true;
+
+					collection.update(criteriaObj, newObj, options, callback);
 						
 					return item._id;
 					
@@ -467,9 +476,9 @@ util.extend (mongoRequestTask.prototype, {
 					// something wrong. this couldn't happen
 					self.emit ('log', 'strange things with _id: "'+item._id+'"');
 				}
+
+				return null;
 			});
-			
-			self.completed ({_id: {$in: idList}});
 		});
 	},
 	
