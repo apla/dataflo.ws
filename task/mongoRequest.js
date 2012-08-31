@@ -389,6 +389,10 @@ util.extend (mongoRequestTask.prototype, {
 							self.mapFields (item);
 						}
 					});
+
+					if (err) {
+						console.error(err);
+					}
 					
 					self.completed ({
 						success:	(err == null),
@@ -600,5 +604,32 @@ util.extend (mongoRequestTask.prototype, {
 			});
 		
 		});
+	},
+
+	createDbRef: function () {
+		var self = this;
+		var DBRef = project.connectors[
+			this.connector
+		].bson_serializer.DBRef;
+		var data = this.data;
+		var colName = this.refCollection;
+
+		var createRef = function (item) {
+			return new DBRef(
+				colName, self._objectId(item._id)
+			);
+		};
+
+		try {
+			if (data instanceof Array) {
+				var refs = data.map(createRef);
+			} else {
+				refs = createRef(data);
+			}
+
+			this.completed(refs);
+		} catch (e) {
+			this.failed(e);
+		}
 	}
 });
