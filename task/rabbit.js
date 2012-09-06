@@ -17,7 +17,7 @@ var OpenSockets = {};
 util.inherits(rabbit, task);
 
 util.extend(rabbit.prototype, {
-	DESTROY_DELAY: 5 * 60 * 1000,
+	DESTROY_DELAY: 5,//* 60 * 1000,
 	
 	run: function () {
 		this.failed('use method [publish|subsribe]');
