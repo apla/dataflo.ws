@@ -233,6 +233,12 @@ in code above i've used these methods:
 *   failed - a method for indication of the failed task
 *   completed - marks the task as completed successfully
 
+### system requirements ###
+
+*   800MHz or higher CPU
+*   128MB or higher RAM
+*   NodeJS 0.8.8 or newer
+
 see also
 ---------------------------
 

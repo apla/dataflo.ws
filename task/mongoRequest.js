@@ -66,6 +66,9 @@ var mongoRequestTask = module.exports = function (config) {
 	this.timestamp = true;
 	this.insertingSafe = false;
 	
+	/* aliases */
+	this.find = this.run;
+	
 	this.init (config);
 	
 };
@@ -215,7 +218,7 @@ util.extend (mongoRequestTask.prototype, {
 		
 		return id;
 	},
-	
+
 	// actually, it's a fetch function
 	
 	run: function () {
@@ -386,6 +389,10 @@ util.extend (mongoRequestTask.prototype, {
 							self.mapFields (item);
 						}
 					});
+
+					if (err) {
+						console.error(err);
+					}
 					
 					self.completed ({
 						success:	(err == null),
@@ -402,10 +409,19 @@ util.extend (mongoRequestTask.prototype, {
 	},
 	
 	update: function () {
-		
 		var self = this;
-		
 		var options = self.options || {};
+		var idList;
+
+		var callback = function (err) {
+			if (err) {
+				self.failed(err);
+			} else {
+				self.completed ({
+					_id: { $in: idList }
+				});
+			}
+		};
 		
 		if (self.verbose)
 			self.emit ('log', 'update called ', self.data);
@@ -419,7 +435,7 @@ util.extend (mongoRequestTask.prototype, {
 			if (self.verbose)
 				console.log ('data for update', self.data);
 				
-			var idList = self.data.map (function (item) {
+			idList = self.data.map (function (item) {
 				
 				if (item._id || self.criteria || options.upsert) {
 					
@@ -453,10 +469,10 @@ util.extend (mongoRequestTask.prototype, {
 					} else {
 						newObj = (self.replace) ? (set) : ({$set: set});
 					}
-					
-					//console.log ('<----------mongo.update', criteriaObj, newObj, options);
-					
-					collection.update (criteriaObj, newObj, options);
+
+					options.safe = true;
+
+					collection.update(criteriaObj, newObj, options, callback);
 						
 					return item._id;
 					
@@ -464,9 +480,9 @@ util.extend (mongoRequestTask.prototype, {
 					// something wrong. this couldn't happen
 					self.emit ('log', 'strange things with _id: "'+item._id+'"');
 				}
+
+				return null;
 			});
-			
-			self.completed ({_id: {$in: idList}});
 		});
 	},
 	
@@ -500,7 +516,7 @@ util.extend (mongoRequestTask.prototype, {
 				}
 			});
 			
-			self.completed({ _id: { $in: idList } });
+			self.completed(idList);
 		});
 	},
 	
@@ -512,6 +528,108 @@ util.extend (mongoRequestTask.prototype, {
 			return true;
 		} else {
 			return false;
+		}
+	},
+
+	readGridFS: function () {
+		var self = this;
+		this.openGridFS('r', function (gs) {
+			gs.read(function (err, data) {
+				if (err) {
+					self.failed(err);
+				} else {
+					self.completed(data);
+				}
+			});
+		});
+	},
+
+	pipeGridFS: function () {
+		var self = this;
+		var toStream = this.toStream;
+
+		this.openGridFS('r', function (gs) {
+			var stream = gs.stream(true);
+
+			stream.on('end', function () {
+				self.completed(stream);
+			});
+
+			stream.on('error', function (err) {
+				self.failed(err);
+			});
+
+			stream.pipe(toStream);
+		});
+	},
+
+	writeGridFS: function () {
+		var self = this;
+		var data = this.fileData;
+
+		this.openGridFS('w', function (gs) {
+			gs.write(data, function (err) {
+				if (err) {
+					self.failed(err);
+				} else {
+					gs.close(function (err, result) {
+						if (err) {
+							self.failed(err);
+						} else {
+							self.completed(result);
+						}
+					});
+				}
+			});
+		});
+	},
+	
+	openGridFS: function (mode, cb) {
+		var self = this;
+		var options = this.options;
+		var fileName = this.fileName;
+
+		this.connector = 'mongo';
+		var db = this._getConnector();
+
+		db.open(function (err, db) {
+			var gs = new mongo.GridStore(db, fileName, mode, options);
+
+			gs.open(function (err, gs) {
+				if (err) {
+					self.failed(err);
+				} else {
+					cb(gs);
+				}
+			});
+		
+		});
+	},
+
+	createDbRef: function () {
+		var self = this;
+		var DBRef = project.connectors[
+			this.connector
+		].bson_serializer.DBRef;
+		var data = this.data;
+		var colName = this.refCollection;
+
+		var createRef = function (item) {
+			return new DBRef(
+				colName, self._objectId(item._id)
+			);
+		};
+
+		try {
+			if (data instanceof Array) {
+				var refs = data.map(createRef);
+			} else {
+				refs = createRef(data);
+			}
+
+			this.completed(refs);
+		} catch (e) {
+			this.failed(e);
 		}
 	}
 });

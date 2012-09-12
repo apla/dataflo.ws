@@ -73,7 +73,9 @@ util.extend (socket.prototype, {
 	},
 	
 	processMessage: function (socket, message) {
-	
+
+		var self = this;
+
 		if (this.log) console.log('processMessage', socket.id, message);
 		
 		var re = /^([A-Z0-9a-z\/]+)(:(.+))?$/;
@@ -123,7 +125,10 @@ util.extend (socket.prototype, {
 
 					wf = new workflow (
 						util.extend (true, {}, item),
-						{query: query}
+						{
+							query: query,
+							socket: socket
+						}
 					);
 					
 					wf.on ('completed', function (wf) {
