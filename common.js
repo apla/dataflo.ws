@@ -141,71 +141,107 @@ var pathToVal = module.exports.pathToVal = function (dict, path, value, method) 
 	return pathToVal (dict[chunks.shift()], chunks, value, method)
 }
 
-function loadIncludes(config, cb) {
-	var DEFAULT_ROOT = 'etc/';
+// - - -
 
-	var tagRe = /<([^>]+)>/;
+var configCache = {};
 
-	var cnt = 0;
-	var len = 0;
+function loadIncludes(config, cb, level) {
+	
+	var DEFAULT_ROOT = 'etc/',
+		DELIMITER = ' > ',
+		tagRe = /<([^>]+)>/,
+		cnt = 0,
+		len = 0;
+		
+	var levelHash = {};
+	
+	level.split(DELIMITER).forEach(function(key) {
+		levelHash[key] = true;
+	});
 
-	var onLoad = function () {
+	function onLoad() {
 		cnt += 1;
 		if (cnt >= len) {
 			cb(null, config);
 		}
-	};
+	}
 
-	var onError = function (err) {
+	function onError(err) {
 		cb(err, config);
-	};
+	}
+	
+	function iterateTree(tree, cb) {
+		if (null == tree) { return; }
+		
+		var step = function (node, key, tree) {
+			cb(tree, key);
+			iterateTree(node, cb);
+		};
 
-	iterateTree(config, function (node, key) {
+		if (Array === tree.constructor) {
+			tree.forEach(step);
+		} else if (Object === tree.constructor) {
+			Object.keys(tree).forEach(function (key) {
+				step(tree[key], key, tree)
+			});
+		}
+	}
+	
+	function iterateNode(node, key) {
 		var value = node[key];
+		
 		if ('string' === typeof value) {
 			var match = value.match(tagRe);
 			if (match) {
 				len += 1;
-
+				
 				var path = match[1];
 
 				if (0 !== path.indexOf('/')) {
 					path = DEFAULT_ROOT + path;
 				}
-
+				
+				if (path in levelHash) {
+					console.error('\n\n\nError: on level "' + level + '" key "' + key + '" linked to "' + value + '" in node:\n', node);
+					throw new Error('circular linking');
+				}
+				
 				delete node[key];
+				
+				if (configCache[path]) {
+					
+					node[key] = util.extend({}, configCache[path]);
+					onLoad();
+					
+				} else {
 
-				/* TODO: cache by path */
-				root.fileIO(path).readFile(function (err, data) {
-					if (err) {
-						onError(err);
-					} else {
-						node[key] = JSON.parse(data);
-						onLoad();
-					}
-				});
+					root.fileIO(path).readFile(function (err, data) {
+						if (err) {
+							
+							onError(err);
+						
+						} else {
+							
+							loadIncludes(JSON.parse(data), function(tree, includeConfig) {
+								
+								configCache[path] = includeConfig;
+							
+								node[key] = util.extend({}, configCache[path]);
+								onLoad();
+							}, level + DELIMITER + path);
+							
+						}
+					});
+				}
 			}
 		}
-	});
+	}
+	
+	console.log('<<<<< level', level);
+	
+	iterateTree(config, iterateNode);
 
 	!len && cb(null, config);
-}
-
-function iterateTree(tree, cb) {
-	if (null == tree) { return; }
-
-	var step = function (node, key, tree) {
-		cb(tree, key);
-		iterateTree(node, cb);
-	};
-
-	if (Array === tree.constructor) {
-		tree.forEach(step);
-	} else if (Object === tree.constructor) {
-		Object.keys(tree).forEach(function (key) {
-			step(tree[key], key, tree)
-		});
-	}
 }
 
 var findInterpolation = module.exports.findInterpolation = function (params, prefix) {
@@ -451,7 +487,7 @@ if ($isServerSide) {
 						self.emit ('ready');
 					});
 				});
-			});
+			}, 'root');
 		});
 		
 		// TODO: walk filetree to find directory root if script located in
