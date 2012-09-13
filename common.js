@@ -91,7 +91,7 @@ try {
 	window.$scope        = 'window';
 	window.$stash        = {};
 	try {
-		if (PhoneGap) window.$isPhoneGap = true;
+		if (PhoneGap || Cordova || cordova) window.$isPhoneGap = true;
 	} catch (e) {
 		window.$isPhoneGap = false;
 	}
