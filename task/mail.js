@@ -3,18 +3,68 @@ var
 	util        = require('util'),
 	path			= require('path'),
 	nodemailer	= require('nodemailer'),
-	emailTemplates	= require('email-templates'),
-	EventEmitter = require('events').EventEmitter;
+	emailTemplates	= require('email-templates');
+
+/**
+ * Batch sending of emails
+ * - supports templates
+ * - doesn't support guaranteed delivery of emails
+ * - doesn't support guaranteed sending of emails (sends to smtp transport)
+ * however, notifies transport errors to console as warnings.
+ *
+ * The task is completed as soon as all required fields for email sending are
+ * present and all emails are forwarded to smtp transport for sending.
+ *
+ * The task is failed or skipped (depends on @cfg {Boolean} important) if there are problems
+ * with template/contents or recepients list.
+ *
+ *
+ *	@cfg {Object} email - basic email data, may be fully or partially generated from template
+ * and list of recepients
+ *
+ * email = {
+ *		from: {String}, // optional, defaults to consumerConfig value : sender OR SMTP.auth.user
+ *		to: {String}, // can be also named "email"
+ *		cc: {String},
+ *		bcc: {String},
+ *		subject: {String},
+ *		text: {String},
+ *		html : {String},
+ *	}
+ *
+ *
+ *	@cfg {String} template - name of template
+ *	template is ejs based, generates Text and HTML
+ * templates are to be located in <project_root>/templates/email
+ * see details: https://github.com/niftylettuce/node-email-templates
+ *
+ *	! template OR text OR html OR subject MUST be provided
+ *
+ *
+ * @cfg {Array} recepients - list for batch sending
+ *
+ *	recepients = ["<email>", "<email>",...]
+ *	recepients = [{
+ *		email: {String}, // can be named "to" or otherwise (see below) substitutes email.to
+ *		// name,... - other fields used in template
+ *	}]
+ *
+ * @cfg {String} emailField - if present recepients[emailField] whill be taken as email.to
+ *
+ *	! email.to OR recepients MUST be provided
+ *
+*/
+
 
 var
 	mailConfig = project.config.consumerConfig.mail,
 	transport = nodemailer.createTransport("SMTP", mailConfig.SMTP),
-	templatesDir = 'templates/email'; //path.resolve(__dirname, '..', 'templates/email');
+	templatesDir = 'templates/email';
 
 var
 	render = {
 		simple :  function (email, recepient, callback) {
-			callback && callback(null, email);
+			if (typeof callback == 'function') callback(null, email);
 		},
 		template : function (template, templateName) {
 			return function (email, recepient, callback) {
@@ -24,8 +74,8 @@ var
 							text: text,
 							html: html
 						});
-						callback && callback(null, email);
-					} else callback(err);
+						if (typeof callback == 'function') callback(null, email);
+					} else if (typeof callback == 'function') callback(err);
 				});
 			};
 		}
@@ -45,31 +95,6 @@ util.extend (mailTask.prototype, {
 	run: function () {
 		
 		var self = this;
-
-		/*
-			email : {
-				from: "info@sample.com", // optional, defaults to consumerConfig value
-				to: "name@something.com", // can be also named email
-				cc: "",
-				bcc: "",
-				subject: "",
-				text: "",
-				html : "",
-			},
-			template : "" // name of template
-
-			// template OR text OR html OR subject MUST be provided
-			// template generates Text and HTML
-
-			recepients = ["<email>", "<email>",...]
-			recepients = [{
-				email: "", // can be named "to" substitutes email.to
-				// name,... other fields used in template
-			}]
-
-			email.to OR recepients MUST be provided
-
-		*/
 
 		var
 			err = false;
@@ -113,13 +138,13 @@ util.extend (mailTask.prototype, {
 				});
 			}
 
-			self.emit('log', 'Starting email job');
+			if (self.verbose) self.emit('log', 'Starting email job');
 			console.log('Template ', template, ' Recepients ', recepients);
 
 			self._prepareRender(
 				template,
 				function () {
-					self.emit('log', 'Render ready');
+					if (self.verbose) self.emit('log', 'Render ready');
 					self._batchSend(email, recepients);
 				},
 				self._err
@@ -141,18 +166,18 @@ util.extend (mailTask.prototype, {
 	_prepareRender : function (templateName, callback, errback) {
 		var self = this;
 		
-		self.emit('log', 'Preparing render');
+		if (self.verbose) self.emit('log', 'Preparing render');
 		if (!templateName) {
 			self._render = render.simple;
-			self.emit('log', 'Render simple. Emiting ready.');
-			callback && callback();
+			if (self.verbose) self.emit('log', 'Render simple. Emiting ready.');
+			if (typeof callback == 'function') callback();
 		} else {
 			emailTemplates(templatesDir, function (err, template) {
 				if (typeof(template) !== 'function') err = 'Incorrect template' + template;
-				if (err) errback && errback(err);
+				if (err) if (typeof errback == 'function') errback(err);
 					else {
 						self._render = render.template(template, templateName);
-						callback && callback();
+						if (typeof callback == 'function') callback();
 					}
 			});
 		}
@@ -165,10 +190,11 @@ util.extend (mailTask.prototype, {
 		console.log('Email setup:', email);
 		console.log('SMTP setup:', mailConfig.SMTP);
 
+		var sendMail = function (err, email) { self._sendMail(err, email); };
 		for (var i = 0; i < recepients.length; i++) {
 			var recepient = recepients[i];
 			email.to = recepient[emailField] || recepient.email || recepient.to;
-			self._render(email, recepient, function (err, email) { self._sendMail(err, email); });
+			self._render(email, recepient, sendMail);
 		}
 
 		// TODO: track individual mail delivery if needed, for example if 'important' flag is set
