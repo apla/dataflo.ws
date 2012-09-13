@@ -73,6 +73,27 @@ util.extend = function extend () {
 }
 }
 
+if (!util.clone) {
+	util.clone = function(object) {
+		
+		var result;
+		
+		if (object.constructor === Array) {
+			result = object.map(function(item) {
+				return util.clone(item);
+			});
+		} else if (object.constructor === Object) {
+			result = {};
+			util.extend(result, object);
+		} else {
+			result = object;
+		}
+		
+		return result;
+		
+	}
+}
+
 try {
 	if (process.pid) {
 		global.$isClientSide = false;
@@ -210,7 +231,7 @@ function loadIncludes(config, cb, level) {
 				
 				if (configCache[path]) {
 					
-					node[key] = util.extend({}, configCache[path]);
+					node[key] = util.clone(configCache[path]);
 					onLoad();
 					
 				} else {
@@ -226,7 +247,7 @@ function loadIncludes(config, cb, level) {
 								
 								configCache[path] = includeConfig;
 							
-								node[key] = util.extend({}, configCache[path]);
+								node[key] = util.clone(configCache[path]);
 								onLoad();
 							}, level + DELIMITER + path);
 							
@@ -237,9 +258,9 @@ function loadIncludes(config, cb, level) {
 		}
 	}
 	
-	console.log('<<<<< level', level);
-	
 	iterateTree(config, iterateNode);
+	
+//	console.log('including:', level, config);
 
 	!len && cb(null, config);
 }
