@@ -64,7 +64,7 @@ var
 var
 	render = {
 		simple :  function (email, recepient, callback) {
-			if (typeof callback == 'function') callback(null, email);
+			callback && callback(null, email);
 		},
 		template : function (template, templateName) {
 			return function (email, recepient, callback) {
@@ -74,8 +74,8 @@ var
 							text: text,
 							html: html
 						});
-						if (typeof callback == 'function') callback(null, email);
-					} else if (typeof callback == 'function') callback(err);
+						callback && callback(null, email);
+					} else callback(err);
 				});
 			};
 		}
@@ -146,8 +146,7 @@ util.extend (mailTask.prototype, {
 				function () {
 					if (self.verbose) self.emit('log', 'Render ready');
 					self._batchSend(email, recepients);
-				},
-				self._err
+				}
 			);
 		}
 	},
@@ -169,15 +168,17 @@ util.extend (mailTask.prototype, {
 		if (self.verbose) self.emit('log', 'Preparing render');
 		if (!templateName) {
 			self._render = render.simple;
-			if (self.verbose) self.emit('log', 'Render simple. Emiting ready.');
-			if (typeof callback == 'function') callback();
+			if (self.verbose) self.emit('log', 'Render simple');
+			callback && callback();
 		} else {
+			if (self.verbose) self.emit('log', 'Render template - getting');
 			emailTemplates(templatesDir, function (err, template) {
 				if (typeof(template) !== 'function') err = 'Incorrect template' + template;
-				if (err) if (typeof errback == 'function') errback(err);
+				if (err) self._err(err);
 					else {
+						if (self.verbose) self.emit('log', 'Render template - OK');
 						self._render = render.template(template, templateName);
-						if (typeof callback == 'function') callback();
+						callback && callback();
 					}
 			});
 		}
@@ -191,6 +192,7 @@ util.extend (mailTask.prototype, {
 		console.log('SMTP setup:', mailConfig.SMTP);
 
 		var sendMail = function (err, email) { self._sendMail(err, email); };
+
 		for (var i = 0; i < recepients.length; i++) {
 			var recepient = recepients[i];
 			email.to = recepient[emailField] || recepient.email || recepient.to;
