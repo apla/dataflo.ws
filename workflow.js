@@ -156,6 +156,13 @@ function checkTaskParams (params, dict, prefix) {
  * notifies subscribers (inititators).
  *
  * @cfg {Object} config (required) Workflow configuration.
+ * @cfg {String} config.$class (required) Class to instantiate
+ * (alias of config.className).
+ * @cfg {String} config.$function (required) Synchronous function to be run
+ * (instead of a class). Alias of functionName.
+ * @cfg {String} config.$set Path to the property in which the produced data
+ * will be stored.
+ * @cfg {String} config.$method Method to be run after the class instantiation.
  * @cfg {Object} reqParam (required) Workflow parameters.
  */
 var workflow = module.exports = function (config, reqParam) {
