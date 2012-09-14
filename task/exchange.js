@@ -57,6 +57,14 @@ util.extend(exchange.prototype, {
 		});
 		req.end();
 	},
+
+	encode: function (str) {
+		return new Buffer(str).toString('base64');
+	},
+
+	decode: function (str) {
+		return new Buffer(str, 'base64').toString('utf8');
+	},
 	
 	profile: function() {
 		var self = this,
@@ -78,7 +86,7 @@ util.extend(exchange.prototype, {
 				authType: 'exchange',
 				tokens: {
 					login: credentials.login, 
-					password: credentials.password
+					password: this.encode(credentials.password)
 				}
 			};
 			
@@ -116,7 +124,7 @@ util.extend(exchange.prototype, {
 			
 			self.credentials = {
 				login: user.tokens.login,
-				password: user.tokens.password
+				password: this.decode(user.tokens.password)
 			};
 			
 			self.login();
