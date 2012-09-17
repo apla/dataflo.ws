@@ -1,11 +1,13 @@
 var task         = require ('task/base'),
 	util         = require ('util');
 
+var defaultDomain = project.config.consumerConfig.domain || "127.0.0.1";
+
 var sessionGenerator = module.exports = function (config) {
 	
 	this.cookieTpl = { // default tpl
 		name: "stoken",
-		domain: "127.0.0.1",
+		domain: defaultDomain,
 		path: "/",
 		expirePeriod: "0"
 	};
@@ -27,6 +29,7 @@ util.extend (sessionGenerator.prototype, {
 		
 		//cookie template
 		var cookieTpl = self.cookieTpl;
+		if (!cookieTpl.domain) cookieTpl.domain = defaultDomain;
 		
 		// name of session cookie
 		var name = cookieTpl.name;
@@ -38,7 +41,7 @@ util.extend (sessionGenerator.prototype, {
 			
 		// - - -
 		
-		var newCookie = {value: value}
+		var newCookie = {value: value};
 		
 		for (var key in cookieTpl) {
 			newCookie[key] = cookieTpl[key];
