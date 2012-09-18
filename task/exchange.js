@@ -38,14 +38,16 @@ util.extend(exchange.prototype, {
 					self.completed({
 						statusCode: 200, 
 						err: '', 
-						accessAllowed: true
+						accessAllowed: true,
+						success: true
 					});
 					break;
 				default: 
 					self.completed({
 						statusCode: 401, 
 						err: 'User not authorized', 
-						accessAllowed: false
+						accessAllowed: false,
+						success: false
 					});
 					break;
 			}
