@@ -19,6 +19,15 @@ var socket = module.exports = function (config) {
 	} else {
 		this.port  = config.port;
 	}
+
+	if (config.ssl) {
+		this.opts = {
+			key  : fs.readFileSync(config.ssl.key).toString(),
+			cert : fs.readFileSync(config.ssl.cert).toString()
+		};
+	} else {
+		this.opts = {};
+	}
 		
 	self.workflows = config.workflows;
 	self.timer = config.timer;
@@ -49,7 +58,7 @@ util.extend (socket.prototype, {
 		
 		var self = this;
 		
-		var socketIo = self.socketIo = SocketIo.listen(self.port);
+		var socketIo = self.socketIo = SocketIo.listen(self.port, self.opts);
 		
 		socketIo.set('transports', ['websocket']);
 		if (!self.log) socketIo.disable('log');
