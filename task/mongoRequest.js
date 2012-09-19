@@ -445,9 +445,10 @@ util.extend (mongoRequestTask.prototype, {
 					util.extend(true, set, item);
 					delete set._id;
 					
-					var criteriaObj = (self.criteria) ? self.criteria :
-						(item._id) ? {_id: self._objectId(item._id)} : {};
+					var criteriaObj = (self.criteria) ? self.criteria : {};
 					
+					if (!criteriaObj._id && item._id) criteriaObj._id = self._objectId(item._id);
+						
 					var newObj;
 					
 					if (self.modify) {
