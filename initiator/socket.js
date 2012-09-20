@@ -1,7 +1,8 @@
 var EventEmitter = require ('events').EventEmitter,
 	SocketIo     = require('socket.io'),
 	util         = require ('util'),
-	workflow     = require ('../workflow');
+	workflow     = require ('../workflow'),
+	fs 			 = require ('fs');
 
 /**
  * @class initiator.socket
