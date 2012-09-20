@@ -98,7 +98,7 @@ util.extend (facebook.prototype, {
 		var getParams = {
 			client_id: facebookConfig.appId,
 			redirect_uri: facebookConfig.callbackUrl,
-			scope: scopes.join(','),
+			scope: scopes.join(',')
 		};
 		
 		var redirectUrl = facebookConfig.requestTokenUrl + "?" + querystring.stringify(getParams);
@@ -144,18 +144,21 @@ util.extend (facebook.prototype, {
 	},
 	
 	profile: function() {
-		
 		var self = this;
 		var req = self.req;
 		var tokens = req.user.tokens;
 		
-		var oa = new OAuth2(facebookConfig.appId,  facebookConfig.appSecret,  facebookConfig.baseUrl);
+		var oa = new OAuth2(
+			facebookConfig.appId,
+			facebookConfig.appSecret,
+			facebookConfig.baseUrl
+		);
 		
 		oa.getProtectedResource(
-			facebookConfig.baseUrl+"/me",
+			facebookConfig.baseUrl + '/me',
 			tokens.oauth_access_token,
-			function (error, data, response) {
-				
+
+			function (error, data, response) {				
 				if (error) {
 					self.failed(error);
 				} else {
@@ -172,13 +175,15 @@ util.extend (facebook.prototype, {
 	mappingUser: function(user) {
 		var mapped = {
 			name: user.name,
-			link: user.link
+			link: user.link,
+			authType: 'facebook'
 		};
 
         var emailName;
         if (user.username) {
-            emailName = user.username
-            mapped.avatar = 'http://graph.facebook.com/' + user.username + '/picture';
+            emailName = user.username;
+            mapped.avatar = 'http://graph.facebook.com/' +
+				user.username + '/picture';
         } else {
             emailName = user.id;
             mapped.avatar = '';
@@ -222,5 +227,61 @@ util.extend (facebook.prototype, {
 		
 		return groupIds;
 		
+	},
+
+	tmpl: function (str, obj) {
+		return str.replace(
+			/{\$(.+?)}/g,
+			function (_, key) { return obj[key]; }
+		);
+	},
+
+	searchFriends: function () {
+		var self = this;
+
+		var queryTpl = [
+			'SELECT username, name',
+			'FROM user',
+			'WHERE uid IN',
+			'(SELECT uid2 FROM friend WHERE uid1 = me())',
+			'AND (',
+			'strpos(lower(name), "{$filter}") >=0',
+			'OR strpos(lower(username), "{$filter}") >=0',
+			')',
+			'ORDER BY first_name LIMIT {$start}, {$limit}'
+		].join(' ');
+
+		var urlTpl = '/fql?q={$query}';
+
+		var query = this.tmpl(queryTpl, this.pager);
+		var url = this.tmpl(urlTpl, { query: query });
+
+		var oa = new OAuth2(
+			facebookConfig.appId,
+			facebookConfig.appSecret,
+			facebookConfig.baseUrl
+		);
+
+		oa.getProtectedResource(
+			facebookConfig.baseUrl + url,
+			this.req.user.tokens.oauth_access_token,
+
+			function (error, data, response) {
+				var items = JSON.parse(data);
+
+				if (!error) {
+					var users = items.data.map(function (user) {
+						return self.mapFields(self.mappingUser(user));
+					});
+				}
+
+				self.completed({
+					data: users || null,
+					total: users ? users.length : 0,
+					success: !error,
+					error: error
+				});
+			}
+		);
 	}
 });
