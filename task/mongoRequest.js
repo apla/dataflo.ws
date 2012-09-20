@@ -266,6 +266,22 @@ util.extend (mongoRequestTask.prototype, {
 				}
 			}
 			
+			//remap options fields
+			if (options.fields) {
+				var fields = options.fields,
+					include = fields["$inc"],
+					exclude = fields["$exc"];
+				
+				delete fields.$inc;
+				delete fields.$exc;
+				
+				if (include) {
+					include.map(function(field) {fields[field] = 1});
+				} else if (exclude) {
+					include.map(function(field) {fields[field] = 0})
+				}
+			}
+			
 			if (self.verbose)
 				console.log ("collection.find", self.collection, filter, options);
 			
@@ -439,8 +455,6 @@ util.extend (mongoRequestTask.prototype, {
 				
 				if (item._id || self.criteria || options.upsert) {
 					
-					if (self.timestamp) item.updated = ~~(new Date().getTime()/1000);
-					
 					var set = {};
 					util.extend(true, set, item);
 					delete set._id;
@@ -465,14 +479,25 @@ util.extend (mongoRequestTask.prototype, {
 							});
 						}
 						
-						newObj.$set = set;
+						if (!('$set' in modify)) {
+							newObj.$set = set;
+						}
 						
 					} else {
 						newObj = (self.replace) ? (set) : ({$set: set});
 					}
+					
+					if (self.timestamp) {
+						var timestamp = ~~(new Date().getTime()/1000);
+						if (newObj.$set) newObj.$set.updated = timestamp;
+						else newObj.updated = timestamp;
+					}
 
 					options.safe = true;
-
+					
+					if (self.verbose)
+						console.log('collection.update ', criteriaObj, newObj, options);
+					
 					collection.update(criteriaObj, newObj, options, callback);
 						
 					return item._id;
