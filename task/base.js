@@ -297,6 +297,8 @@ util.extend (task.prototype, taskStateMethods, {
 			if (item[self.mapping[k]])
 				item[k] = item[self.mapping[k]];
 		}
+
+		return item;
 	},
 
 	/**
