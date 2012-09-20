@@ -245,10 +245,10 @@ util.extend (facebook.prototype, {
 			'WHERE uid IN',
 			'(SELECT uid2 FROM friend WHERE uid1 = me())',
 			'AND (',
-			'strpos(lower(name), "{$filter}") >=0',
-			'OR strpos(lower(username), "{$filter}") >=0',
+			'strpos(lower(name), "{$filter}") >= 0',
+			'OR strpos(lower(username), "{$filter}") >= 0',
 			')',
-			'ORDER BY first_name LIMIT {$start}, {$limit}'
+			'ORDER BY name LIMIT {$start}, {$limit}'
 		].join(' ');
 
 		var urlTpl = '/fql?q={$query}';
