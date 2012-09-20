@@ -169,8 +169,8 @@ var workflow = module.exports = function (config, reqParam) {
 	
 	var self = this;
 	
-	util.extend (true, this, config);
-	util.extend (true, this, reqParam);
+	util.extend (true, this, config); // this is immutable config skeleton
+	util.extend (true, this, reqParam); // this is config fixup
 	
 	this.created = new Date().getTime();
 	
@@ -233,7 +233,14 @@ var workflow = module.exports = function (config, reqParam) {
 			}
 		}
 		
-		//console.log (taskParams);
+		// check for data persistence in self.templates[taskTemplateName], taskParams
+		var taskTemplateName = taskParams.$template;
+		if (self.templates && self.templates[taskTemplateName]) {
+			taskParams = util.extend(true, self.templates[taskTemplateName], taskParams);
+			delete taskParams.$template;
+		}
+		
+//		console.log (taskParams);
 		
 		var taskClassName = taskParams.className || taskParams.$class;
 		var taskFnName = taskParams.functionName || taskParams.$function;
