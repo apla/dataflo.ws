@@ -212,6 +212,19 @@ var workflow = module.exports = function (config, reqParam) {
 	
 	this.tasks = config.tasks.map (function (taskParams) {
 		var task;
+		
+		var actualTaskParams;
+		var taskTemplateName = taskParams.$template;
+		if (self.templates && self.templates[taskTemplateName]) {
+			
+			actualTaskParams = {};
+			util.extend(true, actualTaskParams, self.templates[taskTemplateName]);
+			util.extend(true, actualTaskParams, taskParams);
+			
+			delete actualTaskParams.$template;
+		} else {
+			actualTaskParams = util.extend(true, {}, taskParams);
+		}
 
 		var checkRequirements = function () {
 			
@@ -222,7 +235,7 @@ var workflow = module.exports = function (config, reqParam) {
 				dict.project = project
 			}
 			
-			var result = checkTaskParams (taskParams, dict);
+			var result = checkTaskParams (actualTaskParams, dict);
 			
 			if (result.failed && result.failed.length > 0) {
 				this.unsatisfiedRequirements = result.failed;
@@ -234,16 +247,11 @@ var workflow = module.exports = function (config, reqParam) {
 		}
 		
 		// check for data persistence in self.templates[taskTemplateName], taskParams
-		var taskTemplateName = taskParams.$template;
-		if (self.templates && self.templates[taskTemplateName]) {
-			taskParams = util.extend(true, self.templates[taskTemplateName], taskParams);
-			delete taskParams.$template;
-		}
 		
 //		console.log (taskParams);
 		
-		var taskClassName = taskParams.className || taskParams.$class;
-		var taskFnName = taskParams.functionName || taskParams.$function;
+		var taskClassName = actualTaskParams.className || actualTaskParams.$class;
+		var taskFnName = actualTaskParams.functionName || actualTaskParams.$function;
 		
 		if (taskClassName && taskFnName)
 			self.logError ('defined both className and functionName, using className');
@@ -264,14 +272,14 @@ var workflow = module.exports = function (config, reqParam) {
 			
 			task = new xTaskClass ({
 				className: taskClassName,
-				method:    taskParams.method || taskParams.$method,
+				method:    actualTaskParams.method || actualTaskParams.$method,
 				require:   checkRequirements,
-				important: taskParams.important || taskParams.$important
+				important: actualTaskParams.important || actualTaskParams.$important
 			});
-		} else if (taskParams.coderef || taskFnName) {
+		} else if (actualTaskParams.coderef || taskFnName) {
 		
 //			self.log ((taskParams.functionName || taskParams.logTitle) + ': initializing task from function');
-			if (!taskFnName && !taskParams.logTitle)
+			if (!taskFnName && !actualTaskParams.logTitle)
 				throw "task must have a logTitle when using call parameter";
 			
 			var xTaskClass = function (config) {
@@ -283,9 +291,10 @@ var workflow = module.exports = function (config, reqParam) {
 			util.extend (xTaskClass.prototype, {
 				run: function () {
 					var failed = false;
-					if ((taskParams.$bind || taskParams.bind) && taskFnName) {
+					
+					if ((actualTaskParams.$bind || actualTaskParams.bind) && taskFnName) {
 						try {
-							var functionRef = taskParams.bind || taskParams.$bind;
+							var functionRef = actualTaskParams.bind || actualTaskParams.$bind;
 							// TODO: use pathToVal
 							var fSplit = taskFnName.split (".");
 							while (fSplit.length) {
@@ -293,9 +302,9 @@ var workflow = module.exports = function (config, reqParam) {
 								functionRef = functionRef[fChunk];
 							}
 							
-							this.completed (functionRef.call (taskParams.bind || taskParams.$bind, this));
+							this.completed (functionRef.call (actualTaskParams.bind || actualTaskParams.$bind, this));
 						} catch (e) {
-							failed = 'failed call function "'+taskFnName+'" from ' + (taskParams.bind || taskParams.$bind) + ' with ' + e;
+							failed = 'failed call function "'+taskFnName+'" from ' + (actualTaskParams.bind || actualTaskParams.$bind) + ' with ' + e;
 						}
 					} else if (taskFnName) {
 						var fn = $mainModule[taskFnName];
@@ -320,7 +329,7 @@ var workflow = module.exports = function (config, reqParam) {
 					} else {
 						// TODO: detailed error description
 //						if (taskParams.bind)
-						this.completed (taskParams.coderef (this));
+						this.completed (actualTaskParams.coderef (this));
 					}
 					if (failed) throw failed;
 				}
@@ -328,9 +337,9 @@ var workflow = module.exports = function (config, reqParam) {
 			
 			task = new xTaskClass ({
 				functionName: taskFnName,
-				logTitle:     taskParams.logTitle || taskParams.$logTitle,
+				logTitle:     actualTaskParams.logTitle || actualTaskParams.$logTitle,
 				require:      checkRequirements,
-				important:    taskParams.important || taskParams.$important
+				important:    actualTaskParams.important || actualTaskParams.$important
 			});
 			
 		}
