@@ -1,7 +1,8 @@
 var EventEmitter = require ('events').EventEmitter,
 	SocketIo     = require('socket.io'),
 	util         = require ('util'),
-	workflow     = require ('../workflow');
+	workflow     = require ('../workflow'),
+	fs 			 = require ('fs');
 
 /**
  * @class initiator.socket
@@ -18,6 +19,15 @@ var socket = module.exports = function (config) {
 		throw "you must define 'port' key for http initiator";
 	} else {
 		this.port  = config.port;
+	}
+
+	if (config.ssl) {
+		this.opts = {
+			key  : fs.readFileSync(config.ssl.key).toString(),
+			cert : fs.readFileSync(config.ssl.cert).toString()
+		};
+	} else {
+		this.opts = {};
 	}
 		
 	self.workflows = config.workflows;
@@ -49,7 +59,7 @@ util.extend (socket.prototype, {
 		
 		var self = this;
 		
-		var socketIo = self.socketIo = SocketIo.listen(self.port);
+		var socketIo = self.socketIo = SocketIo.listen(self.port, self.opts);
 		
 		socketIo.set('transports', ['websocket']);
 		if (!self.log) socketIo.disable('log');
