@@ -218,14 +218,18 @@ var workflow = module.exports = function (config, reqParam) {
 		if (self.templates && self.templates[taskTemplateName]) {
 			
 			actualTaskParams = {};
-			util.extend(true, actualTaskParams, self.templates[taskTemplateName]);
-			util.extend(true, actualTaskParams, taskParams);
+			// nobody wants to use recursive copy
+			util.extend (
+				self.templates[taskTemplateName].$deep ? true : false,
+				actualTaskParams, self.templates[taskTemplateName]
+			);
+			util.extend (true, actualTaskParams, taskParams);
 			
 			delete actualTaskParams.$template;
 		} else {
 			actualTaskParams = util.extend(true, {}, taskParams);
 		}
-
+		
 		var checkRequirements = function () {
 			
 			var dict = util.extend(true, {}, reqParam);
