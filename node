@@ -25,7 +25,8 @@ fi
 NODE_PATH=''
 
 if [ "x$IS_WINDOWS" == "x" ] ; then
-	NODE_PATH=/usr/local/lib/node_modules/
+	NODE_PATH=/usr/local/lib/node_modules
+	NODE_PATH=/usr/local/share/npm/lib/node_modules:$NODE_PATH
 fi
 
 NODE_PATH_DELIMITER=":"
