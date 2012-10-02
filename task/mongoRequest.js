@@ -11,9 +11,9 @@ var EventEmitter = require ('events').EventEmitter,
  * @docauthor
  * @class task.mongoRequest
  * @extends task.task
- * 
+ *
  * A class for creating MongoDB-related tasks.
- * 
+ *
  * To use, set {@link #className} to `"mongoRequest"`.
  *
  * ### Example
@@ -62,21 +62,21 @@ var EventEmitter = require ('events').EventEmitter,
  * or real {@link http://www.mongodb.org/display/DOCS/Querying mongo query}
  */
 var mongoRequestTask = module.exports = function (config) {
-	
+
 	this.timestamp = true;
 	this.insertingSafe = false;
-	
+
 	this.init (config);
-	
+
 };
 
 mongo.Db.prototype.open = function (callback) {
-	var self = this; 
-	
+	var self = this;
+
 	if (self._state == 'connected') {
 		return callback (null, self);
 	}
-	
+
 	// Set the status of the server
 	if (this.openCalled)
 		self._state = 'connecting';
@@ -84,14 +84,14 @@ mongo.Db.prototype.open = function (callback) {
 	// Set up connections
 	if(self.serverConfig instanceof mongo.Server || self.serverConfig instanceof mongo.ReplSet) {
 		if (!this._openCallbacks) this._openCallbacks = [];
-		
+
 		if (callback)
 			this._openCallbacks.push (callback);
-		
+
 		if (!this.openCalled) self.serverConfig.connect(self, {firstCall: true}, function(err, result) {
-			
+
 			console.log (123);
-			
+
 			if(err != null) {
 				// Return error from connection
 				self.emit ('error', err);
@@ -102,7 +102,7 @@ mongo.Db.prototype.open = function (callback) {
 				return;
 			}
 			// Set the status of the server
-			self._state = 'connected';      
+			self._state = 'connected';
 			// Callback
 			self.emit ('open', self);
 			self._openCallbacks.map (function (item) {
@@ -125,68 +125,68 @@ mongo.Db.prototype.open = function (callback) {
 util.inherits (mongoRequestTask, task);
 
 util.extend (mongoRequestTask.prototype, {
-	
-	
+
+
 	_log : function(){
 		var self = this;
 		if (self.verbose){
 			console.log.apply (console, arguments);
 		}
 	},
-	
+
 	// private method get connector
-	
+
 	_getConnector: function () {
-		
+
 		// connector is real connector object
 		if (!this.connector.substring && this.connector.open)
 			return this.connector;
-		
+
 		// get connector config from project if it created
 		if (project.connectors[this.connector]) {
 			return project.connectors[this.connector];
 		}
-		
+
 		// otherwise create connector from project config and add to project.connectors
-		
+
 		var connectorConfig = project.config.db[this.connector];
-		
+
 		// create connector
-		
+
 		var connector = new mongo.Db (
 			connectorConfig.database,
 			new mongo.Server (connectorConfig.host, connectorConfig.port),
 			{native_parser: true}
 		);
-		
+
 		project.connectors[this.connector] = connector;
 		project.connections[this.connector] = {};
-		
+
 		return connector;
 	},
-	
+
 	// private method to collection open
-	
+
 	_openCollection: function (cb) {
-		
+
 		var self = this;
-		
+
 		// get db client
 		var client = self._getConnector ();
-		
+
 		if (this.verbose)
 			console.log (
 				'checking project.connections', self.connector, self.collection,
 				project.connections[self.connector][self.collection] === void 0 ? 'not cached' : 'cached'
 			);
-		
+
 		// check collection existing in cache
 		// if collection cached - return through callback this collection
 		if (project.connections[self.connector][self.collection]) {
 			cb.call (self, false, project.connections[self.connector][self.collection]);
 			return;
 		}
-		
+
 		// otherwise open db connection
 		client.open (function (err, p_client) {
 			// get collection
@@ -203,17 +203,17 @@ util.extend (mongoRequestTask.prototype, {
 			});
 		});
 	},
-	
+
 	// private method to create ObjectID
-	
+
 	_objectId: function (hexString) {
-		
+
 		if (!hexString.substring) return hexString;
-		
+
 		var ObjectID = project.connectors[this.connector].bson_serializer.ObjectID;
-		
+
 		var id;
-		
+
 		try {
 			id = new ObjectID(hexString);
 		} catch (e) {
@@ -222,38 +222,39 @@ util.extend (mongoRequestTask.prototype, {
 			id = hexString.toString();
 			// throw e;
 		}
-		
+
 		return id;
 	},
-	
+
 	// actually, it's a fetch function
-	
+
 	run: function () {
 		var self = this;
-		
+
 		if (this.verbose)
 			self.emit ('log', 'run called');
-		
+
 		// primary usable by Ext.data.Store
 		// we need to return {data: []}
-		
+
 		// open collection
 		self._openCollection (function (err, collection) {
 			var filter = self.filter,
 				options = self.options || {},
 				sort = self.sort || self.pager && self.pager.sort || {};
-			if (self.verbose)
-				console.log ("collection.find", self.collection, self.filter, self.pager);
 
 			if (self.pager) {
 				if (self.pager.page && self.pager.limit && self.pager.limit < 100) {
 					options.skip = self.pager.start;
 					options.limit = self.pager.limit;
 				}
-				
+
 				filter = self.pager.filter;
 				options.sort = sort;
 			}
+
+			if (self.verbose)
+				console.log ("collection.find", self.collection, filter, options );
 
 			// find by filter or all records
 			if (filter) {
@@ -274,13 +275,13 @@ util.extend (mongoRequestTask.prototype, {
 					}
 				}
 			}
-			
+
 			var cursor = collection.find(filter, options);
 			cursor.toArray (function (err, docs) {
-				
+
 				if (self.verbose)
 					console.log ("findResult", docs);
-				
+
 				if (docs) {
 					docs.map (function (item) {
 						if (self.mapping) {
@@ -288,7 +289,7 @@ util.extend (mongoRequestTask.prototype, {
 						}
 					});
 				}
-				
+
 				cursor.count(function (err, n) {
 					self.completed ({
 						success:	(err == null),
@@ -300,53 +301,53 @@ util.extend (mongoRequestTask.prototype, {
 			});
 		});
 	},
-	
+
 	insert: function () {
-		
+
 		var self = this;
-	
+
 		if (!self.data) self.data = {};
 
 		console.log('INSERT');
 
 		if (self.verbose)
 			self.emit ('log', 'insert called ' + self.data);
-		
+
 		self._openCollection (function (err, collection) {
-			
+
 			if (self.data.constructor != Array) {
 				self.data = [self.data];
 			}
-			
+
 			var docsId = [];
 			self.data.map(function(item) {
-				
+
 				if (self.timestamp) item.created = item.updated = ~~(new Date().getTime()/1000);
 				if (item._id && item._id != '') docsId.push(item._id);
-				
+
 			});
-			
+
 			/* MODIFIED: optionally check if records already in collection by self.filter, otherwise by _id
 			 * if records found :
 			 *		if no self.updateData provided : insert records that do not match filter
-			 *		if self.updateData is provided : update records using self.updateData 
+			 *		if self.updateData is provided : update records using self.updateData
 			 * if records not found : insert
 			 */
 
 			var filter = self.filter || {_id: {$in: docsId}};
-			
+
 			self._log('Filter: ', filter, ', Update: ', self.updateData);
 
 			if (self.insertingSafe) {
-			
+
 				// find any records alredy stored in db
-				
+
 				self._log('insertingSafe data = ', self.data);
-				
+
 				collection.find(filter).toArray(function (err, alreadyStoredDocs) {
 
 					self._log('Already stored: ', alreadyStoredDocs.length, ' docs');
-					
+
 					if (alreadyStoredDocs.length > 0 && self.updateData) {
 
 						self._log('Updating @filter: ', filter, ' with: ', self.updateData);
@@ -361,23 +362,23 @@ util.extend (mongoRequestTask.prototype, {
 							err:		false,
 							data:		alreadyStoredDocs
 						});
-						
+
 						return;
-					
+
 					} else {
-					
+
 						// build list of new records
 
 						self._log('Really inserting. Creating dataToInsert with unique = ', self.unique);
 
 						var dataToInsert = [];
-						
+
 						/* if self.unique array is provided, its fields are used to check whether doc is already in collection
 						 *	doc is not inserted only if all unique fields of the new doc are equal to the same fields of the old doc
 						 *
 						 * if self.unique is not provided checks by _id
 						 */
-						
+
 						if (alreadyStoredDocs.length == 0) {
 
 							self.data.map(function (item) { dataToInsert.push(item) });
@@ -413,156 +414,156 @@ util.extend (mongoRequestTask.prototype, {
 
 							}
 						}
-											
+
 						if (dataToInsert.length == 0) {
 
 							self._log('Nothing to insert');
-							
+
 							self.completed ({
 								success:	(err == null),
 								total:		alreadyStoredDocs.length,
 								err:		err || null,
 								data:		alreadyStoredDocs
 							});
-							
+
 							return;
 						}
-						
+
 
 						self._log('Perform insert of ', dataToInsert.length, ' items');
 
 						collection.insert (dataToInsert, {safe: true}, function (err, docs) {
-							
+
 							if (docs) docs.map (function (item) {
 								if (self.mapping) {
 									self.mapFields (item);
 								}
 							});
-							
+
 							var insertedRecords = alreadyStoredDocs.concat(docs);
-							
+
 							self.completed ({
 								success:	(err == null),
 								total:		(insertedRecords && insertedRecords.length) || 0,
 								err:		err || null,
 								data:		insertedRecords
 							});
-							
+
 						});
 					}
-				
+
 				}); //collection.find(filter).toArray
-				
+
 			} else {
-				
+
 				collection.insert (self.data, {safe: true}, function (err, docs) {
-					
+
 					// TODO: check two parallels tasks: if one from its completed, then workflow must be completed (for exaple mongo & ldap tasks)
 					if (this.verbose)
 						console.log ('collection.insert', docs, err);
-					
+
 					if (docs) docs.map (function (item) {
 						if (self.mapping) {
 							self.mapFields (item);
 						}
 					});
-					
+
 					self.completed ({
 						success:	(err == null),
 						total:		(docs && docs.length) || 0,
 						err:		err || null,
 						data:		docs
 					});
-					
+
 				});
-			
+
 			}
-			
+
 		});
 	},
-	
+
 	update: function () {
-		
+
 		var self = this;
-		
+
 		var options = self.options || {};
-		
+
 		if (self.verbose)
 			self.emit ('log', 'update called ', self.data);
-		
+
 		self._openCollection (function (err, collection) {
-			
+
 			if (self.data.constructor != Array) {
 				self.data = [self.data];
 			}
-			
+
 			if (self.verbose)
 				console.log ('data for update', self.data);
-				
+
 			var idList = self.data.map (function (item) {
-				
+
 				if (item._id || options.upsert) {
-					
+
 					if (self.timestamp) item.updated = ~~(new Date().getTime()/1000);
-					
+
 					var set = {};
 					util.extend(true, set, item);
 					delete set._id;
-					
+
 					var newObj = (self.replace) ? set : {$set: set};
 					var criteriaObj = (self.criteria) ? self.criteria :
 						(item._id) ? {_id: self._objectId(item._id)} : {};
-					
+
 					//console.log ('<----------mongo.update', criteriaObj, newObj, options);
-					
+
 					collection.update (criteriaObj, newObj, options);
-						
+
 					return item._id;
-					
+
 				} else {
 					// something wrong. this couldn't happen
 					self.emit ('log', 'strange things with _id: "'+item._id+'"');
 				}
 			});
-			
+
 			self.completed ({_id: {$in: idList}});
 		});
 	},
-	
+
 	remove: function () {
 		var self = this;
-		
+
 		if (self.verbose) {
 			self.emit('log', 'remove called ', self.data);
 		}
-		
+
 		self._openCollection (function (err, collection) {
-			
+
 			if (self.data.constructor != Array) {
 				self.data = [self.data];
 			}
-			
+
 			if (self.verbose) {
 				console.log ('data for update', self.data);
 			}
-				
+
 			var idList = self.data.map(function (item) {
 				if (item._id) {
 					collection.remove({
 						_id: self._objectId(item._id)
 					}/*, options, callback */);
-						
+
 					return item._id;
 				} else {
 					// something wrong. this couldn't happen
 					self.emit('log', 'strange things with _id: "'+item._id+'"');
 				}
 			});
-			
+
 			self.completed({ _id: { $in: idList } });
 		});
 	},
-	
+
 	emitError: function (e) {
 		if (e) {
 			this.state = 5;

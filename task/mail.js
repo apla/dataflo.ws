@@ -83,17 +83,17 @@ var
 
 
 var mailTask = module.exports = function (config) {
-	
+
 	this.request = config.request;
 	this.init(config);
-	
+
 };
 
 util.inherits (mailTask, task);
 
 util.extend (mailTask.prototype, {
 	run: function () {
-		
+
 		var self = this;
 
 		var
@@ -107,7 +107,7 @@ util.extend (mailTask.prototype, {
 			return self._err('Neither email object nor template not provided');
 
 		} else {
-			
+
 			if (!email) {
 				email = {
 					to: null,
@@ -164,7 +164,7 @@ util.extend (mailTask.prototype, {
 
 	_prepareRender : function (templateName, callback, errback) {
 		var self = this;
-		
+
 		if (self.verbose) self.emit('log', 'Preparing render');
 		if (!templateName) {
 			self._render = render.simple;
@@ -196,6 +196,7 @@ util.extend (mailTask.prototype, {
 		for (var i = 0; i < recepients.length; i++) {
 			var recepient = recepients[i];
 			email.to = recepient[emailField] || recepient.email || recepient.to;
+			if (!email.to || email.length < 6 || email.to.indexOf('@')<0) continue; // ugly skip bad emails
 			self._render(email, recepient, sendMail);
 		}
 
