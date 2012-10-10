@@ -241,20 +241,26 @@ util.extend (mongoRequestTask.prototype, {
 		self._openCollection (function (err, collection) {
 			var filter = self.filter,
 				options = self.options || {},
-				sort = self.sort || self.pager && self.pager.sort || {};
-
-			if (self.pager) {
-				if (self.pager.page && self.pager.limit && self.pager.limit < 100) {
-					options.skip = self.pager.start;
-					options.limit = self.pager.limit;
-				}
-
-				filter = self.pager.filter;
-				options.sort = sort;
-			}
+				sort = self.sort || (self.pager && self.pager.sort) || {};
 
 			if (self.verbose)
-				console.log ("collection.find", self.collection, filter, options );
+				console.log ("collection.find ", self.collection, filter, options, self.pager );
+
+			if (self.pager) {
+				if (self.pager.limit) {
+					options.limit = self.pager.limit;
+					options.page = self.pager.page || 0;
+					//options.skip = self.pager.start || 0;
+					options.skip = self.pager.start || options.limit * options.page;
+				}
+
+				if (!filter) filter = self.pager.filter;
+			}
+
+			options.sort = sort;
+
+			if (self.verbose)
+				console.log ("collection.find >> ", self.collection, filter, options );
 
 			// find by filter or all records
 			if (filter) {
@@ -280,7 +286,7 @@ util.extend (mongoRequestTask.prototype, {
 			cursor.toArray (function (err, docs) {
 
 				if (self.verbose)
-					console.log ("findResult", docs);
+					console.log ("findResult", docs.length);
 
 				if (docs) {
 					docs.map (function (item) {
