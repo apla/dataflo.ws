@@ -136,7 +136,8 @@ util.extend (twitter.prototype, {
 			name: user.name,
 			email: user.screen_name+"@twitter.com",
 			avatar: user.profile_image_url,
-			link: "https://twitter.com/?id="+user.id
+			link: "https://twitter.com/?id="+user.id,
+			authType: 'twitter'
 		};
 		
 	}
