@@ -5,7 +5,7 @@ var task = require('task/base'),
 
 var userRender = module.exports = function(config) {
 
-	this.init (config);		
+	this.init (config);
 
 };
 
@@ -14,25 +14,25 @@ util.inherits (userRender, task);
 util.extend (userRender.prototype, {
 
 	run: function () {
-		
+
 		var self = this;
-		
+
 		var found = self.found;
 		var data = found.data;
-		
+
 		var user;
-		
+
 		if (data && data.length > 0) {
-			
+
 			user = data[0];
 
 			if(!user.authorized){
 				user.authorized = 0;
 			}
 			user.authenticated = true;
-			
-			console.info(user);
-			
+
+			//console.info(user);
+
 		} else {
 			user = {
 				anonymous: true

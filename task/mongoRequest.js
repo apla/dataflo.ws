@@ -335,8 +335,8 @@ util.extend (mongoRequestTask.prototype, {
 
 			/* MODIFIED: optionally check if records already in collection by self.filter, otherwise by _id
 			 * if records found :
-			 *		if no self.updateData provided : insert records that do not match filter
-			 *		if self.updateData is provided : update records using self.updateData
+			 *		if self.forceUpdate is true of updateData is provided
+			 *			: update records using updateData or data
 			 * if records not found : insert
 			 */
 
@@ -354,11 +354,13 @@ util.extend (mongoRequestTask.prototype, {
 
 					self._log('Already stored: ', alreadyStoredDocs.length, ' docs');
 
-					if (alreadyStoredDocs.length > 0 && self.updateData) {
+					if (alreadyStoredDocs.length > 0 && (self.forceUpdate || self.updateData)) {
 
-						self._log('Updating @filter: ', filter, ' with: ', self.updateData);
+						var updateData = self.updateData || self.data;
 
-						collection.update(filter, self.updateData, false, true);
+						self._log('Updating @filter: ', filter, ' with: ', updateData);
+
+						collection.update(filter, updateData, false, true);
 
 						self._log(alreadyStoredDocs);
 
@@ -436,7 +438,7 @@ util.extend (mongoRequestTask.prototype, {
 						}
 
 
-						self._log('Perform insert of ', dataToInsert.length, ' items');
+						self._log('Perform insert of ', dataToInsert.length, ' items', dataToInsert);
 
 						collection.insert (dataToInsert, {safe: true}, function (err, docs) {
 
@@ -446,7 +448,10 @@ util.extend (mongoRequestTask.prototype, {
 								}
 							});
 
+						self._log('inserted ', docs);
+
 							var insertedRecords = alreadyStoredDocs.concat(docs);
+
 
 							self.completed ({
 								success:	(err == null),
