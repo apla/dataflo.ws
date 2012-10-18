@@ -657,5 +657,143 @@ util.extend (mongoRequestTask.prototype, {
 		} catch (e) {
 			this.failed(e);
 		}
+	},
+	
+/**
+ * Run a group command across a collection
+ *
+ * @param {Object|Array|Function|Code} keys an object, array or function expressing the keys to group by.
+ * @param {Object} condition an optional condition that must be true for a row to be considered.
+ * @param {Object} initial initial value of the aggregation counter object.
+ * @param {Function|Code} reduce the reduce function aggregates (reduces) the objects iterated
+ * @param {Function|Code} finalize an optional function to be run on each item in the result set just before the item is returned.
+ * @param {Boolean} command specify if you wish to run using the internal group command or using eval, default is true.
+ * @param {Object} [options] additional options during update.
+ * @param {Function} callback returns the results.
+ * @return {null}
+ * @api public
+ * @group(keys, condition, initial, reduce, finalize, command, options, callback)
+ */
+	
+	group: function () {
+		
+		var self = this;
+		
+		if (this.verbose)
+			self.emit ('log', 'group called');
+		
+		// open collection
+		/*self._openCollection (function (err, collection) {
+			var filter = self.filter,
+				options = self.options || {},
+				sort = self.sort || self.pager && self.pager.sort || {};
+			
+			if (self.pager) {
+				if (self.pager.page && self.pager.limit && self.pager.limit < 100) {
+					options.skip = self.pager.start;
+					options.limit = self.pager.limit;
+				}
+				
+				filter = self.pager.filter;
+				options.sort = sort;
+			}
+
+			// find by filter or all records
+			if (filter) {
+				if (filter.constructor === Array)
+					filter = {_id: {'$in': filter}};
+				// filter is string
+				if (filter.substring) {
+					filter = {_id: self._objectId (filter)};
+				// filter is hash
+				} else if (filter._id) {
+					// filter._id is string
+					if (filter._id.substring) filter._id = self._objectId (filter._id);
+					// filter._id is hash with $in quantificators
+					if (filter._id['$in']) {
+						filter._id['$in'] = filter._id['$in'].map(function(id) {
+							return self._objectId(id);
+						});
+					}
+				}
+			}
+			
+			//remap options fields
+			if (options.fields) {
+				var fields = options.fields,
+					include = fields["$inc"],
+					exclude = fields["$exc"];
+				
+				delete fields.$inc;
+				delete fields.$exc;
+				
+				if (include) {
+					include.map(function(field) {fields[field] = 1});
+				} else if (exclude) {
+					include.map(function(field) {fields[field] = 0})
+				}
+			}
+			
+			if (self.verbose)
+				console.log ("collection.find", self.collection, filter, options);
+			
+			var cursor = collection.find(filter, options);
+			cursor.toArray (function (err, docs) {
+				
+				if (self.verbose)
+					console.log ("findResult", docs);
+				
+				if (docs) {
+					docs.map (function (item) {
+						if (self.mapping) {
+							self.mapFields (item);
+						}
+					});
+				}
+				
+				cursor.count(function (err, n) {
+					self.completed ({
+						success:	(err == null),
+						total:		n || 0,
+						err:		err,
+						data:		docs
+					});
+				});
+			});
+		});*/
+	},
+	
+/**
+ * Run Map Reduce across a collection. Be aware that the inline option for out will return an array of results not a collection.
+ *
+ * Options
+ *  - **out** {Object, default:*{inline:1}*}, sets the output target for the map reduce job. *{inline:1} | {replace:'collectionName'} | {merge:'collectionName'} | {reduce:'collectionName'}*
+ *  - **query** {Object}, query filter object.
+ *  - **sort** {Object}, sorts the input objects using this key. Useful for optimization, like sorting by the emit key for fewer reduces.
+ *  - **limit** {Number}, number of objects to return from collection.
+ *  - **keeptemp** {Boolean, default:false}, keep temporary data.
+ *  - **finalize** {Function | String}, finalize function.
+ *  - **scope** {Object}, can pass in variables that can be access from map/reduce/finalize.
+ *  - **jsMode** {Boolean, default:false}, it is possible to make the execution stay in JS. Provided in MongoDB > 2.0.X.
+ *  - **verbose** {Boolean, default:false}, provide statistics on job execution time.
+ *  - **readPreference** {String, only for inline results}, the preferred read preference (Server.PRIMARY, Server.PRIMARY_PREFERRED, Server.SECONDARY, Server.SECONDARY_PREFERRED, Server.NEAREST).
+ *
+ * @param {Function|String} map the mapping function.
+ * @param {Function|String} reduce the reduce function.
+ * @param {Objects} [options] options for the map reduce job.
+ * @param {Function} callback returns the result of the map reduce job, (error, results, [stats])
+ * @return {null}
+ * @api public
+ * function mapReduce (map, reduce, options, callback)
+ */
+	
+	mapReduce: function () {
+		
+		var self = this;
+		
+		if (this.verbose)
+			self.emit ('log', 'group called');
+			
+		/* --- */
 	}
 });
