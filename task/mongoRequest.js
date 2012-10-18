@@ -203,9 +203,9 @@ util.extend (mongoRequestTask.prototype, {
 		
 		if (!hexString) return null;
 		
-		if (!hexString.substring) return hexString;
-		
 		var ObjectID = project.connectors[this.connector].bson_serializer.ObjectID;
+		
+		if (hexString.constructor === ObjectID) return hexString;
 		
 		var id;
 		
@@ -251,12 +251,12 @@ util.extend (mongoRequestTask.prototype, {
 				if (filter.constructor === Array)
 					filter = {_id: {'$in': filter}};
 				// filter is string
-				if (filter.substring) {
+				if (filter.constructor === String) {
 					filter = {_id: self._objectId (filter)};
 				// filter is hash
 				} else if (filter._id) {
 					// filter._id is string
-					if (filter._id.substring) filter._id = self._objectId (filter._id);
+					if (filter._id.constructor === String) filter._id = self._objectId (filter._id);
 					// filter._id is hash with $in quantificators
 					if (filter._id['$in']) {
 						filter._id['$in'] = filter._id['$in'].map(function(id) {
