@@ -1,12 +1,7 @@
 var task = require ('task/base'),
+	jade = require ('jade'),
+	ejs  = require ('ejs'),
 	util = require ('util');
-
-try {
-	var jade = require ('jade');
-	var ejs  = require ('ejs');
-} catch (e) {
-	// console.log ('jade not available');
-}
 
 /**
  * @class task.presenterTask
