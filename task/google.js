@@ -169,7 +169,8 @@ util.extend (google.prototype, {
 			name: user.name,
 			email: user.email,
 			avatar: user.picture,
-			link: user.link
+			link: user.link,
+			authType: 'google'
 		};
 		
 	}
