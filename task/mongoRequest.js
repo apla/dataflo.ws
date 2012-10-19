@@ -208,7 +208,7 @@ util.extend (mongoRequestTask.prototype, {
 
 	_objectId: function (hexString) {
 
-		if (!hexString.substring) return hexString;
+		if (!hexString.charAt) return hexString;
 
 		var ObjectID = project.connectors[this.connector].bson_serializer.ObjectID;
 
@@ -222,6 +222,8 @@ util.extend (mongoRequestTask.prototype, {
 			id = hexString.toString();
 			// throw e;
 		}
+
+		console.log('ObjectID',id);
 
 		return id;
 	},
@@ -513,6 +515,8 @@ util.extend (mongoRequestTask.prototype, {
 
 			var idList = self.data.map (function (item) {
 
+				console.log ('data for update', item._id);
+
 				if (item._id || options.upsert) {
 
 					if (self.timestamp) item.updated = ~~(new Date().getTime()/1000);
@@ -522,12 +526,22 @@ util.extend (mongoRequestTask.prototype, {
 					delete set._id;
 
 					var newObj = (self.replace) ? set : {$set: set};
+
+					/*
 					var criteriaObj = (self.criteria) ? self.criteria :
 						(item._id) ? {_id: self._objectId(item._id)} : {};
+					*/
 
-					//console.log ('<----------mongo.update', criteriaObj, newObj, options);
+					var criteriaObj = {_id: self._objectId(item._id)};
 
-					collection.update (criteriaObj, newObj, options);
+					console.log ('<----------mongo.update', criteriaObj, newObj, options);
+
+					collection.find(criteriaObj).toArray(function (err, alreadyStoredDocs) {
+						self._log('Already stored: ', alreadyStoredDocs.length, ' docs');
+					});
+
+					var ret = collection.update(criteriaObj, newObj, false, true);
+					console.log('UPDATE <--', ret);
 
 					return item._id;
 
@@ -537,7 +551,7 @@ util.extend (mongoRequestTask.prototype, {
 				}
 			});
 
-			self.completed ({_id: {$in: idList}});
+			self.completed ({Id: idList});
 		});
 	},
 

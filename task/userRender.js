@@ -30,8 +30,9 @@ util.extend (userRender.prototype, {
 				user.authorized = 0;
 			}
 			user.authenticated = true;
+			user.cid = user._id.toString();
 
-			//console.info(user);
+			console.log("User:",user._id, user.cid);
 
 		} else {
 			user = {
