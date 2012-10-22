@@ -1,3 +1,5 @@
+// https://github.com/felixge/node-mysql
+
 var sphinxQLClient = require('mysql'),
 	task         = require ('task/base'),
 	util         = require ('util');
