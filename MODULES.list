@@ -1,13 +1,13 @@
 amqp
 crack
-canvas (brew install cairo)
+canvas
 ejs
 iconv
 formidable
 jade
 mime
 mongodb
-mysql@2.0.0-alpha3
+"mysql@>=2.0.0-alpha3"
 oauth
 recess
 socket.io
