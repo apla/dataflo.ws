@@ -1,23 +1,57 @@
 {
-    "name": "workflow",
-    "description": "Zero-code workflows engine for Node, PhoneGap and browser.",
-    "version": "0.0.1",
-    "keywords" : ["workflow", "flow-control", "flow", "tasks", "dependencies"],
-    "repository": {
-        "type": "git",
-        "url": "https://github.com/apla/workflow.js.git"
-    },
-    "dependencies" : {
-    },
-    "devDependencies" : {
-    },
-    "homepage": "http://apla.github.com/workflow.js/",
-    "author": "http://apla.github.com/",
-    "main": "index.js",
-    "directories": {
-        "test": "test"
-    },
-    "engines": {
-        "node": ">= 0.6.1"
-    }
+  "name": "dataflo.ws",
+  "description": "Zero-code JSON config-based workflow engine for Node, PhoneGap and browser.",
+  "version": "0.0.1",
+  "keywords": [
+    "workflow",
+    "flow-control",
+    "flow",
+    "tasks",
+    "dependencies"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/apla/dataflo.ws.git"
+  },
+  "dependencies": {
+    "amqp": "*",
+    "crack": "*",
+    "canvas": "*",
+    "ejs": "*",
+    "iconv": "*",
+    "formidable": "*",
+    "jade": "*",
+    "mime": "*",
+    "mongodb": "*",
+    "mysql": ">=2.0.0-alpha3",
+    "oauth": "*",
+    "recess": "*",
+    "socket.io": "*"
+  },
+  "devDependencies": {
+    "utest": "*"
+  },
+  "homepage": "http://apla.github.com/workflow.js/",
+  "author": "https://github.com/apla/",
+  "main": "initiator/http",
+  "directories": {
+    "example": "example",
+    "test": "test"
+  },
+  "engines": {
+    "node": ">= 0.6.1"
+  },
+  "optionalDependencies": {},
+  "_engineSupported": true,
+  "_npmVersion": "1.1.59",
+  "_nodeVersion": "v0.8.8",
+  "_defaultsLoaded": true,
+  "dist": {
+    "shasum": "dae79e14e13bcca90a09487af54e95a08d9e72b2"
+  },
+  "_from": "dataflo.ws@0.0.1",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "license": "BSD"
 }
