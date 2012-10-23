@@ -273,7 +273,7 @@ util.extend (httpdi.prototype, {
 			}
 
 			if (match) {
-				if (level >= maxLevel) {
+				if (level >= maxLevel && tree.tasks) {
 					wf = self.createWorkflow(tree, req, res);
 				} else if (tree.workflows) {
 					tree.workflows.forEach(function (item) {
