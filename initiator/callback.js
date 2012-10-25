@@ -50,7 +50,7 @@ util.extend (callbacki.prototype, {
 		});
 		
 		if (!wf)
-			self.emit ("unknown", request, wf);
+			self.emit ("unknown", wfRequire, wf);
 		
 		return wf;
 	}
