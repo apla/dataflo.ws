@@ -180,7 +180,8 @@ util.extend(sphinx.prototype, {
 			var res = sphinxQL.query(query);
 			
 			res.on('error', function(err) {
-		    	if (self.verbose) console.log('Query error', err);
+				console.log('Query to execute', query);
+		    	console.log('Query error', err);
 				self.failed({
 					'code'  : err.code,
 					'err' : err.fatal
