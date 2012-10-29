@@ -155,7 +155,7 @@ util.extend(sphinx.prototype, {
 			// prepare values to insert
 			values = [];
 			records.forEach(function (record) {
-				var id = record._id.toString().substring(16,24);
+				var id = parseInt(record._id.toString().substring(16,24), 16);
 				var tmpValues = [sphinxQL.escape(id)];
 				mapping.forEach(function (prop) {
 					tmpValues.push(
