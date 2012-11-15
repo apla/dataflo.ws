@@ -292,6 +292,7 @@ util.extend (mongoRequestTask.prototype, {
 
 				if (docs) {
 					docs.map (function (item) {
+						if (self.verbose) console.log(item._id);
 						if (self.mapping) {
 							self.mapFields (item);
 						}
@@ -510,8 +511,8 @@ util.extend (mongoRequestTask.prototype, {
 				self.data = [self.data];
 			}
 
-			if (self.verbose)
-				console.log ('data for update', self.data);
+			//if (self.verbose)
+				//console.log ('data for update', self.data);
 
 			var idList = self.data.map (function (item) {
 
@@ -534,7 +535,7 @@ util.extend (mongoRequestTask.prototype, {
 
 					var criteriaObj = {_id: self._objectId(item._id)};
 
-					console.log ('<----------mongo.update', criteriaObj, newObj, options);
+					//console.log ('<----------mongo.update', criteriaObj, newObj, options);
 
 					collection.find(criteriaObj).toArray(function (err, alreadyStoredDocs) {
 						self._log('Already stored: ', alreadyStoredDocs.length, ' docs');
@@ -550,7 +551,7 @@ util.extend (mongoRequestTask.prototype, {
 					self.emit ('log', 'strange things with _id: "'+item._id+'"');
 				}
 			});
-
+			//console.log('---->', idList);
 			self.completed ({Id: idList});
 		});
 	},
