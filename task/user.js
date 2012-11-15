@@ -33,7 +33,7 @@ util.extend (userRender.prototype, {
 		if (self.groupsData) authUser.groupIds = self.groupsData;
 		
 		authUser.sessionUIDs = request.sessionUID;
-		
+
 		self.completed(authUser);
 		
 	},
@@ -56,5 +56,23 @@ util.extend (userRender.prototype, {
 		
 		self.request.user = user;
 		self.completed(user);
+	},
+
+	getProfile: function () {
+		var result = {};
+		var session = this.request.sessionUID;
+		var user = this.request.user;
+
+		if (user && user.email && user.name) {
+			result.email = user.email;
+			result.name = user.name;
+			result.avatar = user.avatar || '';
+			result.sessionUID = session;
+		} else {
+			result.statusCode = 401;
+			result.err = 'User not authorized';
+		}
+
+		this.completed(result);
 	}
 });

@@ -260,12 +260,11 @@ util.extend (httpdi.prototype, {
 		}
 
 		var findPath = function (tree, level) {
-			var path = pathes[level], match;
+			level = level || 1;
+			var path = pathes[level];
 
 			/* Exact match. */
-			if ('path' in tree) {
-				match = (path === tree.path);
-			}
+			var match = path === tree.path;
 
 			/* Pattern match. */
 			if (!match && 'pattern' in tree) {
@@ -274,7 +273,11 @@ util.extend (httpdi.prototype, {
 
 			if (match) {
 				if (level >= maxLevel) {
-					wf = self.createWorkflow(tree, req, res);
+					if (tree.tasks) {
+						wf = self.createWorkflow(tree, req, res);
+					} else {
+						match = false;
+					}
 				} else if (tree.workflows) {
 					tree.workflows.forEach(function (item) {
 						findPath(item, level + 1);
@@ -285,8 +288,8 @@ util.extend (httpdi.prototype, {
 			return match;
 		};
 
-		this.workflows.every(function (item) {
-			return !findPath(item, 1);
+		this.workflows.some(function (tree) {
+			return findPath(tree);
 		});
 
 		return wf;
