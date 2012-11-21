@@ -92,7 +92,7 @@ function checkTaskParams (params, dict, prefix) {
 					failedParams.push (prefix+'['+index+']');
 				}
 
-			} else if (val.toFixed) {
+			} else if (val.toFixed || val.constructor == Boolean) {
 				modifiedParams.push(val);
 			} else {
 				var result = checkTaskParams(val, dict, prefix+'['+index+']');
@@ -129,7 +129,7 @@ function checkTaskParams (params, dict, prefix) {
 				
 				}
 				
-			} else if (val.toFixed) {
+			} else if (val.toFixed || val.constructor == Boolean) {
 				modifiedParams[key] = val;
 			} else { // val is hash || array
 				
