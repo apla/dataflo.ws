@@ -363,6 +363,17 @@ util.extend (mongoRequestTask.prototype, {
 
 						self._log('Updating @filter: ', filter, ' with: ', updateData);
 
+						if (self.emulate) {
+							console.log('EMULATION: Update');
+							self.completed ({
+								success:	true,
+								total: alreadyStoredDocs.length,
+								err: null,
+								data: []
+							});
+							return;
+						}
+
 						collection.update(filter, updateData, false, true);
 
 						self._log(alreadyStoredDocs);
@@ -443,6 +454,17 @@ util.extend (mongoRequestTask.prototype, {
 
 						self._log('Perform insert of ', dataToInsert.length, ' items', dataToInsert);
 
+						if (self.emulate) {
+							console.log('EMULATION: Insert Safe');
+							self.completed ({
+								success:	true,
+								total: 1,
+								err: null,
+								data: []
+							});
+							return;
+						}
+
 						collection.insert (dataToInsert, {safe: true}, function (err, docs) {
 
 							if (docs) docs.map (function (item) {
@@ -451,7 +473,7 @@ util.extend (mongoRequestTask.prototype, {
 								}
 							});
 
-						self._log('inserted ', docs);
+							self._log('inserted ', docs, err);
 
 							var insertedRecords = alreadyStoredDocs.concat(docs);
 
@@ -470,6 +492,16 @@ util.extend (mongoRequestTask.prototype, {
 
 			} else {
 
+				if (self.emulate) {
+					console.log('EMULATION: Insert');
+					self.completed ({
+						success:	true,
+						total: 1,
+						err: null,
+						data: []
+					});
+					return;
+				}
 				collection.insert (self.data, {safe: true}, function (err, docs) {
 
 					// TODO: check two parallels tasks: if one from its completed, then workflow must be completed (for exaple mongo & ldap tasks)
