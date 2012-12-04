@@ -12,6 +12,9 @@ var data = {
 	inlineExp: "{$data.string}-{$data.number}",
 	arrayExp: "{$arr}",
 	objectExp: "{$data}",
+	indexedExp: "{$nestedData.arr.0}",
+	indexedZeroPropExp: "{$nestedData.arr.0.record}",
+	indexedNonZeroPropExp: "{$nestedData.arr.1.record}",
 
 };
 
@@ -20,6 +23,12 @@ var dict = {
 		bool: true,
 		string: "string",
 		number: 123
+	},
+	nestedData: {
+		arr: [
+			{ record: 'a' },
+			{ record: 'b' }
+		]
 	},
 	badString: "{$",
 	okString: "}",
@@ -68,6 +77,23 @@ test('interpolate', {
 			string: "string",
 			number: 123
 		});
+	},
+	
+	'expandIndexed': function() {
+		var result = data.indexedExp.interpolate (dict);
+		console.log(result);
+		assert.deepEqual (result, { record: 'a' });
+	},
+	
+	'expandIndexedZeroProp': function() {
+		var result = data.indexedZeroPropExp.interpolate (dict);
+		console.log(result);
+		assert.equal (result, 'a');
+	},
+	
+	'expandIndexedNonZeroProp': function() {
+		var result = data.indexedNonZeroPropExp.interpolate (dict);
+		console.log(result);
+		assert.equal (result, 'b');
 	}
-
 });

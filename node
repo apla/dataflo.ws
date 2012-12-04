@@ -25,7 +25,8 @@ fi
 NODE_PATH=''
 
 if [ "x$IS_WINDOWS" == "x" ] ; then
-	NODE_PATH=/usr/local/lib/node_modules/
+	NODE_PATH=/usr/local/lib/node_modules
+	NODE_PATH=/usr/local/share/npm/lib/node_modules:$NODE_PATH
 fi
 
 NODE_PATH_DELIMITER=":"
@@ -46,7 +47,7 @@ if [ "x$1" == "x--project-root" ] ; then
 	exit
 fi
 
-# echo $PROJECT_DIR
+echo PROJECT DIR IS: $PROJECT_DIR
 
 if [ "x$IS_WINDOWS" != "x" ] ; then
 	PROJECT_DIR="/cygdrive$PROJECT_DIR"
@@ -58,10 +59,10 @@ NODE_PATH=.$NODE_PATH_DELIMITER$NODE_PATH$NODE_PATH_DELIMITER${PROJECT_DIR}lib$N
 
 if [ "x$1" == "x" ] ; then
 	if [ -f ${PROJECT_DIR}lib/workflow.nodejs/repl.js ] ; then
-		NODE_PATH=$NODE_PATH /usr/bin/env node ${PROJECT_DIR}lib/workflow.nodejs/repl.js
+		NODE_PATH=$NODE_PATH /usr/local/bin/node ${PROJECT_DIR}lib/workflow.nodejs/repl.js
 	else
-		NODE_PATH=$NODE_PATH /usr/bin/env node ${PROJECT_DIR}lib/workflow.js/repl.js
+		NODE_PATH=$NODE_PATH /usr/local/bin/node ${PROJECT_DIR}lib/workflow.js/repl.js
 	fi
 else
-	NODE_PATH=$NODE_PATH /usr/bin/env node $@
+	NODE_PATH=$NODE_PATH /usr/local/bin/node $@
 fi

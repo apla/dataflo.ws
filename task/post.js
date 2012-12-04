@@ -24,9 +24,9 @@ util.extend (postTask.prototype, {
 		if (self.request.method != 'POST' && self.request.method != 'PUT')
 			return self.skipped ();
 
-		if (self.request.headers['content-type'].indexOf('application/json') == 0 ) {
+		var contentType = self.request.headers['content-type'];
 
-			var self = this;
+		if (contentType != 'application/octet-stream') {
 
 			self.data = "";
 
@@ -42,7 +42,7 @@ util.extend (postTask.prototype, {
 
 			self.request.on("end", function () {
 
-				var fields;
+				var fields, err;
 
 				if (self.dumpData) {
 					self.emit ('log', self.data);
@@ -51,13 +51,28 @@ util.extend (postTask.prototype, {
 				try {
 					fields = JSON.parse (self.data);
 				} catch (e) {
-					fields = qs.parse (self.data);
+					err = e;
 				}
 
+// TODO : move to httpd.js
 				var body = {fields: fields};
+				self.request.body = body;
+// =======
+
+				if (err) {
+
+					err = null;
+
+					try {
+						fields = qs.parse (self.data);
+					} catch (e) {
+						err == e;
+					}
+				}
+
+				var body = (err) ? self.data : {fields: fields};
 
 				self.request.body = body;
-
 				self.completed (body);
 			});
 
@@ -74,9 +89,6 @@ util.extend (postTask.prototype, {
 
 			var body = {fields: fields, files: files};
 			self.request.body = body;
-
-			//console.log ('<---------', body);
-
 			self.completed (body);
 		});
 	}

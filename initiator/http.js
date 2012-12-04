@@ -31,6 +31,16 @@ var httpdi = module.exports = function (config) {
 	this.workflows = config.workflows;
 	this.static    = config.static;
 	
+	// - change static root by path
+	if (this.static.root && this.static.root.substring) {
+		this.static.root = project.root.fileIO (this.static.root);
+	}
+	
+	// - - - prepare configs
+	this.prepare = config.prepare;
+	
+	//
+	
 	this.router    = config.router;
 	// router is function in main module or initiator method
 	if (config.router === void 0) {
@@ -64,10 +74,72 @@ util.extend (httpdi.prototype, {
 		this.emit ('ready', this.server);
 		
 	},
-	runPresenter: function (wf, state, res) {
+	
+	runPrepare: function(wf) {
+		
+		var prepareCfg = wf.prepare,
+			request = wf.request,
+			response = wf.response,
+			prepare = this.prepare;
+		
+		if (prepare) {
+			
+			var wfChain = [];
+			
+			// create chain of wfs
+		
+			prepareCfg.forEach(function(p, index, arr) {
+				
+				var innerWfConfig = prepare[p];
+				
+				var innerWf = new workflow(innerWfConfig, {
+					request: request,
+					response: response,
+					stage: 'prepare'}
+				);
+				
+				wfChain.push(innerWf);
+				
+			});
+			
+			// push basic wf to chain
+			
+			wfChain.push(wf)
+			
+			// subscribe they
+			
+			for (var i = 0; i < wfChain.length-1; i++) {
+			
+				var currentWf = wfChain[i];
+				currentWf.nextWf = wfChain[i+1];
+				
+				currentWf.on('completed', function(cWF) {
+					
+					setTimeout(cWF.nextWf.run.bind (cWF.nextWf), 0);
+				
+				});
+				
+				currentWf.on('failed', function(cWF) {
+				
+					this.runPresenter(cWF, 'failed');
+				
+				})
+			
+			}
+			
+			wfChain[0].run();
+		
+		} else {
+			
+			throw "Config doesn't contain such prepare type: " + wf.prepare;
+			
+		}
+	},
+
+	runPresenter: function (wf, state) {
 		var self = this;
 		// presenter can be:
-		// {success: ..., failed: ..., failedRequire: ...} — succeeded or failed tasks in workflow or failed require step
+		// {completed: ..., failed: ..., failedRequire: ...} — succeeded or failed tasks in workflow or failed require step
 		// "template.name" — template file for presenter
 		// {"type": "json"} — presenter config
 		// TODO: [{...}, {...}] — presentation workflow
@@ -75,11 +147,11 @@ util.extend (httpdi.prototype, {
 		if (!wf.presenter) return;
 		// TODO: emit SOMETHING
 
-		// self.log ('running presenter');
-		
 		var presenter = wf.presenter;
+		
+		//console.log ('running presenter on state: ', state, presenter[state]);
 
-		// {success: ..., failed: ..., failedRequire: ...}
+		// {completed: ..., failed: ..., failedRequire: ...}
 		if (presenter[state])
 			presenter = presenter[state];
 		
@@ -115,12 +187,13 @@ util.extend (httpdi.prototype, {
 
 		var presenterWf = new workflow ({
 			id:    wf.id,
-			data:  wf.data,
 			tasks: tasks,
 			stage: 'presentation'
 		}, {
-			vars:  wf,
-			response: res
+			data:  wf.data,
+			error: wf.error,
+			request: wf.request,
+			response: wf.response
 		});
 
 		presenterWf.on ('completed', function () {
@@ -187,12 +260,11 @@ util.extend (httpdi.prototype, {
 		}
 
 		var findPath = function (tree, level) {
-			var path = pathes[level], match;
+			level = level || 1;
+			var path = pathes[level];
 
 			/* Exact match. */
-			if ('path' in tree) {
-				match = (path === tree.path);
-			}
+			var match = path === tree.path;
 
 			/* Pattern match. */
 			if (!match && 'pattern' in tree) {
@@ -201,7 +273,11 @@ util.extend (httpdi.prototype, {
 
 			if (match) {
 				if (level >= maxLevel) {
-					wf = self.createWorkflow(tree, req, res);
+					if (tree.tasks) {
+						wf = self.createWorkflow(tree, req, res);
+					} else {
+						match = false;
+					}
 				} else if (tree.workflows) {
 					tree.workflows.forEach(function (item) {
 						findPath(item, level + 1);
@@ -212,8 +288,8 @@ util.extend (httpdi.prototype, {
 			return match;
 		};
 
-		this.workflows.every(function (item) {
-			return !findPath(item, 1);
+		this.workflows.some(function (tree) {
+			return findPath(tree);
 		});
 
 		return wf;
@@ -228,19 +304,21 @@ util.extend (httpdi.prototype, {
 			util.extend (true, {}, cfg),
 			{ request: req, response: res }
 		);
-
+		
 		wf.on('completed', function (wf) {
-			self.runPresenter(wf, 'completed', res);
+			self.runPresenter(wf, 'completed');
 		});
 
 		wf.on('failed', function (wf) {
-			self.runPresenter(wf, 'failed', res);
+			self.runPresenter(wf, 'failed');
 		});
 
 		self.emit('detected', req, res, wf);
 
 		if (!cfg.prepare && wf.ready) {
 			wf.run();
+		} else {
+			self.runPrepare(wf);
 		}
 
 		return wf;
@@ -280,13 +358,16 @@ util.extend (httpdi.prototype, {
 						pathName += self.static.index;
 					}
 					
-					var contentType;
+					var contentType, charset;
 					if (pathName.match (/\.html$/)) {
 						contentType = 'text/html';
+						charset = 'utf-8';
 					}
 					
 					if (mime && mime.lookup) {
 						contentType = mime.lookup (pathName);
+						charset = mime.charsets.lookup(contentType);
+						if (charset) contentType += '; charset='+charset;
 					} else if (!contentType) {
 						console.error ('sorry, there is no content type for ' + pathName);
 					}
@@ -305,7 +386,7 @@ util.extend (httpdi.prototype, {
 							} else if (stats.isFile() && readStream) {
 
 								res.writeHead (200, {
-									'Content-Type': contentType + '; charset=utf-8'
+									'Content-Type': contentType
 								});
 								readStream.pipe (res);
 								readStream.resume ();

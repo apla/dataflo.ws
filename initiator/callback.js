@@ -1,7 +1,14 @@
-define(function(require, exports, module) {
+var define;
+if (typeof define === "undefined")
+	define = function (classInstance) {
+		classInstance (require, exports, module);
+	}
+
+define (function (require, exports, module) {
 
 var EventEmitter = require ('events').EventEmitter,
-	workflow     = require ('workflow');
+	util         = require ('util'),
+	workflow     = require ('../workflow');
 
 var callbacki = module.exports = function (config) {
 	var self = this;
@@ -17,7 +24,7 @@ util.extend (callbacki.prototype, {
 		
 	},
 	
-	process: function (token, request) {
+	process: function (token, wfRequire) {
 		
 		var self = this;
 		
@@ -31,24 +38,22 @@ util.extend (callbacki.prototype, {
 				
 				wf = new workflow (
 					util.extend (true, {}, item),
-					{request: request}
+					wfRequire
 				);
-
-				self.emit ("detected", request, wf);
+				
+				self.emit ("detected", wfRequire, wf);
 				if (item.autoRun || item.autoRun == void 0)
-					wf.run();
+					wf.run ();
 				
 				return;
 			}
 		});
 		
 		if (!wf)
-			self.emit ("unknown", request, wf);
+			self.emit ("unknown", wfRequire, wf);
 		
 		return wf;
 	}
 });
-
-return callbacki;
 
 });

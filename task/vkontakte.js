@@ -1,4 +1,4 @@
-var OAuth2 = require('lib/node-oauth').OAuth2,
+var OAuth2 = require('oauth').OAuth2,
 	querystring = require('querystring'),
 	task = require('task/base'),
 	util = require('util');
@@ -154,7 +154,8 @@ util.extend (vkontakte.prototype, {
 			name: user.first_name+' '+user.last_name,
 			email: "id"+user.uid+ "@vk.com",
 			avatar: user.photo,
-			link: "http://vk.com/id"+user.uid
+			link: "http://vk.com/id"+user.uid,
+			authType: 'vk'
 		};
 		
 	}
