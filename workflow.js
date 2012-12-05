@@ -266,17 +266,26 @@ var workflow = module.exports = function (config, reqParam) {
 				xTaskClass = require (taskClassName);
 			} catch (e) {
 				console.log ('requirement "'+taskClassName+'" failed:');
-				throw (e);
+				console.log (e.stack);
+				throw ();
 				self.ready = false;
-				
 			}
 			
+			try {
 			task = new xTaskClass ({
 				className: taskClassName,
 				method:    actualTaskParams.method || actualTaskParams.$method,
 				require:   checkRequirements,
 				important: actualTaskParams.important || actualTaskParams.$important
 			});
+			} catch (e) {
+				console.log ('instance of "'+taskClassName+'" creation failed:');
+				console.log (e.stack);
+				throw ();
+				self.ready = false;
+				
+			}
+			
 		} else if (actualTaskParams.coderef || taskFnName) {
 		
 //			self.log ((taskParams.functionName || taskParams.logTitle) + ': initializing task from function');
