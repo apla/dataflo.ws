@@ -265,9 +265,10 @@ var workflow = module.exports = function (config, reqParam) {
 			try {
 				xTaskClass = require (taskClassName);
 			} catch (e) {
-				console.log ('require '+taskClassName+':', e);
+				console.log ('requirement "'+taskClassName+'" failed:');
+				throw (e);
 				self.ready = false;
-				return;
+				
 			}
 			
 			task = new xTaskClass ({
@@ -420,7 +421,11 @@ util.extend (workflow.prototype, {
 			
 			if (task.isReady ()) {
 				self.logTask (task, 'started');
-				task.run ();
+				try {
+					task.run ();
+				} catch (e) {
+					self.logTaskError (task, 'failed to run');
+				}
 				
 				// sync task support
 				if (!task.isReady()) {
