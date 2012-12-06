@@ -5,7 +5,7 @@ var EventEmitter = require ('events').EventEmitter,
 	urlUtil      = require ('url'),
 	urlModel     = require ('model/from-url');
 
-var cachePath = 'var/cache';
+var cachePath = project.config.cachePath || 'var/cache';
 
 if (!project.caching) {
 	project.caching = {};
