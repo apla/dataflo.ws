@@ -7,6 +7,10 @@ var EventEmitter = require ('events').EventEmitter,
 
 var cachePath = 'var/cache';
 
+if (!project.caching) {
+	project.caching = {};
+}
+
 var cacheTask = module.exports = function (config) {
 	
 	this.url = config.url;
@@ -80,7 +84,7 @@ util.extend (cacheTask.prototype, {
 		}
 		
 		this.generateCacheFileName ();
-		
+
 		// other task is caching requested url
 		var anotherTask = project.caching[self.cacheFileName];
 		
@@ -98,9 +102,9 @@ util.extend (cacheTask.prototype, {
 		} else {
 			project.caching[self.cacheFileName] = self;
 		}
-		
+
 		self.cacheFile.stat (function (err, stats) {
-						
+
 			if (!err && (stats.mode & 0644 ^ 0600)) {
 				
 				self.clearOperationTimeout();
