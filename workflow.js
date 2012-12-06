@@ -267,7 +267,7 @@ var workflow = module.exports = function (config, reqParam) {
 			} catch (e) {
 				console.log ('requirement "'+taskClassName+'" failed:');
 				console.log (e.stack);
-				throw ();
+				throw ('requirement "'+taskClassName+'" failed:');
 				self.ready = false;
 			}
 			
@@ -281,7 +281,7 @@ var workflow = module.exports = function (config, reqParam) {
 			} catch (e) {
 				console.log ('instance of "'+taskClassName+'" creation failed:');
 				console.log (e.stack);
-				throw ();
+				throw('instance of "'+taskClassName+'" creation failed:');
 				self.ready = false;
 				
 			}
