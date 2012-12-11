@@ -265,17 +265,27 @@ var workflow = module.exports = function (config, reqParam) {
 			try {
 				xTaskClass = require (taskClassName);
 			} catch (e) {
-				console.log ('require '+taskClassName+':', e);
+				console.log ('requirement "'+taskClassName+'" failed:');
+				console.log (e.stack);
+				throw ('requirement "'+taskClassName+'" failed:');
 				self.ready = false;
-				return;
 			}
 			
+			try {
 			task = new xTaskClass ({
 				className: taskClassName,
 				method:    actualTaskParams.method || actualTaskParams.$method,
 				require:   checkRequirements,
 				important: actualTaskParams.important || actualTaskParams.$important
 			});
+			} catch (e) {
+				console.log ('instance of "'+taskClassName+'" creation failed:');
+				console.log (e.stack);
+				throw('instance of "'+taskClassName+'" creation failed:');
+				self.ready = false;
+				
+			}
+			
 		} else if (actualTaskParams.coderef || taskFnName) {
 		
 //			self.log ((taskParams.functionName || taskParams.logTitle) + ': initializing task from function');
@@ -420,7 +430,11 @@ util.extend (workflow.prototype, {
 			
 			if (task.isReady ()) {
 				self.logTask (task, 'started');
-				task.run ();
+				try {
+					task.run ();
+				} catch (e) {
+					self.logTaskError (task, 'failed to run');
+				}
 				
 				// sync task support
 				if (!task.isReady()) {

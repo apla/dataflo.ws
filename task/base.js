@@ -7,7 +7,8 @@ if (typeof define === "undefined")
 define (function (require, exports, module) {
 
 var EventEmitter = require ('events').EventEmitter,
-	util         = require ('util');
+	util         = require ('util'),
+	common       = require ('common');
 
 var taskStateList = [
 	'scarce', 'ready', 'running', 'idle',

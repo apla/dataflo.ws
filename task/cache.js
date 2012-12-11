@@ -5,7 +5,11 @@ var EventEmitter = require ('events').EventEmitter,
 	urlUtil      = require ('url'),
 	urlModel     = require ('model/from-url');
 
-var cachePath = 'var/cache';
+var cachePath = project.config.cachePath || 'var/cache';
+
+if (!project.caching) {
+	project.caching = {};
+}
 
 var cacheTask = module.exports = function (config) {
 	
@@ -18,6 +22,10 @@ var cacheTask = module.exports = function (config) {
 util.inherits (cacheTask, task);
 
 util.extend (cacheTask.prototype, {
+	/**
+	 * Generates file name as a hash sum
+	 * based on the cached file original URL.
+     */
 	generateCacheFileName: function () {
 		
 		if (this.cacheFileName)
@@ -33,7 +41,15 @@ util.extend (cacheTask.prototype, {
 });
 
 util.extend (cacheTask.prototype, {
-	
+	/**
+	 * @method run
+	 * Downloads a given URL into a uniquely named file.
+	 *
+	 * @cfg {String} url (required) A URL to download from.
+	 * @cfg {Number} [retries=0] The number of times to retry to run the task.
+	 * @cfg {Number} [timeout=10000] Timeout for downloading of each file
+	 * (in milliseconds)
+	 */
 	run: function () {
 
 		var self = this;
@@ -41,7 +57,7 @@ util.extend (cacheTask.prototype, {
 		self.activityCheck ('task run');
 				
 		// create model and listen
-		
+		// model is a class for working with particular network protocol
 		if (!self.model) {
 			
 			// console.log("self.model.url -> ", self.url.fetch.uri);
@@ -80,7 +96,7 @@ util.extend (cacheTask.prototype, {
 		}
 		
 		this.generateCacheFileName ();
-		
+
 		// other task is caching requested url
 		var anotherTask = project.caching[self.cacheFileName];
 		
@@ -98,9 +114,9 @@ util.extend (cacheTask.prototype, {
 		} else {
 			project.caching[self.cacheFileName] = self;
 		}
-		
+
 		self.cacheFile.stat (function (err, stats) {
-						
+
 			if (!err && (stats.mode & 0644 ^ 0600)) {
 				
 				self.clearOperationTimeout();
