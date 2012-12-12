@@ -162,6 +162,7 @@ util.extend (facebook.prototype, {
 				} else {
 					try {
 						var user = JSON.parse(data);
+						user.tokens = tokens;
 						self.completed(self.mappingUser(user));
 					} catch (e) {
 						self.failed(e);
@@ -174,6 +175,7 @@ util.extend (facebook.prototype, {
 		var mapped = {
 			name: user.name,
 			link: user.link,
+			tokens : user.tokens,
 			authType: 'facebook'
 		};
 
@@ -287,23 +289,20 @@ util.extend (facebook.prototype, {
 		var self = this;
 		var tokens = this.req.user.tokens;
 		var msg = this.message;
+		var to = this.to || 'feed';
 
-		var oa = new OAuth(
-			facebookConfig.requestTokenUrl,
-			facebookConfig.accessTokenUrl,
-			facebookConfig.consumerKey,
-			facebookConfig.consumerSecret,
-			'1.0',
-			facebookConfig.callbackUrl,
-			'HMAC-SHA1'
+		var oa = new OAuth2(
+			facebookConfig.appId,
+			facebookConfig.appSecret,
+			facebookConfig.baseUrl
 		);
 
 		oa.post(
-			'https://graph.facebook.com/me/feed',
+			'https://graph.facebook.com/me/' + to,
 			tokens.oauth_token,
 			tokens.oauth_token_secret,
 
-			{ 'message': msg },
+			msg,
 
 			function (error, data) {
 				if (error) {
