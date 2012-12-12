@@ -38,8 +38,6 @@ util.extend (cookieParser.prototype, {
 		var cookies = self.headers.cookie ? self.headers.cookie : null;
 		var cookiesObj = {length:0};
 
-console.log('COOKIES', cookies, self.headers);
-
 		if (cookies) cookies.split('; ').map (function(item) {
 
 			var s = item.split('=');
@@ -65,8 +63,6 @@ console.log('COOKIES', cookies, self.headers);
 
 		});
 
-		console.log('SET COOKIES', cookies);
-
 		self.output.setHeader ("Set-Cookie", cookies);
 
 		self.completed (cookies);
@@ -75,8 +71,6 @@ console.log('COOKIES', cookies, self.headers);
 	serializeCookie: function(cookie) {
 
 		var pairs = [cookie.name + '=' + encodeURIComponent(cookie.value)];
-
-		console.log('SERIALIZE COOKIE', cookie);
 
 		if (cookie.domain) pairs.push('domain=' + cookie.domain);
 		if (cookie.path) pairs.push('path=' + cookie.path);
