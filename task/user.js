@@ -46,7 +46,7 @@ util.extend (userRender.prototype, {
 			data = found.data,
 			user;
 
-			console.log('>>>>>', self.found);
+			//console.log('>>>>>', self.found);
 
 		if (data && data.length > 0) {
 
