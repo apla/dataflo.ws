@@ -2,7 +2,7 @@ var OAuth2 = require('oauth').OAuth2,
 	querystring = require('querystring'),
 	task = require('task/base'),
 	util = require('util');
-	
+
 // - - - static
 
 var facebookConfig = project.config.consumerConfig.facebook;
@@ -10,7 +10,7 @@ var facebookScopes = (facebookConfig ? facebookConfig.scopes : null);
 
 if (!facebookScopes) {
 
-	util.extend (facebookConfig, {	
+	util.extend (facebookConfig, {
 		"scopes": {
 			"profile"			: "user_about_me",
 			"email"				: "email",
@@ -53,9 +53,9 @@ if (!facebookScopes) {
 			"publish_actions"	: "publish_actions"
 		}
 	});
-	
+
 	facebookScopes = facebookConfig.scopes;
-	
+
 //	console.log ('<------facebookConfig', facebookConfig);
 }
 
@@ -69,7 +69,7 @@ var facebook = module.exports = function(config) {
 		"groups"
 	];
 
-	this.init (config);		
+	this.init (config);
 
 };
 
@@ -78,87 +78,85 @@ util.inherits (facebook, task);
 util.extend (facebook.prototype, {
 
 	run: function() {
-		
+
 		var self = this;
 		self.failed('use method [login|callback|profile|grouplist]');
-		
+
 	},
-	
+
 	login: function () {
-		
+
 		var self = this;
 		var req = self.req;
 		var res = self.res;
 		var query = req.url.query;
-		
+
 		var scopes = self.scopes.map(function(scope) {
 			return facebookScopes[scope];
 		});
-		
+
 		var getParams = {
 			client_id: facebookConfig.appId,
 			redirect_uri: facebookConfig.callbackUrl,
 			scope: scopes.join(',')
 		};
-		
+
 		var redirectUrl = facebookConfig.requestTokenUrl + "?" + querystring.stringify(getParams);
-		
+
 		self.completed(redirectUrl);
 	},
-	
+
 	callback: function() {
-		
+
 		var self = this,
 			req = self.req;
 			query = req.url.query;
-		
-		req.user  = {
-			tokens : {}
-		};
-		
+
+		req.user.tokens  = {};
+
 		if (query.error || !query.code) {
 			self.failed (query.error_description || "token was not accepted");
 		}
-		
+
 		var oa = new OAuth2(facebookConfig.appId,  facebookConfig.appSecret,  facebookConfig.baseUrl);
-		
+
 		oa.getOAuthAccessToken(
 			query.code,
 			{redirect_uri: facebookConfig.callbackUrl},
 			function( error, access_token, refresh_token ){
-				
+
 				if (error) {
-					
+
 					self.failed(error);
-				
+
 				} else {
-					
+
 					req.user.tokens.oauth_access_token = access_token;
 					if (refresh_token) req.user.tokens.oauth_refresh_token = refresh_token;
-					
+
 					var redirectUrl = (query.action && query.action != "") ? query.action : "/";
 					self.completed (redirectUrl)
-					
+
 				}
 		});
 	},
-	
+
 	profile: function() {
 		var self = this;
 		var req = self.req;
 		var tokens = req.user.tokens;
-		
+
 		var oa = new OAuth2(
 			facebookConfig.appId,
 			facebookConfig.appSecret,
 			facebookConfig.baseUrl
 		);
-		
+
 		oa.getProtectedResource(
 			facebookConfig.baseUrl + '/me',
 			tokens.oauth_access_token,
 
-			function (error, data, response) {				
+			function (error, data, response) {
 				if (error) {
 					self.failed(error);
 				} else {
@@ -171,7 +169,7 @@ util.extend (facebook.prototype, {
 				}
 		});
 	},
-	
+
 	mappingUser: function(user) {
 		var mapped = {
 			name: user.name,
@@ -182,7 +180,7 @@ util.extend (facebook.prototype, {
         var emailName;
         if (user.username) {
             emailName = user.username;
-            mapped.avatar = '//graph.facebook.com/' +
+            mapped.avatar = 'http://graph.facebook.com/' +
 				user.username + '/picture';
         } else {
             emailName = user.id;
@@ -192,20 +190,20 @@ util.extend (facebook.prototype, {
 
         return mapped;
 	},
-	
+
 	grouplist: function() {
-		
+
 		var self = this;
 		var req = self.req;
 		var tokens = req.user.tokens;
-		
+
 		var oa = new OAuth2(facebookConfig.appId,  facebookConfig.appSecret,  facebookConfig.baseUrl);
-		
+
 		oa.getProtectedResource(
 			facebookConfig.baseUrl+"/me/groups",
 			tokens.oauth_access_token,
 			function (error, data, response) {
-				
+
 				if (error) {
 					self.failed(error);
 				} else {
@@ -218,15 +216,15 @@ util.extend (facebook.prototype, {
 				}
 		});
 	},
-	
+
 	mappingGroups: function(groups) {
-		
+
 		var groupIds = groups.data.map(function(group) {
 			return group.id;
 		});
-		
+
 		return groupIds;
-		
+
 	},
 
 	tmpl: function (str, obj) {
@@ -281,6 +279,38 @@ util.extend (facebook.prototype, {
 					success: !error,
 					error: error
 				});
+			}
+		);
+	},
+
+	post: function () {
+		var self = this;
+		var tokens = this.req.user.tokens;
+		var msg = this.message;
+
+		var oa = new OAuth(
+			facebookConfig.requestTokenUrl,
+			facebookConfig.accessTokenUrl,
+			facebookConfig.consumerKey,
+			facebookConfig.consumerSecret,
+			'1.0',
+			facebookConfig.callbackUrl,
+			'HMAC-SHA1'
+		);
+
+		oa.post(
+			'https://graph.facebook.com/me/feed',
+			tokens.oauth_token,
+			tokens.oauth_token_secret,
+
+			{ 'message': msg },
+
+			function (error, data) {
+				if (error) {
+					self.completed(JSON.parse(error.data));
+				} else {
+					self.completed(JSON.parse(data));
+				}
 			}
 		);
 	}
