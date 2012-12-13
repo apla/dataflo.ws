@@ -283,5 +283,35 @@ util.extend (facebook.prototype, {
 				});
 			}
 		);
+	},
+
+	post: function () {
+		var self = this;
+		var req = this.req;
+		var tokens = req.user.tokens;
+		var msg = this.message;
+
+		var oa = new OAuth2(
+			facebookConfig.appId,
+			facebookConfig.appSecret,
+			facebookConfig.baseUrl
+		);
+
+		var post_headers= {
+			'Content-Type': 'application/x-www-form-urlencoded'
+		};
+		var post_data = JSON.stringify(msg);
+
+		oa._request(
+			'POST', 'https://graph.facebook.com/me/feed',
+			post_headers, post_data, req.user.tokens.oauth_access_token,
+			function (error, data) {
+				if (error) {
+					self.failed(error);
+				} else {
+					self.completed(JSON.parse(data));
+				}
+			}
+		);
 	}
 });
