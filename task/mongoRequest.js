@@ -149,7 +149,7 @@ util.extend (mongoRequestTask.prototype, {
 		var connector = new mongo.Db (
 			connectorConfig.database,
 			new mongo.Server (connectorConfig.host, connectorConfig.port),
-			{native_parser: true}
+			connectorConfig.options || {native_parser: true}
 		);
 		
 		project.connectors[this.connector] = connector;
