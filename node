@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 SCRIPT_PATH=`pwd`/$0
 
@@ -58,10 +58,10 @@ NODE_PATH=.$NODE_PATH_DELIMITER$NODE_PATH$NODE_PATH_DELIMITER${PROJECT_DIR}lib$N
 # echo $NODE_PATH
 
 if [ "x$1" == "x" ] ; then
-	if [ -f ${PROJECT_DIR}lib/workflow.nodejs/repl.js ] ; then
-		NODE_PATH=$NODE_PATH /usr/local/bin/node ${PROJECT_DIR}lib/workflow.nodejs/repl.js
+	if [ -f ${PROJECT_DIR}lib/workflow/repl.js ] ; then
+		NODE_PATH=$NODE_PATH /usr/local/bin/node ${PROJECT_DIR}lib/workflow/repl.js
 	else
-		NODE_PATH=$NODE_PATH /usr/local/bin/node ${PROJECT_DIR}lib/workflow.js/repl.js
+		NODE_PATH=$NODE_PATH /usr/local/bin/node ${PROJECT_DIR}lib/dataflo.ws/repl.js
 	fi
 else
 	NODE_PATH=$NODE_PATH /usr/local/bin/node $@
