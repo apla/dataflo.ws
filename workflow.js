@@ -305,13 +305,29 @@ var workflow = module.exports = function (config, reqParam) {
                      * Apply $function to $args if they are present.
                      */
                     if (this.$args) {
-                        var fn = this.$bind || root, context;
-                        taskFnName.split('.').forEach(function (prop) {
-                            context = fn;
-                            fn = context[prop];
-                        });
+                        if (this.$bind) {
+                            /**
+                             * Either look up $function in the $bind object...
+                             */
+                            var context = this.$bind;
+                            var fn = context[taskFnName];
+                        } else {
+                            /**
+                             * Or do a deep look-up in the root object.
+                             */
+                            fn = root;
+                            taskFnName.split('.').forEach(function (prop) {
+                                context = fn;
+                                fn = context[prop];
+                            });
+                        }
                         if ('function' == typeof fn) {
                             var args = this.$args;
+                            /**
+                             * $context is another new parameter.
+                             * It can override the default context
+                             * of $function. It's different from $bind.
+                             */
                             var ctx = this.$context || context;
                             var product;
                             try {
