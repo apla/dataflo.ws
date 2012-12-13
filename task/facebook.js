@@ -50,7 +50,8 @@ if (!facebookScopes) {
 			"publish_checkins"		: "publish_checkins",
 			"publish_stream"		: "publish_stream",
 			"rsvp_event"		: "rsvp_event",
-			"publish_actions"	: "publish_actions"
+			"publish_actions"	: "publish_actions",
+			"publish_stream"    : "publish_stream"
 		}
 	});
 	
@@ -300,7 +301,7 @@ util.extend (facebook.prototype, {
 		var post_headers= {
 			'Content-Type': 'application/x-www-form-urlencoded'
 		};
-		var post_data = JSON.stringify(msg);
+		var post_data = msg;
 
 		oa._request(
 			'POST', 'https://graph.facebook.com/me/feed',
