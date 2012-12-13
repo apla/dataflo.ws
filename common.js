@@ -75,9 +75,9 @@ util.extend = function extend () {
 
 if (!util.clone) {
 	util.clone = function(object) {
-		
+
 		var result;
-		
+
 		if (object.constructor === Array) {
 			result = object.map(function(item) {
 				return util.clone(item);
@@ -88,9 +88,9 @@ if (!util.clone) {
 		} else {
 			result = object;
 		}
-		
+
 		return result;
-		
+
 	}
 }
 
@@ -135,7 +135,7 @@ Number.prototype.times = function (cb) {
 // overwrite subject with values from object (merge object with subject)
 var mergeObjects = module.exports.mergeObjects = function (object, subjectParent, subjectKey) {
 	// subject parent here for js's lack of pass by reference
-	
+
 	if (subjectParent[subjectKey] === void 0)
 		subjectParent[subjectKey] = {};
 	var subject = subjectParent[subjectKey];
@@ -167,15 +167,15 @@ var pathToVal = module.exports.pathToVal = function (dict, path, value, method) 
 var configCache = {};
 
 function loadIncludes(config, cb, level) {
-	
+
 	var DEFAULT_ROOT = 'etc/',
 		DELIMITER = ' > ',
 		tagRe = /<([^>]+)>/,
 		cnt = 0,
 		len = 0;
-		
+
 	var levelHash = {};
-	
+
 	level.split(DELIMITER).forEach(function(key) {
 		levelHash[key] = true;
 	});
@@ -190,10 +190,10 @@ function loadIncludes(config, cb, level) {
 	function onError(err) {
 		cb(err, config);
 	}
-	
+
 	function iterateTree(tree, cb) {
 		if (null == tree) { return; }
-		
+
 		var step = function (node, key, tree) {
 			cb(tree, key);
 			iterateTree(node, cb);
@@ -207,82 +207,82 @@ function loadIncludes(config, cb, level) {
 			});
 		}
 	}
-	
+
 	function iterateNode(node, key) {
 		var value = node[key];
-		
+
 		if ('string' === typeof value) {
 			var match = value.match(tagRe);
 			if (match) {
 				len += 1;
-				
+
 				var path = match[1];
 
 				if (0 !== path.indexOf('/')) {
 					path = DEFAULT_ROOT + path;
 				}
-				
+
 				if (path in levelHash) {
-					console.error('\n\n\nError: on level "' + level + '" key "' + key + '" linked to "' + value + '" in node:\n', node);
+					//console.error('\n\n\nError: on level "' + level + '" key "' + key + '" linked to "' + value + '" in node:\n', node);
 					throw new Error('circular linking');
 				}
-				
+
 				delete node[key];
-				
+
 				if (configCache[path]) {
-					
+
 					node[key] = util.clone(configCache[path]);
 					onLoad();
-					
+
 				} else {
 
 					root.fileIO(path).readFile(function (err, data) {
 						if (err) {
-							
+
 							onError(err);
-						
+
 						} else {
-							
+
 							loadIncludes(JSON.parse(data), function(tree, includeConfig) {
-								
+
 								configCache[path] = includeConfig;
-							
+
 								node[key] = util.clone(configCache[path]);
 								onLoad();
 							}, level + DELIMITER + path);
-							
+
 						}
 					});
 				}
 			}
 		}
 	}
-	
+
 	iterateTree(config, iterateNode);
-	
+
 //	console.log('including:', level, config);
 
 	!len && cb(null, config);
 }
 
 var findInterpolation = module.exports.findInterpolation = function (params, prefix) {
-	
+
 	// parse task params
 	// TODO: modify this function because recursive changes of parameters works dirty (indexOf for value)
-	
+
 	if (prefix == void 0) prefix = '';
 	if (prefix) prefix += '.';
-	
+
 	var found = {};
-	
+
 	if (params.constructor == Array) { // params is array
-		
+
 		params.forEach(function (val, index, arr) {
-			
-			if (val.indexOf && val.interpolate) { // string				
-				
+
+			if (val.indexOf && val.interpolate) { // string
+
 				var tmp = val.interpolate ({}, false, true);
-				
+
 				if (tmp !== void 0) {
 					found[prefix + index] = tmp;
 				}
@@ -294,16 +294,16 @@ var findInterpolation = module.exports.findInterpolation = function (params, pre
 				}
 			}
 		});
-		
+
 	} else { // params is hash
-	
+
 		for (var key in params) {
 			var val = params[key];
 
-			if (val.indexOf && val.interpolate) { // string				
-				
+			if (val.indexOf && val.interpolate) { // string
+
 				var tmp = val.interpolate ({}, false, true);
-				
+
 				if (tmp !== void 0) {
 					found[prefix + key] = tmp;
 				}
@@ -316,7 +316,7 @@ var findInterpolation = module.exports.findInterpolation = function (params, pre
 			}
 		}
 	}
-	
+
 	return found;
 }
 
@@ -339,55 +339,70 @@ String.prototype.interpolate = function (dict, marks, checkOnly) {
 		marks = {
 			start: '{$', end: '}', path: '.'
 		};
-	
+
 	var result;
-	
+
 	var interpolatePaths = [];
-	
+
 	var template = this;
-	
+
 	var pos = this.indexOf (marks.start);
 	while (pos > -1) {
 		var end = (result || this).indexOf (marks.end, pos);
 		var str = (result || this).substr (pos + 2, end - pos - 2);
-		
+
 		if (checkOnly && str) {
 			interpolatePaths.push (str);
 			pos = this.indexOf (marks.start, end);
 			continue;
 		}
-		
+
 //		console.log ("found replacement: key => ???, requires => $"+this+"\n");
-		
+
 		var fix;
 		if (str.indexOf (marks.path) > -1) { //  treat as path
 			fix = pathToVal (dict, str);
 		} else { // scalar
+			//console.log('- Scalar');
 			fix = dict[str];
 		}
-		
-		if (fix === void(0))
+
+		if (fix === void(0)) {
+			//console.error('ERR fix === void(0)');
 			throw (result || this);
-		
-		if (fix.indexOf && fix.indexOf (marks.start) > -1)
+		}
+
+		if (fix.indexOf && fix.indexOf (marks.start) > -1 && fix.length < 1000) {
+			//console.log('interpolation mark "' + marks.start + '" within interpolation string (' + fix.length + ') is denied', str, dict);
 			throw 'interpolation mark "' + marks.start + '" within interpolation string (' + fix + ') is denied';
-		
+		}
+
 		if (pos == 0 && end == ((result || this).length - 1)) {
 			result = fix;
 		} else {
 			result = (result || this).substr (0, pos) + fix + (result || this).substr (end + 1);
 //			console.log ('!!!', (result || this).toString(), fix.toString(), pos, end, end - pos + 1);
 		}
-		
-		if ((((result === false || result === 0 || result === "") ? true : result) || this).indexOf)
-			pos = (((result === false || result === 0 || result === "") ? true : result) || this).indexOf (marks.start);
+
+		//console.log('--', result.length);
+
+		if (
+				(
+					(
+						(result === false || result === 0 || result === "" || result.length > 1000) ? true : result
+					) || this
+				).indexOf
+			) pos = (
+				(
+					(result === false || result === 0 || result === "") ? true : result
+				) || this).indexOf (marks.start);
 		else
 			break;
 	}
-	
+
 	if (checkOnly)
 		return interpolatePaths;
-	
+
 	return result;
 
 };
@@ -402,32 +417,32 @@ if ($isServerSide) {
 		// TODO: root directory object
 		var script = process.argv[1];
 		var rootPath = script.match (/(.*)\/(bin|t|lib)\//);
-		
+
 		if (!rootPath) {//win
 			rootPath = script.match (/(.*)\\(bin|t|lib)\\/)
 		}
-		
+
 		if (!rootPath)
 			return;
-		
+
 		root = new io (rootPath[1]);
-		
+
 		this.root = root;
 		var self = this;
-		
+
 		root.fileIO ('etc/project').readFile (function (err, data) {
 			if (err) {
 				console.error ("can't access etc/project file. create one and define project id");
 				// process.kill ();
 				return;
 			}
-			
+
 			var configData = (""+data).match (/(\w+)(\W[^]*)/);
 			configData.shift ();
 			var parser = configData.shift ();
 
 			// console.log ('parsing etc/project using "' + parser + '" parser');
-			
+
 			if (parser == 'json') {
 
 				try {
@@ -436,7 +451,7 @@ if ($isServerSide) {
 					console.log ('WARNING: project config cannot parsed');
 					throw e;
 				}
-				
+
 				// TODO: read config fixup
 			} else {
 				console.error ('parser ' + parser + ' unknown');
@@ -458,19 +473,19 @@ if ($isServerSide) {
 				self.config = config;
 
 				root.fileIO ('var/instance').readFile (function (err, data) {
-					
+
 					if (err) {
 						console.error ("PROBABLY HARMFUL: can't access var/instance: "+err);
 						self.emit ('ready');
 						return;
 					}
-					
+
 					var instance = (""+data).split (/\n/)[0];
-					
+
 					self.instance = instance;
-					
+
 					console.log ('instance is: ', instance);
-					
+
 					root.fileIO ('etc/' + instance + '/fixup').readFile (function (err, data) {
 						if (err) {
 							console.error ("PROBABLY HARMFUL: can't access "+'etc/' + instance + '/fixup'+" file. "
@@ -479,9 +494,9 @@ if ($isServerSide) {
 							self.emit ('ready');
 							// process.kill ();
 							return;
-							
+
 						}
-						
+
 						var fixupData = (""+data).match (/(\w+)(\W[^]*)/);
 						fixupData.shift ();
 						var fixupParser = fixupData.shift ();
@@ -495,26 +510,26 @@ if ($isServerSide) {
 
 						if (fixupParser == 'json') {
 							var config = JSON.parse (fixupData[0]);
-							
+
 							util.extend (true, self.config, config);
 						} else {
 							console.log ('parser ' + fixupParser + ' unknown');
 							// process.kill ();
 							return;
 						}
-						
+
 						console.log ('project ready');
-						
+
 						self.emit ('ready');
 					});
 				});
 			}, 'root');
 		});
-		
+
 		// TODO: walk filetree to find directory root if script located in
 		// subdir of bin or t
 	//	console.log (root);
-		
+
 	}
 
 	var EventEmitter = require ('events').EventEmitter;
