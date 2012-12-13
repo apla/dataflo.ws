@@ -14,7 +14,7 @@ IS_WINDOWS=
 OS_NAME=${UNAMES%%-*}
 OS_VERS=${UNAMES##*-}
 
-if [ "x$OS_NAME" == "xMINGW32_NT" ] ; then
+if [ "x$OS_NAME" = "xMINGW32_NT" ] ; then
 	IS_WINDOWS=$OS_VERS
 	DNS=`netsh interface ip show dns | grep 'DNS ser'  | cut -d ':' -f 2 | cut -d ' ' -f 3`
 	echo nameserver $DNS > /etc/resolv.conf
@@ -24,7 +24,7 @@ fi
 
 NODE_PATH=''
 
-if [ "x$IS_WINDOWS" == "x" ] ; then
+if [ "x$IS_WINDOWS" = "x" ] ; then
 	NODE_PATH=/usr/local/lib/node_modules
 	NODE_PATH=/usr/local/share/npm/lib/node_modules:$NODE_PATH
 fi
@@ -42,7 +42,7 @@ NODE_PATH_DELIMITER=":"
 
 PROJECT_DIR=${SCRIPT_PATH%%bin/node}
 
-if [ "x$1" == "x--project-root" ] ; then
+if [ "x$1" = "x--project-root" ] ; then
 	echo $PROJECT_DIR
 	exit
 fi
@@ -57,7 +57,7 @@ NODE_PATH=.$NODE_PATH_DELIMITER$NODE_PATH$NODE_PATH_DELIMITER${PROJECT_DIR}lib$N
 
 # echo $NODE_PATH
 
-if [ "x$1" == "x" ] ; then
+if [ "x$1" = "x" ] ; then
 	if [ -f ${PROJECT_DIR}lib/workflow/repl.js ] ; then
 		NODE_PATH=$NODE_PATH /usr/local/bin/node ${PROJECT_DIR}lib/workflow/repl.js
 	else
