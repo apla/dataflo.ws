@@ -50,7 +50,8 @@ if (!facebookScopes) {
 			"publish_checkins"		: "publish_checkins",
 			"publish_stream"		: "publish_stream",
 			"rsvp_event"		: "rsvp_event",
-			"publish_actions"	: "publish_actions"
+			"publish_actions"	: "publish_actions",
+			"publish_stream"    : "publish_stream"
 		}
 	});
 
@@ -287,9 +288,9 @@ util.extend (facebook.prototype, {
 
 	post: function () {
 		var self = this;
-		var tokens = this.req.user.tokens;
+		var req = this.req;
+		var tokens = req.user.tokens;
 		var msg = this.message;
-		var to = this.to || 'feed';
 
 		var oa = new OAuth2(
 			facebookConfig.appId,
@@ -297,16 +298,17 @@ util.extend (facebook.prototype, {
 			facebookConfig.baseUrl
 		);
 
-		oa.post(
-			'https://graph.facebook.com/me/' + to,
-			tokens.oauth_token,
-			tokens.oauth_token_secret,
+		var post_headers= {
+			'Content-Type': 'application/x-www-form-urlencoded'
+		};
+		var post_data = msg;
 
-			msg,
-
+		oa._request(
+			'POST', 'https://graph.facebook.com/me/feed',
+			post_headers, post_data, req.user.tokens.oauth_access_token,
 			function (error, data) {
 				if (error) {
-					self.completed(JSON.parse(error.data));
+					self.failed(error);
 				} else {
 					self.completed(JSON.parse(data));
 				}
