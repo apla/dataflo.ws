@@ -94,9 +94,11 @@ util.extend (twitter.prototype, {
 
 	profile: function() {
 		var self = this;
+console.log('0');
 		var req = self.req;
+console.log('1');
 		var tokens = req.user.tokens;
-
+console.log('2',req);
 		var oa = new OAuth(twitterConfig.requestTokenUrl,
 			twitterConfig.accessTokenUrl,
 			twitterConfig.consumerKey,
@@ -104,6 +106,8 @@ util.extend (twitter.prototype, {
 			"1.0",
 			twitterConfig.callbackUrl,
 			"HMAC-SHA1");
+
+console.log('2', self.userId);
 
 		oa.getProtectedResource(
 			"https://api.twitter.com/1/users/show.json?id="+self.userId,
@@ -168,6 +172,7 @@ util.extend (twitter.prototype, {
 		var req = self.req;
 		var tokens = req.user.tokens;
 		var msg = self.message;
+		var url, ctype;
 
 		/*
 			message = {
@@ -190,23 +195,103 @@ util.extend (twitter.prototype, {
 		// https://upload.twitter.com/1/statuses/update_with_media.json
 		// https://dev.twitter.com/docs/api/1/post/statuses/update_with_media
 
+		if (msg['media[]']) {
+			url = 'https://upload.twitter.com/1/statuses/update_with_media.json';
+			ctype = 'multipart/form-data';
+		} else {
+			url = 'http://api.twitter.com/1/statuses/update.json';
+			ctype = 'application/x-www-form-urlencoded';
+		}
+
+		//console.log('TW', url, ctype, msg);
 
 		oa.post(
-		  "http://api.twitter.com/1/statuses/update.json",
-		  tokens.oauth_token,
-		  tokens.oauth_token_secret,
-
-		  {"status": msg},
-
-		  function(error, data) {
-			if (error) {
-				self.completed(JSON.parse(error.data));
-			} else {
-				self.completed(JSON.parse(data));
+			url,
+			tokens.oauth_token,
+			tokens.oauth_token_secret,
+			msg,
+			ctype,
+			function(error, data) {
+				var ret;
+				if (error) {
+					console.log('ERR!', error);
+					try {
+						ret = JSON.parse(error.data);
+					} catch (e) {
+						ret = error.data;
+					}
+					self.completed(ret);
+				} else {
+					console.log('TW.OK', data);
+					self.completed(JSON.parse(data));
+				}
 			}
-
-		  }
 		);
+
+	},
+
+	multipartPost : function (msg) {
+		var self = this;
+		var crlf = "\r\n";
+		var boundary = '---------------------------10102754414578508781458777923';
+
+		var separator = '--' + boundary;
+		var footer = crlf + separator + '--' + crlf;
+		var fileHeader = 'Content-Disposition: file; name="media"; filename="' + photoName + '"';
+
+		var contents = separator + crlf +
+				'Content-Disposition: form-data; name="status"' + crlf +
+				crlf +
+				tweet + crlf +
+				separator + crlf +
+				fileHeader + crlf +
+				'Content-Type: image/jpeg' +  crlf +
+				crlf;
+
+		var multipartBody = Buffer.concat([
+			new Buffer(contents),
+			image,
+			new Buffer(footer)]);
+
+		var hostname = 'upload.twitter.com';
+		var authorization = oauth.authHeader(
+			'https://upload.twitter.com/1/statuses/update_with_media.json',
+			accessToken, tokenSecret, 'POST');
+
+		var headers = {
+			'Authorization': authorization,
+			'Content-Type': 'multipart/form-data; boundary=' + boundary,
+			'Host': hostname,
+			'Content-Length': multipartBody.length,
+			'Connection': 'Keep-Alive'
+		};
+
+		var options = {
+			host: hostname,
+			port: 443,
+			path: '/1/statuses/update_with_media.json',
+			method: 'POST',
+			headers: headers
+		};
+
+		var request = https.request(options);
+		request.write(multipartBody);
+		request.end();
+
+		request.on('error', function (err) {
+			console.log('Error: Something is wrong.\n'+JSON.stringify(err)+'\n');
+		});
+
+		request.on('response', function (response) {
+			response.setEncoding('utf8');
+			response.on('data', function (chunk) {
+				console.log(chunk.toString());
+			});
+			response.on('end', function () {
+				console.log(response.statusCode +'\n');
+				res.end();
+			});
+		});
 
 	},
 
