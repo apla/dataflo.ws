@@ -287,6 +287,15 @@ util.extend (facebook.prototype, {
 	},
 
 	post: function () {
+		this._post('https://graph.facebook.com/me/feed');
+	},
+
+	postPhoto: function () {
+		//this._post('https://graph.facebook.com/me/photo');
+		this._post('https://graph.facebook.com/me/photos');
+	},
+
+	_post : function (url) {
 		var self = this;
 		var req = this.req;
 		var tokens = req.user.tokens;
@@ -304,7 +313,7 @@ util.extend (facebook.prototype, {
 		var post_data = msg;
 
 		oa._request(
-			'POST', 'https://graph.facebook.com/me/feed',
+			'POST', url,
 			post_headers, post_data, req.user.tokens.oauth_access_token,
 			function (error, data) {
 				if (error) {
@@ -314,5 +323,6 @@ util.extend (facebook.prototype, {
 				}
 			}
 		);
+
 	}
 });
