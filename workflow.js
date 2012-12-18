@@ -75,7 +75,7 @@ function checkTaskParams (params, dict, prefix) {
 		
 		params.forEach(function (val, index, arr) {
 			
-			if (val.indexOf || val.interpolate) { // string				
+			if (val.interpolate) { // string				
 				
 				try {
 					var tmp = val.interpolate (dict);
@@ -132,7 +132,6 @@ function checkTaskParams (params, dict, prefix) {
 			} else if (val.toFixed || val.constructor == Boolean) {
 				modifiedParams[key] = val;
 			} else { // val is hash || array
-				
 				var result = checkTaskParams(val, dict, prefix+key);
 				
 				modifiedParams[key] = result.modified;
@@ -302,7 +301,51 @@ var workflow = module.exports = function (config, reqParam) {
 				run: function () {
 					var failed = false;
 					
-					if ((actualTaskParams.$bind || actualTaskParams.bind) && taskFnName) {
+                    /**
+                     * Apply $function to $args if they are present.
+                     */
+                    if (this.$args) {
+                        if (this.$bind) {
+                            /**
+                             * Either look up $function in the $bind object...
+                             */
+                            var context = this.$bind;
+                            var fn = context[taskFnName];
+                        } else {
+                            /**
+                             * Or do a deep look-up in the root object.
+                             */
+                            fn = root;
+                            taskFnName.split('.').forEach(function (prop) {
+                                context = fn;
+                                fn = context[prop];
+                            });
+                        }
+                        if ('function' == typeof fn) {
+                            var args = this.$args;
+                            /**
+                             * $context is another new parameter.
+                             * It can override the default context
+                             * of $function. It's different from $bind.
+                             */
+                            var ctx = this.$context || context;
+                            var product;
+                            try {
+                                product = fn.apply(ctx, args);
+                            } catch (e) {
+                                return this.failed(e);
+                            }
+                            return this.completed(product);
+                        } else {
+                            throw new TypeError(
+                                taskFnName + 'is not a function'
+                            );
+                        }
+                    /**
+                     * Otherwise simply run $function,
+                     * optionally in the context of $bind.
+                     */
+                    } else if ((actualTaskParams.$bind || actualTaskParams.bind) && taskFnName) {
 						try {
 							var functionRef = actualTaskParams.bind || actualTaskParams.$bind;
 							// TODO: use pathToVal
