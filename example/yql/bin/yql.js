@@ -26,15 +26,29 @@ project.on ('ready', function () {
 			}, {
                 $function: "log",
                 $args: [ "POST FIELDS", "{$data.post.fields}" ],
-                $bind: console
+				$origin: "GLOBAL.console"
+			}, {
+                $function: "String.prototype.trim",
+				$scope: "{$data.post.fields.q}",
+                $args: [],
+				produce: "data.trimmedText"
+			}, {
+                $function: "toLowerCase",
+				$origin: "{$data.trimmedText}",
+                $args: [],
+				produce: "data.lowerCasedText"
 			}, {
                 $function: "encodeURIComponent",
                 $args: [ 'select * from contentanalysis.analyze ' +
-                         'where text="{$data.post.fields.q}"' ],
+                         'where text="{$data.lowerCasedText}"' ],
                 produce: "data.yql"
 			}, {
+                $function: "console.log",
+                $args: [ "ENCODED ", "{$data.yql}" ]
+			}, {
 				$class: "task/download",
-				url: "http://query.yahooapis.com/v1/public/yql?format=json&q={$data.yql}",
+				url: "http://query.yahooapis.com/v1/public/yql?" +
+					"format=json&q={$data.yql}",
                 timeout: 10000,
                 retries: 10,
 				produce: "data.results"
