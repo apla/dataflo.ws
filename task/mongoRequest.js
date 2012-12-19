@@ -926,12 +926,33 @@ util.extend (mongoRequestTask.prototype, {
  */
 
 	mapReduce: function () {
-
 		var self = this;
 
-		if (this.verbose)
-			self.emit ('log', 'group called');
+		var db = this._getConnector();
 
-		/* --- */
+		db.open(function (err, db) {
+			if (err) {
+				self.failed(err);
+				return;
+			}
+
+			db.executeDbCommand({
+				mapreduce: self.collection,
+
+				map: self.map.toString(),
+				reduce: self.reduce.toString(),
+
+				out: { inline: 1 },
+				query: self.pager.filter
+			},
+			function (err, coll) {
+				if (err) {
+					self.failed(err);
+				} else {
+					console.log('MAPREDUCE', coll.documents[0].results);
+					self.completed({ ok: true, collection: coll });
+				}
+			});
+		});
 	}
 });

@@ -110,12 +110,7 @@ function checkTaskParams (params, dict, prefix) {
 		for (var key in params) {
 			var val = params[key];
 			var valCheck = val;
-			//console.log('CHECKING', key, val, !!val.interpolate);
-			if ((key == '$bind' || key == 'bind') && prefix == '') {
-				// bind is a real js object. it can be circular
-				modifiedParams[key] = val;
-			} else if (!!val.interpolate) { // val is string || number
-
+			if (val.interpolate) { // val is string
 				try {
 					//console.log('- interpolate');
 					var tmp = modifiedParams[key] = val.interpolate (dict);
@@ -310,61 +305,32 @@ var workflow = module.exports = function (config, reqParam) {
                     /**
                      * Apply $function to $args if they are present.
                      */
-                    if (this.$args) {
-                        if (this.$bind) {
-                            /**
-                             * Either look up $function in the $bind object...
-                             */
-                            var context = this.$bind;
-                            var fn = context[taskFnName];
-                        } else {
-                            /**
-                             * Or do a deep look-up in the root object.
-                             */
-                            fn = root;
-                            taskFnName.split('.').forEach(function (prop) {
-                                context = fn;
-                                fn = context[prop];
-                            });
-                        }
-                        if ('function' == typeof fn) {
-                            var args = this.$args;
-                            /**
-                             * $context is another new parameter.
-                             * It can override the default context
-                             * of $function. It's different from $bind.
-                             */
-                            var ctx = this.$context || context;
-                            var product;
-                            try {
-                                product = fn.apply(ctx, args);
-                            } catch (e) {
-                                return this.failed(e);
-                            }
-                            return this.completed(product);
-                        } else {
-                            throw new TypeError(
-                                taskFnName + 'is not a function'
-                            );
-                        }
-                    /**
-                     * Otherwise simply run $function,
-                     * optionally in the context of $bind.
-                     */
-                    } else if ((actualTaskParams.$bind || actualTaskParams.bind) && taskFnName) {
-						try {
-							var functionRef = actualTaskParams.bind || actualTaskParams.$bind;
-							// TODO: use pathToVal
-							var fSplit = taskFnName.split (".");
-							while (fSplit.length) {
-								var fChunk = fSplit.shift();
-								functionRef = functionRef[fChunk];
-							}
-
-							this.completed (functionRef.call (actualTaskParams.bind || actualTaskParams.$bind, this));
-						} catch (e) {
-							failed = 'failed call function "'+taskFnName+'" from ' + (actualTaskParams.bind || actualTaskParams.$bind) + ' with ' + e;
+                    if (taskFnName && this.$args) {
+						var origin = this.$origin;
+						if ('string' == typeof origin) {
+							origin = common.getByPath(origin).value;
 						}
+						var method = common.getByPath(taskFnName, origin);
+
+						var fn = method.value;
+						var ctx = this.$scope || method.scope;
+						var args = this.$args;
+
+                        if ('function' == typeof fn) {
+                            try {
+                                var returnVal = fn.apply(ctx, args);
+                            } catch (e) {
+								this.failed(e);
+								return;
+                            }
+							this.completed(returnVal);
+                        } else {
+							this.failed(taskFnName + ' is not a function');
+                        }
+						return;
+                    /**
+                     * Otherwise run $function as method in the initiator.
+					 */
 					} else if (taskFnName) {
 						var fn = $mainModule[taskFnName];
 						if (fn && fn.constructor == Function) {
@@ -387,7 +353,6 @@ var workflow = module.exports = function (config, reqParam) {
 						}
 					} else {
 						// TODO: detailed error description
-//						if (taskParams.bind)
 						this.completed (actualTaskParams.coderef (this));
 					}
 					if (failed) throw failed;

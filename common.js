@@ -142,7 +142,18 @@ var mergeObjects = module.exports.mergeObjects = function (object, subjectParent
 	for (var objectField in object) {
 		subject[objectField] = object[objectField];
 	}
-}
+};
+
+module.exports.getByPath = function (path, origin) {
+	var value = origin || GLOBAL;
+	var scope, key;
+    path.split('.').forEach(function (prop) {
+        scope = value;
+		key = prop;
+        value = scope[key];
+    });
+	return { value: value, scope: scope, key: key };
+};
 
 var pathToVal = module.exports.pathToVal = function (dict, path, value, method) {
 //	console.log ('pathToVal ('+ dict + ', '+ path + ', '+value+')');
