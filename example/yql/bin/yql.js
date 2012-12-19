@@ -26,15 +26,15 @@ project.on ('ready', function () {
 			}, {
                 $function: "log",
                 $args: [ "POST FIELDS", "{$data.post.fields}" ],
-				$origin: "GLOBAL.console"
+				$origin: "console"
 			}, {
                 $function: "String.prototype.trim",
 				$scope: "{$data.post.fields.q}",
                 $args: [],
 				produce: "data.trimmedText"
 			}, {
-                $function: "toLowerCase",
-				$origin: "{$data.trimmedText}",
+                $function: "String.prototype.toLowerCase",
+				$scope: "{$data.trimmedText}",
                 $args: [],
 				produce: "data.lowerCasedText"
 			}, {

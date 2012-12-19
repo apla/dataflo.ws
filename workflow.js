@@ -302,8 +302,7 @@ var workflow = module.exports = function (config, reqParam) {
                      */
                     if (taskFnName && this.$args) {
 						var origin = this.$origin;
-						if ('string' == typeof origin &&
-								0 == origin.indexOf('GLOBAL.')) {
+						if ('string' == typeof origin) {
 							origin = common.getByPath(origin).value;
 						}
 						var method = common.getByPath(taskFnName, origin);
