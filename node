@@ -9,6 +9,8 @@ SCRIPT_PATH=`pwd`/$0
 # NODE_PATH=/usr/local/lib/node_modules/
 UNAMES=`uname -s`
 
+NODE_EXE_PATH=`which node`
+
 IS_WINDOWS=
 
 OS_NAME=${UNAMES%%-*}
@@ -53,16 +55,19 @@ if [ "x$IS_WINDOWS" != "x" ] ; then
 	PROJECT_DIR="/cygdrive$PROJECT_DIR"
 fi
 
-NODE_PATH=.$NODE_PATH_DELIMITER$NODE_PATH$NODE_PATH_DELIMITER${PROJECT_DIR}lib$NODE_PATH_DELIMITER${PROJECT_DIR}lib/workflow.nodejs$NODE_PATH_DELIMITER${PROJECT_DIR}lib/workflow.js$NODE_PATH_DELIMITER${PROJECT_DIR}lib/workflow$NODE_PATH_DELIMITER${PROJECT_DIR}lib/dataflows-tasks
+if [ -d ${PROJECT_DIR}lib/workflow.nodejs -o -d ${PROJECT_DIR}lib/workflow.js -o -d ${PROJECT_DIR}lib/workflow ] ; then
+	echo "YOU USING DEPRECATED CONFIG. YOU MUST RENAME (lib/workflow.nodejs|lib/workflow.js|lib/workflow) TO THE lib/dataflo.ws"
+	exit
+fi
+
+NODE_PATH=.$NODE_PATH_DELIMITER$NODE_PATH$NODE_PATH_DELIMITER${PROJECT_DIR}lib$NODE_PATH_DELIMITER${PROJECT_DIR}lib/dataflo.ws$NODE_PATH_DELIMITER${PROJECT_DIR}lib/dataflows-tasks
 
 # echo $NODE_PATH
 
 if [ "x$1" = "x" ] ; then
-	if [ -f ${PROJECT_DIR}lib/workflow/repl.js ] ; then
-		NODE_PATH=$NODE_PATH /usr/local/bin/node ${PROJECT_DIR}lib/workflow/repl.js
-	else
-		NODE_PATH=$NODE_PATH /usr/local/bin/node ${PROJECT_DIR}lib/dataflo.ws/repl.js
+	if [ -f ${PROJECT_DIR}lib/dataflo.ws/repl.js ] ; then
+		NODE_PATH=$NODE_PATH $NODE_EXE_PATH ${PROJECT_DIR}lib/dataflo.ws/repl.js
 	fi
 else
-	NODE_PATH=$NODE_PATH /usr/local/bin/node $@
+	NODE_PATH=$NODE_PATH $NODE_EXE_PATH $@
 fi
