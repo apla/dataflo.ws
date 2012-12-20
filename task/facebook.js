@@ -50,7 +50,8 @@ if (!facebookScopes) {
 			"publish_checkins"		: "publish_checkins",
 			"publish_stream"		: "publish_stream",
 			"rsvp_event"		: "rsvp_event",
-			"publish_actions"	: "publish_actions"
+			"publish_actions"	: "publish_actions",
+			"publish_stream"    : "publish_stream"
 		}
 	});
 	
@@ -281,6 +282,36 @@ util.extend (facebook.prototype, {
 					success: !error,
 					error: error
 				});
+			}
+		);
+	},
+
+	post: function () {
+		var self = this;
+		var req = this.req;
+		var tokens = req.user.tokens;
+		var msg = this.message;
+
+		var oa = new OAuth2(
+			facebookConfig.appId,
+			facebookConfig.appSecret,
+			facebookConfig.baseUrl
+		);
+
+		var post_headers= {
+			'Content-Type': 'application/x-www-form-urlencoded'
+		};
+		var post_data = msg;
+
+		oa._request(
+			'POST', 'https://graph.facebook.com/me/feed',
+			post_headers, post_data, req.user.tokens.oauth_access_token,
+			function (error, data) {
+				if (error) {
+					self.failed(error);
+				} else {
+					self.completed(JSON.parse(data));
+				}
 			}
 		);
 	}
