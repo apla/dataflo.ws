@@ -2,7 +2,6 @@ var HTTPClient		= require ('http'),
 	util			= require ('util'),
 	fs				= require ('fs'),
 	urlUtils		= require ('url'),
-	bufferTools,//		= require('buffertools'), // buffertools usage on demand
 	httpManager     = require ('model/http/model-manager');
 	
 var pipeProgress = function (config) {
@@ -123,8 +122,7 @@ util.extend (httpModel.prototype, {
 			});
 			
 			res.on ('data', function (chunk) {
-				if (!bufferTools) bufferTools = require('buffertools');
-				if (!self.isStream) self.target.to.data = bufferTools.concat(self.target.to.data, chunk);
+				if (!self.isStream) self.target.to.data = Buffer.concat ([self.target.to.data, chunk]);
 				self.modelBase.emit ('data', chunk);
 			});
 			
