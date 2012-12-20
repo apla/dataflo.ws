@@ -439,7 +439,10 @@ if ($isServerSide) {
 				
 				// TODO: read config fixup
 			} else {
-				console.error ('parser ' + parser + ' unknown');
+				console.error (
+					'parser ' + parser + ' unknown in etc/project; '
+					+ 'we analyze parser using first string of file; '
+					+ 'you must put in first string comment with file format, like "// json"');
 				// process.kill ();
 				return;
 			}
@@ -498,7 +501,11 @@ if ($isServerSide) {
 							
 							util.extend (true, self.config, config);
 						} else {
-							console.log ('parser ' + fixupParser + ' unknown');
+							console.error (
+								'parser ' + fixupParser + ' unknown in etc/' + instance + 'fixup; '
+								+ 'we analyze parser using first string of file; '
+								+ 'you must put in first string comment with file format, like "// json"');
+
 							// process.kill ();
 							return;
 						}
