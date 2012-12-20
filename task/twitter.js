@@ -1,6 +1,7 @@
 var OAuth = require('oauth').OAuth,
 	querystring = require('querystring'),
 	task = require('task/base'),
+	twitterClient = require('node-twitter'),
 	util = require('util');
 	
 // - - - static	
@@ -125,6 +126,34 @@ util.extend (twitter.prototype, {
 					} catch (e) {
 						self.failed(e);
 					}
+				}
+			}
+		);
+	},
+
+	postWithMedia: function () {
+		var self = this;
+		var req = self.req;
+		var tokens = req.user.tokens;
+		var msg = self.message;
+
+		var twitterRestClient = new twitterClient.RestClient(
+			twitterConfig.consumerKey,
+			twitterConfig.consumerSecret,
+			tokens.oauth_token,
+			tokens.oauth_token_secret
+		);
+
+		twitterRestClient.statusesUpdateWithMedia(
+			{
+				'status': msg.status,
+				'media[]': msg.image
+			},
+			function (error, result) {
+				if (error) {
+					self.failed(error);
+				} else {
+					self.completed(result);
 				}
 			}
 		);
