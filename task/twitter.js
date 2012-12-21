@@ -118,9 +118,7 @@ util.extend (twitter.prototype, {
 				} else {
 					try {
 						var user = JSON.parse(data);
-
-						//console.log ('<---------user', user);
-
+						user.tokens = tokens;
 						self.completed(self.mappingUser(user));
 					} catch (e) {
 						self.failed(e);
@@ -166,6 +164,7 @@ util.extend (twitter.prototype, {
 			email: user.screen_name+"@twitter.com",
 			avatar: user.profile_image_url,
 			link: "https://twitter.com/?id="+user.id,
+			tokens: user.tokens,
 			authType: 'twitter'
 		};
 
