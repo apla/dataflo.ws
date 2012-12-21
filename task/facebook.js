@@ -172,8 +172,10 @@ util.extend (facebook.prototype, {
 	},
 
 	mappingUser: function(user) {
+
 		var mapped = {
 			name: user.name,
+			username: user.username,
 			link: user.link,
 			tokens : user.tokens,
 			authType: 'facebook'

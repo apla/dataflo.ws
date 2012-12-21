@@ -162,6 +162,7 @@ util.extend (twitter.prototype, {
 
 		return {
 			name: user.name,
+			username: user.screen_name,
 			email: user.screen_name+"@twitter.com",
 			avatar: user.profile_image_url,
 			link: "https://twitter.com/?id="+user.id,
