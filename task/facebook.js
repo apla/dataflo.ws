@@ -291,6 +291,10 @@ util.extend (facebook.prototype, {
 		this._post('https://graph.facebook.com/me/feed');
 	},
 
+	customPost: function () {
+		this._post(this.customUrl);
+	},
+
 	postPhoto: function () {
 		//this._post('https://graph.facebook.com/me/photo');
 		this._post('https://graph.facebook.com/me/photos');
