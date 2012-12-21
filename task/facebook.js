@@ -116,7 +116,8 @@ util.extend (facebook.prototype, {
 		req.user.tokens  = {};
 
 		if (query.error || !query.code) {
-			self.failed (query.error_description || "token was not accepted");
+			//self.failed (query.error_description || "token was not accepted");
+			self.completed ({ error : query.error_description || "token was not accepted"});
 		}
 
 		var oa = new OAuth2(facebookConfig.appId,  facebookConfig.appSecret,  facebookConfig.baseUrl);
@@ -127,9 +128,7 @@ util.extend (facebook.prototype, {
 			function( error, access_token, refresh_token ){
 
 				if (error) {
-
 					self.failed(error);
-
 				} else {
 
 					req.user.tokens.oauth_access_token = access_token;
@@ -173,8 +172,10 @@ util.extend (facebook.prototype, {
 	},
 
 	mappingUser: function(user) {
+
 		var mapped = {
 			name: user.name,
+			username: user.username,
 			link: user.link,
 			tokens : user.tokens,
 			authType: 'facebook'
@@ -189,7 +190,7 @@ util.extend (facebook.prototype, {
             emailName = user.id;
             mapped.avatar = '';
         }
-        mapped.email = emailName + '@facebook.com';
+        mapped.email = user.email || (emailName + '@facebook.com');
 
         return mapped;
 	},
