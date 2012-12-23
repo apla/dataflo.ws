@@ -71,7 +71,7 @@ function checkTaskParams (params, dict, prefix) {
 	var modifiedParams;
 	var failedParams = [];
 
-	if (params.constructor == Array) { // params is array
+	if (params.constructor === Array) { // params is array
 
 		modifiedParams = [];
 
@@ -312,9 +312,11 @@ var workflow = module.exports = function (config, reqParam) {
 						}
 						var method = common.getByPath(taskFnName, origin);
 
-						var fn = method.value;
-						var ctx = this.$scope || method.scope;
+						var fn   = method.value;
+						var ctx  = this.$scope;
 						var args = this.$args;
+						if (args.constructor !== Array)
+							args = [args];
 
                         if ('function' == typeof fn) {
                             try {
