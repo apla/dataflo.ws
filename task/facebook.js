@@ -2,7 +2,7 @@ var OAuth2 = require('oauth').OAuth2,
 	querystring = require('querystring'),
 	task = require('task/base'),
 	util = require('util');
-	
+
 // - - - static
 
 var facebookConfig = project.config.consumerConfig.facebook;
@@ -10,7 +10,7 @@ var facebookScopes = (facebookConfig ? facebookConfig.scopes : null);
 
 if (!facebookScopes) {
 
-	util.extend (facebookConfig, {	
+	util.extend (facebookConfig, {
 		"scopes": {
 			"profile"			: "user_about_me",
 			"email"				: "email",
@@ -50,12 +50,13 @@ if (!facebookScopes) {
 			"publish_checkins"		: "publish_checkins",
 			"publish_stream"		: "publish_stream",
 			"rsvp_event"		: "rsvp_event",
-			"publish_actions"	: "publish_actions"
+			"publish_actions"	: "publish_actions",
+			"publish_stream"    : "publish_stream"
 		}
 	});
-	
+
 	facebookScopes = facebookConfig.scopes;
-	
+
 //	console.log ('<------facebookConfig', facebookConfig);
 }
 
@@ -69,7 +70,7 @@ var facebook = module.exports = function(config) {
 		"groups"
 	];
 
-	this.init (config);		
+	this.init (config);
 
 };
 
@@ -78,92 +79,90 @@ util.inherits (facebook, task);
 util.extend (facebook.prototype, {
 
 	run: function() {
-		
+
 		var self = this;
 		self.failed('use method [login|callback|profile|grouplist]');
-		
+
 	},
-	
+
 	login: function () {
-		
+
 		var self = this;
 		var req = self.req;
 		var res = self.res;
 		var query = req.url.query;
-		
+
 		var scopes = self.scopes.map(function(scope) {
 			return facebookScopes[scope];
 		});
-		
+
 		var getParams = {
 			client_id: facebookConfig.appId,
 			redirect_uri: facebookConfig.callbackUrl,
 			scope: scopes.join(',')
 		};
-		
+
 		var redirectUrl = facebookConfig.requestTokenUrl + "?" + querystring.stringify(getParams);
-		
+
 		self.completed(redirectUrl);
 	},
-	
+
 	callback: function() {
-		
+
 		var self = this,
 			req = self.req;
 			query = req.url.query;
-		
-		req.user  = {
-			tokens : {}
-		};
-		
+
+		req.user.tokens  = {};
+
 		if (query.error || !query.code) {
-			self.failed (query.error_description || "token was not accepted");
+			//self.failed (query.error_description || "token was not accepted");
+			self.completed ({ error : query.error_description || "token was not accepted"});
 		}
-		
+
 		var oa = new OAuth2(facebookConfig.appId,  facebookConfig.appSecret,  facebookConfig.baseUrl);
-		
+
 		oa.getOAuthAccessToken(
 			query.code,
 			{redirect_uri: facebookConfig.callbackUrl},
 			function( error, access_token, refresh_token ){
-				
+
 				if (error) {
-					
 					self.failed(error);
-				
 				} else {
-					
+
 					req.user.tokens.oauth_access_token = access_token;
 					if (refresh_token) req.user.tokens.oauth_refresh_token = refresh_token;
-					
+
 					var redirectUrl = (query.action && query.action != "") ? query.action : "/";
 					self.completed (redirectUrl)
-					
+
 				}
 		});
 	},
-	
+
 	profile: function() {
 		var self = this;
 		var req = self.req;
 		var tokens = req.user.tokens;
-		
+
 		var oa = new OAuth2(
 			facebookConfig.appId,
 			facebookConfig.appSecret,
 			facebookConfig.baseUrl
 		);
-		
+
 		oa.getProtectedResource(
 			facebookConfig.baseUrl + '/me',
 			tokens.oauth_access_token,
 
-			function (error, data, response) {				
+			function (error, data, response) {
 				if (error) {
 					self.failed(error);
 				} else {
 					try {
 						var user = JSON.parse(data);
+						user.tokens = tokens;
 						self.completed(self.mappingUser(user));
 					} catch (e) {
 						self.failed(e);
@@ -171,41 +170,44 @@ util.extend (facebook.prototype, {
 				}
 		});
 	},
-	
+
 	mappingUser: function(user) {
+
 		var mapped = {
 			name: user.name,
+			username: user.username,
 			link: user.link,
+			tokens : user.tokens,
 			authType: 'facebook'
 		};
 
         var emailName;
         if (user.username) {
             emailName = user.username;
-            mapped.avatar = '//graph.facebook.com/' +
+            mapped.avatar = 'http://graph.facebook.com/' +
 				user.username + '/picture';
         } else {
             emailName = user.id;
             mapped.avatar = '';
         }
-        mapped.email = emailName + '@facebook.com';
+        mapped.email = user.email || (emailName + '@facebook.com');
 
         return mapped;
 	},
-	
+
 	grouplist: function() {
-		
+
 		var self = this;
 		var req = self.req;
 		var tokens = req.user.tokens;
-		
+
 		var oa = new OAuth2(facebookConfig.appId,  facebookConfig.appSecret,  facebookConfig.baseUrl);
-		
+
 		oa.getProtectedResource(
 			facebookConfig.baseUrl+"/me/groups",
 			tokens.oauth_access_token,
 			function (error, data, response) {
-				
+
 				if (error) {
 					self.failed(error);
 				} else {
@@ -218,15 +220,15 @@ util.extend (facebook.prototype, {
 				}
 		});
 	},
-	
+
 	mappingGroups: function(groups) {
-		
+
 		var groupIds = groups.data.map(function(group) {
 			return group.id;
 		});
-		
+
 		return groupIds;
-		
+
 	},
 
 	tmpl: function (str, obj) {
@@ -283,5 +285,49 @@ util.extend (facebook.prototype, {
 				});
 			}
 		);
+	},
+
+	post: function () {
+		this._post('https://graph.facebook.com/me/feed');
+	},
+
+	customPost: function () {
+		this._post(this.customUrl);
+	},
+
+	postPhoto: function () {
+		//this._post('https://graph.facebook.com/me/photo');
+		this._post('https://graph.facebook.com/me/photos');
+	},
+
+	_post : function (url) {
+		var self = this;
+		var req = this.req;
+		var tokens = req.user.tokens;
+		var msg = this.message;
+
+		var oa = new OAuth2(
+			facebookConfig.appId,
+			facebookConfig.appSecret,
+			facebookConfig.baseUrl
+		);
+
+		var post_headers= {
+			'Content-Type': 'application/x-www-form-urlencoded'
+		};
+		var post_data = msg;
+
+		oa._request(
+			'POST', url,
+			post_headers, post_data, req.user.tokens.oauth_access_token,
+			function (error, data) {
+				if (error) {
+					self.failed(error);
+				} else {
+					self.completed(JSON.parse(data));
+				}
+			}
+		);
+
 	}
 });

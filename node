@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 SCRIPT_PATH=`pwd`/$0
 
@@ -9,12 +9,14 @@ SCRIPT_PATH=`pwd`/$0
 # NODE_PATH=/usr/local/lib/node_modules/
 UNAMES=`uname -s`
 
+NODE_EXE_PATH=`which node`
+
 IS_WINDOWS=
 
 OS_NAME=${UNAMES%%-*}
 OS_VERS=${UNAMES##*-}
 
-if [ "x$OS_NAME" == "xMINGW32_NT" ] ; then
+if [ "x$OS_NAME" = "xMINGW32_NT" ] ; then
 	IS_WINDOWS=$OS_VERS
 	DNS=`netsh interface ip show dns | grep 'DNS ser'  | cut -d ':' -f 2 | cut -d ' ' -f 3`
 	echo nameserver $DNS > /etc/resolv.conf
@@ -24,7 +26,7 @@ fi
 
 NODE_PATH=''
 
-if [ "x$IS_WINDOWS" == "x" ] ; then
+if [ "x$IS_WINDOWS" = "x" ] ; then
 	NODE_PATH=/usr/local/lib/node_modules
 	NODE_PATH=/usr/local/share/npm/lib/node_modules:$NODE_PATH
 fi
@@ -42,7 +44,7 @@ NODE_PATH_DELIMITER=":"
 
 PROJECT_DIR=${SCRIPT_PATH%%bin/node}
 
-if [ "x$1" == "x--project-root" ] ; then
+if [ "x$1" = "x--project-root" ] ; then
 	echo $PROJECT_DIR
 	exit
 fi
@@ -53,16 +55,19 @@ if [ "x$IS_WINDOWS" != "x" ] ; then
 	PROJECT_DIR="/cygdrive$PROJECT_DIR"
 fi
 
-NODE_PATH=.$NODE_PATH_DELIMITER$NODE_PATH$NODE_PATH_DELIMITER${PROJECT_DIR}lib$NODE_PATH_DELIMITER${PROJECT_DIR}lib/workflow.nodejs$NODE_PATH_DELIMITER${PROJECT_DIR}lib/workflow.js$NODE_PATH_DELIMITER${PROJECT_DIR}lib/workflow
+if [ -d ${PROJECT_DIR}lib/workflow.nodejs -o -d ${PROJECT_DIR}lib/workflow.js -o -d ${PROJECT_DIR}lib/workflow ] ; then
+	echo "YOU USING DEPRECATED CONFIG. YOU MUST RENAME (lib/workflow.nodejs|lib/workflow.js|lib/workflow) TO THE lib/dataflo.ws"
+	exit
+fi
+
+NODE_PATH=.$NODE_PATH_DELIMITER$NODE_PATH$NODE_PATH_DELIMITER${PROJECT_DIR}lib$NODE_PATH_DELIMITER${PROJECT_DIR}lib/dataflo.ws$NODE_PATH_DELIMITER${PROJECT_DIR}lib/dataflows-tasks
 
 # echo $NODE_PATH
 
-if [ "x$1" == "x" ] ; then
-	if [ -f ${PROJECT_DIR}lib/workflow.nodejs/repl.js ] ; then
-		NODE_PATH=$NODE_PATH /usr/local/bin/node ${PROJECT_DIR}lib/workflow.nodejs/repl.js
-	else
-		NODE_PATH=$NODE_PATH /usr/local/bin/node ${PROJECT_DIR}lib/workflow.js/repl.js
+if [ "x$1" = "x" ] ; then
+	if [ -f ${PROJECT_DIR}lib/dataflo.ws/repl.js ] ; then
+		NODE_PATH=$NODE_PATH $NODE_EXE_PATH ${PROJECT_DIR}lib/dataflo.ws/repl.js
 	fi
 else
-	NODE_PATH=$NODE_PATH /usr/local/bin/node $@
+	NODE_PATH=$NODE_PATH $NODE_EXE_PATH $@
 fi

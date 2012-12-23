@@ -16,17 +16,17 @@ var taskStateNames = taskClass.prototype.stateNames;
 var hasOwnProperty = Object.prototype.hasOwnProperty;
 
 function isEmpty(obj) {
-	
+
     if (obj === void 0)
 		return true;
 	// Assume if it has a length property with a non-zero value
     // that that property is correct.
     if (obj === true)
 		return !obj;
-	
+
 	if (obj.toFixed && obj !== 0)
 		return false;
-	
+
 	if (obj.length && obj.length > 0)
 		return false;
 
@@ -34,14 +34,14 @@ function isEmpty(obj) {
         if (hasOwnProperty.call(obj, key))
 			return false;
     }
-	
+
     return true;
 }
 
 function taskRequirements (requirements, dict) {
-	
+
 	var result = [];
-	
+
 	for (var k in requirements) {
 		var requirement = requirements[k];
 		for (var i = 0; i < requirement.length; i++) {
@@ -53,37 +53,39 @@ function taskRequirements (requirements, dict) {
 			}
 		}
 	}
-	
+
 	return result;
 }
 
 
 function checkTaskParams (params, dict, prefix) {
-	
+
 	// parse task params
 	// TODO: modify this function because recursive changes of parameters works dirty (indexOf for value)
-	
+
+//console.log('CHECK TASK PARAMS', params);
+
 	if (prefix == void 0) prefix = '';
 	if (prefix) prefix += '.';
-	
+
 	var modifiedParams;
 	var failedParams = [];
-	
+
 	if (params.constructor == Array) { // params is array
-		
+
 		modifiedParams = [];
-		
+
 		params.forEach(function (val, index, arr) {
-			
-			if (val.indexOf || val.interpolate) { // string				
-				
+
+			if (val.interpolate) { // string
+
 				try {
 					var tmp = val.interpolate (dict);
 					if (tmp === void 0)
 						modifiedParams.push(val);
 					else
 						modifiedParams.push(tmp);
-						
+
 //					console.log (val, ' interpolated to the "', modifiedParams[key], '" and ', isEmpty (modifiedParams[key]) ? ' is empty' : 'is not empty');
 
 					if (isEmpty (modifiedParams[modifiedParams.length-1]))
@@ -100,47 +102,45 @@ function checkTaskParams (params, dict, prefix) {
 				failedParams = failedParams.concat (result.failed);
 			}
 		});
-		
+
 	} else { // params is hash
-	
+
 		modifiedParams = {};
-		
+
 		for (var key in params) {
 			var val = params[key];
 			var valCheck = val;
-			if ((key == '$bind' || key == 'bind') && prefix == '') {
-				// bind is a real js object. it can be circular
-				modifiedParams[key] = val;
-			} else if (val.interpolate) { // val is string || number
-				
+			if (val.interpolate) { // val is string
 				try {
+					//console.log('- interpolate');
 					var tmp = modifiedParams[key] = val.interpolate (dict);
+					//console.log('- interpolate', typeof(tmp), tmp === void 0);
 					if (tmp === void 0)
 						modifiedParams[key] = val;
 //					if (tmp === false || tmp === 0 || tmp === "")
-						
+
 //					console.log (val, ' interpolated to the "', modifiedParams[key], '" and ', isEmpty (modifiedParams[key]) ? ' is empty' : 'is not empty');
 					if (isEmpty (modifiedParams[key]))
 						throw "EMPTY VALUE";
-					
+
 				} catch (e) {
-					
+
+					//console.error('ERR!');
 					failedParams.push (prefix+key);
-				
+
 				}
-				
+
 			} else if (val.toFixed || val.constructor == Boolean) {
 				modifiedParams[key] = val;
 			} else { // val is hash || array
-				
 				var result = checkTaskParams(val, dict, prefix+key);
-				
+
 				modifiedParams[key] = result.modified;
 				failedParams = failedParams.concat (result.failed);
 			}
 		}
 	}
-	
+//console.log('FAILED', failedParams);
 	return {
 		modified: modifiedParams,
 		failed: failedParams || []
@@ -166,14 +166,14 @@ function checkTaskParams (params, dict, prefix) {
  * @cfg {Object} reqParam (required) Workflow parameters.
  */
 var workflow = module.exports = function (config, reqParam) {
-	
+
 	var self = this;
-	
+
 	util.extend (true, this, config); // this is immutable config skeleton
 	util.extend (true, this, reqParam); // this is config fixup
-	
+
 	this.created = new Date().getTime();
-	
+
 	// here we make sure workflow uid generated
 	// TODO: check for cpu load
 	var salt = (Math.random () * 1e6).toFixed(0);
@@ -197,46 +197,46 @@ var workflow = module.exports = function (config, reqParam) {
 		} catch (e) {
 			return item;
 		}
-		
+
 	}).join ('');
 
 	this.data = this.data || {};
-	
+
 //	console.log ('!!!!!!!!!!!!!!!!!!!' + this.data.keys.length);
-	
+
 //	console.log ('config, reqParam', config, reqParam);
-	
+
 	self.ready = true;
-	
+
 	// TODO: optimize usage - find placeholders and check only placeholders
-	
+
 	this.tasks = config.tasks.map (function (taskParams) {
 		var task;
-		
+
 		var actualTaskParams;
 		var taskTemplateName = taskParams.$template;
 		if (self.templates && self.templates[taskTemplateName]) {
-			
+
 			actualTaskParams = {};
 			util.extend (true, actualTaskParams, self.templates[taskTemplateName]);
 			util.extend (true, actualTaskParams, taskParams);
-			
+
 			delete actualTaskParams.$template;
 		} else {
 			actualTaskParams = util.extend(true, {}, taskParams);
 		}
-		
+
 		var checkRequirements = function () {
-			
+
 			var dict = util.extend(true, {}, reqParam);
 			dict.data = self.data;
-			
+
 			if ($isServerSide) {
 				dict.project = project
 			}
-			
+
 			var result = checkTaskParams (actualTaskParams, dict);
-			
+
 			if (result.failed && result.failed.length > 0) {
 				this.unsatisfiedRequirements = result.failed;
 				return false;
@@ -245,21 +245,21 @@ var workflow = module.exports = function (config, reqParam) {
 				return true;
 			}
 		}
-		
+
 		// check for data persistence in self.templates[taskTemplateName], taskParams
-		
+
 //		console.log (taskParams);
-		
+
 		var taskClassName = actualTaskParams.className || actualTaskParams.$class;
 		var taskFnName = actualTaskParams.functionName || actualTaskParams.$function;
-		
+
 		if (taskClassName && taskFnName)
 			self.logError ('defined both className and functionName, using className');
-		
+
 		if (taskClassName) {
 //			self.log (taskParams.className + ': initializing task from class');
 			var xTaskClass;
-			
+
 			// TODO: need check all task classes, because some compile errors may be there
 //			console.log ('task/'+taskParams.className);
 			try {
@@ -270,7 +270,7 @@ var workflow = module.exports = function (config, reqParam) {
 				throw ('requirement "'+taskClassName+'" failed:');
 				self.ready = false;
 			}
-			
+
 			try {
 			task = new xTaskClass ({
 				className: taskClassName,
@@ -283,15 +283,15 @@ var workflow = module.exports = function (config, reqParam) {
 				console.log (e.stack);
 				throw ('instance of "'+taskClassName+'" creation failed:');
 				self.ready = false;
-				
+
 			}
-			
+
 		} else if (actualTaskParams.coderef || taskFnName) {
-		
+
 //			self.log ((taskParams.functionName || taskParams.logTitle) + ': initializing task from function');
 			if (!taskFnName && !actualTaskParams.logTitle)
 				throw "task must have a logTitle when using call parameter";
-			
+
 			var xTaskClass = function (config) {
 				this.init (config);
 			};
@@ -301,21 +301,36 @@ var workflow = module.exports = function (config, reqParam) {
 			util.extend (xTaskClass.prototype, {
 				run: function () {
 					var failed = false;
-					
-					if ((actualTaskParams.$bind || actualTaskParams.bind) && taskFnName) {
-						try {
-							var functionRef = actualTaskParams.bind || actualTaskParams.$bind;
-							// TODO: use pathToVal
-							var fSplit = taskFnName.split (".");
-							while (fSplit.length) {
-								var fChunk = fSplit.shift();
-								functionRef = functionRef[fChunk];
-							}
-							
-							this.completed (functionRef.call (actualTaskParams.bind || actualTaskParams.$bind, this));
-						} catch (e) {
-							failed = 'failed call function "'+taskFnName+'" from ' + (actualTaskParams.bind || actualTaskParams.$bind) + ' with ' + e;
+
+                    /**
+                     * Apply $function to $args if they are present.
+                     */
+                    if (taskFnName && this.$args) {
+						var origin = this.$origin;
+						if ('string' == typeof origin) {
+							origin = common.getByPath(origin).value;
 						}
+						var method = common.getByPath(taskFnName, origin);
+
+						var fn = method.value;
+						var ctx = this.$scope || method.scope;
+						var args = this.$args;
+
+                        if ('function' == typeof fn) {
+                            try {
+                                var returnVal = fn.apply(ctx, args);
+                            } catch (e) {
+								this.failed(e);
+								return;
+                            }
+							this.completed(returnVal);
+                        } else {
+							this.failed(taskFnName + ' is not a function');
+                        }
+						return;
+                    /**
+                     * Otherwise run $function as method in the initiator.
+					 */
 					} else if (taskFnName) {
 						var fn = $mainModule[taskFnName];
 						if (fn && fn.constructor == Function) {
@@ -338,27 +353,26 @@ var workflow = module.exports = function (config, reqParam) {
 						}
 					} else {
 						// TODO: detailed error description
-//						if (taskParams.bind)
 						this.completed (actualTaskParams.coderef (this));
 					}
 					if (failed) throw failed;
 				}
 			});
-			
+
 			task = new xTaskClass ({
 				functionName: taskFnName,
 				logTitle:     actualTaskParams.logTitle || actualTaskParams.$logTitle,
 				require:      checkRequirements,
 				important:    actualTaskParams.important || actualTaskParams.$important
 			});
-			
+
 		}
-		
+
 //		console.log (task);
-		
+
 		return task;
 	});
-	
+
 };
 
 util.inherits (workflow, EventEmitter);
@@ -393,49 +407,49 @@ util.extend (workflow.prototype, {
 	taskRequirements: taskRequirements,
 	isIdle: true,
 	haveCompletedTasks: false,
-		
+
 	/**
 	 * @method run Initiators call this method to launch the workflow.
 	 */
 	run: function () {
 		if (!this.started)
 			this.started = new Date().getTime();
-		
+
 		var self = this;
-		
+
 		if (self.stopped)
 			return;
-		
+
 		self.failed = false;
 		self.isIdle = false;
 		self.haveCompletedTasks = false;
-				
+
 //		self.log ('workflow run');
-		
+
 		this.taskStates = [0, 0, 0, 0, 0, 0, 0];
-		
+
 		// check task states
-		
+
 		this.tasks.map (function (task) {
-			
+
 			if (task.subscribed === void(0)) {
 				self.addEventListenersToTask (task);
 			}
-			
+
 			task.checkState ();
-			
+
 			self.taskStates[task.state]++;
-			
+
 //			console.log ('task.className, task.state\n', task, task.state, task.isReady ());
-			
+
 			if (task.isReady ()) {
 				self.logTask (task, 'started');
 				try {
 					task.run ();
 				} catch (e) {
-					self.logTaskError (task, 'failed to run');
+					self.logTaskError (task, 'failed to run', e);
 				}
-				
+
 				// sync task support
 				if (!task.isReady()) {
 					self.taskStates[task.stateNames.ready]--;
@@ -445,13 +459,13 @@ util.extend (workflow.prototype, {
 		});
 
 		var taskStateNames = taskClass.prototype.stateNames;
-		
+
 		if (this.taskStates[taskStateNames.ready] || this.taskStates[taskStateNames.running]) {
 			// it is save to continue, wait for running/ready task
 			console.log ('have running tasks');
-			
+
 			self.isIdle = true;
-			
+
 			return;
 		} else if (self.haveCompletedTasks) {
 			console.log ('have completed tasks');
@@ -461,16 +475,16 @@ util.extend (workflow.prototype, {
 			} else if ($isServerSide) {
 				process.nextTick (function () {self.run ()});
 			}
-			
+
 			self.isIdle = true;
-			
+
 			return;
 		}
-		
+
 		self.stopped = new Date().getTime();
-		
+
 		var scarceTaskMessage = 'unsatisfied requirements: ';
-	
+
 		// TODO: display scarce tasks unsatisfied requirements
 		if (this.taskStates[taskStateNames.scarce]) {
 			self.tasks.map (function (task) {
@@ -483,7 +497,7 @@ util.extend (workflow.prototype, {
 					self.failed = true;
 					scarceTaskMessage += '(important)';
 				}
-				
+
 				if (task.state == taskStateNames.scarce)
 					scarceTaskMessage += (task.logTitle) + ' => ' + task.unsatisfiedRequirements.join (', ') + '; ';
 			});
@@ -501,23 +515,23 @@ util.extend (workflow.prototype, {
 					requestDump = e
 			};
 		}
-		
+
 		if (this.failed) {
 			// workflow stopped and failed
-		
+
 			self.emit ('failed', self);
 			self.log (this.stage + ' failed in ' + (self.stopped - self.started) + 'ms; ' + this.taskStates[taskStateNames.failed]+' tasks of ' + self.tasks.length);
 
 		} else {
 			// workflow stopped and not failed
-		
+
 			self.emit ('completed', self);
 			self.log (this.stage + ' complete in ' + (self.stopped - self.started) + 'ms');
 
 		}
-		
+
 		self.isIdle = true;
-		
+
 	},
 	stageMarker: {prepare: "()", workflow: "[]", presentation: "<>"},
 	log: function (msg) {
@@ -529,13 +543,13 @@ util.extend (workflow.prototype, {
 		for (var i = 0, len = arguments.length; i < len; ++i) {
 			toLog.push (arguments[i]);
 		}
-		
+
 		// TODO: also check for bad clients (like ie9)
 		if ($isPhoneGap) {
 			toLog.shift();
 			toLog = [toLog.join (' ')];
 		}
-		
+
 		console.log.apply (console, toLog);
 	},
 	logTask: function (task, msg) {
@@ -551,18 +565,18 @@ util.extend (workflow.prototype, {
 	},
 	addEventListenersToTask: function (task) {
 		var self = this;
-		
+
 		task.subscribed = 1;
-		
+
 		// loggers
 		task.on ('log', function (message) {
-			self.logTask (task, message); 
+			self.logTask (task, message);
 		});
 
 		task.on ('warn', function (message) {
-			self.logTaskError (task, message); 
+			self.logTaskError (task, message);
 		});
-		
+
 		task.on ('error', function (e) {
 			self.error = e;
 			self.logTaskError (task, 'error: ', e);// + '\n' + arguments[0].stack);
@@ -575,23 +589,23 @@ util.extend (workflow.prototype, {
 //				return self.logTaskError (task, 'error ' + arguments[0]);// + '\n' + arguments[0].stack);
 //			}
 			self.logTask (task, 'task skipped');
-			
+
 			if (self.isIdle)
 				self.run ();
-			
+
 		});
-		
+
 		task.on ('cancel', function () {
-			
+
 			self.logTaskError (task, 'canceled, retries = ' + task.retries);
 			self.failed = true;
-			
+
 			if (self.isIdle)
 				self.run ();
 		});
-		
+
 		task.on ('complete', function (t, result) {
-			
+
 			if (result) {
 				if (t.produce || t.$set) {
 					common.pathToVal (self, t.produce || t.$set, result);
@@ -599,9 +613,9 @@ util.extend (workflow.prototype, {
 					common.pathToVal (self, t.$mergeWith, result, common.mergeObjects);
 				}
 			}
-			
+
 			self.logTask (task, 'task completed');
-			
+
 			if (self.isIdle)
 				self.run ();
 			else
