@@ -144,12 +144,24 @@ util.extend (mongoRequestTask.prototype, {
 		
 		var connectorConfig = project.config.db[this.connector];
 		
+		var connOptions;
+		if (!connectorConfig.options)
+			connectorConfig.options = {};
+		
+		connOptions = connectorConfig.options;
+		
+		if (!connOptions['native_parser'])
+			connOptions['native_parser'] = true;
+
+		if (!connOptions['journal'] || !connOptions['w'] || !connOptions['fsync'])
+			connOptions['journal'] = true;
+
 		// create connector
 		
 		var connector = new mongo.Db (
 			connectorConfig.database,
 			new mongo.Server (connectorConfig.host, connectorConfig.port),
-			{native_parser: true}
+			connOptions
 		);
 		
 		project.connectors[this.connector] = connector;
