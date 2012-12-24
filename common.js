@@ -98,8 +98,8 @@ try {
 	if (process.pid) {
 		global.$isClientSide = false;
 		global.$isServerSide = true;
-		global.$mainModule   = process.mainModule.exports;
-		global.$scope        = 'process.mainModule.exports';
+		global.$mainModule   = process.mainModule;
+		global.$scope        = 'process.mainModule';
 		global.$stash        = {};
 		global.$isPhoneGap   = false;
 		global.$global       = global;

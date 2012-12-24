@@ -307,7 +307,7 @@ var workflow = module.exports = function (config, reqParam) {
                      * Apply $function to $args in $scope.
                      */
                     if (taskFnName) {
-						var origin = this.$origin || $mainModule;
+						var origin = this.$origin || $mainModule.exports;
 						var method = common.getByPath(taskFnName, origin);
 
 						/**
