@@ -228,11 +228,12 @@ var workflow = module.exports = function (config, reqParam) {
 
 		var checkRequirements = function () {
 
-			var dict = util.extend(true, {}, reqParam);
-			dict.data = self.data;
+			var dict    = util.extend(true, {}, reqParam);
+			dict.data   = self.data;
+			dict.global = $global;
 
 			if ($isServerSide) {
-				dict.project = project
+				dict.project = project;
 			}
 
 			var result = checkTaskParams (actualTaskParams, dict);
@@ -306,14 +307,11 @@ var workflow = module.exports = function (config, reqParam) {
                      * Apply $function to $args if they are present.
                      */
                     if (taskFnName && this.$args) {
-						var origin = this.$origin;
-						if ('string' == typeof origin) {
-							origin = common.getByPath(origin).value;
-						}
-						var method = common.getByPath(taskFnName, origin);
+						var origin = this.$origin || $mainModule;
+						var method = common.getByPath (taskFnName, origin);
 
 						var fn   = method.value;
-						var ctx  = this.$scope;
+						var ctx  = this.$scope || method.scope;
 						var args = this.$args;
 						if (args.constructor !== Array)
 							args = [args];

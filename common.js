@@ -102,6 +102,7 @@ try {
 		global.$scope        = 'process.mainModule.exports';
 		global.$stash        = {};
 		global.$isPhoneGap   = false;
+		global.$global       = global;
 	} else {
 		throw 'WTF?';
 	}
@@ -111,6 +112,7 @@ try {
 	window.$mainModule   = window;
 	window.$scope        = 'window';
 	window.$stash        = {};
+	window.$global       = window;
 	try {
 		if (PhoneGap || Cordova || cordova) window.$isPhoneGap = true;
 	} catch (e) {
@@ -144,8 +146,8 @@ var mergeObjects = module.exports.mergeObjects = function (object, subjectParent
 	}
 };
 
-module.exports.getByPath = function (path, origin) {
-	var value = origin || GLOBAL;
+var getByPath = module.exports.getByPath = function (path, origin) {
+	var value = origin;
 	var scope, key;
     path.split('.').forEach(function (prop) {
         scope = value;
@@ -340,7 +342,8 @@ define (function (require, exports, module) {
 		pathToVal: pathToVal,
 		findInterpolation: findInterpolation,
 		loadIncludes: loadIncludes,
-		mergeObjects: mergeObjects
+		mergeObjects: mergeObjects,
+		getByPath: getByPath
 	};
 });
 
