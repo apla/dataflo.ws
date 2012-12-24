@@ -1,6 +1,6 @@
 var util = require ('util');
 
-var root;
+var projectRoot;
 
 if (!util.inherits) {
 	util.inherits = function (ctor, superCtor) {
@@ -147,14 +147,20 @@ var mergeObjects = module.exports.mergeObjects = function (object, subjectParent
 };
 
 var getByPath = module.exports.getByPath = function (path, origin) {
-	var value = origin;
+	var value = origin || $global;
 	var scope, key;
-    path.split('.').forEach(function (prop) {
-        scope = value;
+    var validPath = path.split('.').every(function (prop) {
+		scope = value;
 		key = prop;
-        value = scope[key];
+		if (null == scope) {
+			// break
+			return false;
+		} else {
+			value = scope[key];
+			return true;
+		}
     });
-	return { value: value, scope: scope, key: key };
+	return validPath && { value: value, scope: scope, key: key };
 };
 
 var pathToVal = module.exports.pathToVal = function (dict, path, value, method) {
@@ -249,7 +255,7 @@ function loadIncludes(config, cb, level) {
 
 				} else {
 
-					root.fileIO(path).readFile(function (err, data) {
+					projectRoot.fileIO(path).readFile(function (err, data) {
 						if (err) {
 
 							onError(err);
@@ -336,15 +342,9 @@ var findInterpolation = module.exports.findInterpolation = function (params, pre
 var define;
 if (typeof define === "undefined")
 	define = function () {}
-
+var _exports = module.exports;
 define (function (require, exports, module) {
-	return {
-		pathToVal: pathToVal,
-		findInterpolation: findInterpolation,
-		loadIncludes: loadIncludes,
-		mergeObjects: mergeObjects,
-		getByPath: getByPath
-	};
+	return _exports;
 });
 
 
@@ -433,18 +433,18 @@ if ($isServerSide) {
 		var rootPath = script.match (/(.*)\/(bin|t|lib)\//);
 
 		if (!rootPath) {//win
-			rootPath = script.match (/(.*)\\(bin|t|lib)\\/)
+			rootPath = script.match (/(.*)\\(bin|t|lib)\\/);
 		}
 
 		if (!rootPath)
 			return;
 
-		root = new io (rootPath[1]);
+		projectRoot = new io (rootPath[1]);
 
-		this.root = root;
+		this.root = projectRoot;
 		var self = this;
 
-		root.fileIO ('etc/project').readFile (function (err, data) {
+		projectRoot.fileIO ('etc/project').readFile (function (err, data) {
 			if (err) {
 				console.error ("can't access etc/project file. create one and define project id");
 				// process.kill ();
@@ -489,7 +489,7 @@ if ($isServerSide) {
 
 				self.config = config;
 
-				root.fileIO ('var/instance').readFile (function (err, data) {
+				projectRoot.fileIO ('var/instance').readFile (function (err, data) {
 
 					if (err) {
 						console.error ("PROBABLY HARMFUL: can't access var/instance: "+err);
@@ -503,7 +503,7 @@ if ($isServerSide) {
 
 					console.log ('instance is: ', instance);
 
-					root.fileIO ('etc/' + instance + '/fixup').readFile (function (err, data) {
+					projectRoot.fileIO ('etc/' + instance + '/fixup').readFile (function (err, data) {
 						if (err) {
 							console.error ("PROBABLY HARMFUL: can't access "+'etc/' + instance + '/fixup'+" file. "
 										   + "create one and define local configuration fixup. "
@@ -544,14 +544,9 @@ if ($isServerSide) {
 						self.emit ('ready');
 					});
 				});
-			}, 'root');
+			}, 'projectRoot');
 		});
-
-		// TODO: walk filetree to find directory root if script located in
-		// subdir of bin or t
-	//	console.log (root);
-
-	}
+	};
 
 	var EventEmitter = require ('events').EventEmitter;
 

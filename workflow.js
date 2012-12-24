@@ -304,56 +304,41 @@ var workflow = module.exports = function (config, reqParam) {
 					var failed = false;
 
                     /**
-                     * Apply $function to $args if they are present.
+                     * Apply $function to $args in $scope.
                      */
-                    if (taskFnName && this.$args) {
+                    if (taskFnName) {
 						var origin = this.$origin || $mainModule;
-						var method = common.getByPath (taskFnName, origin);
+						var method = common.getByPath(taskFnName, origin);
 
-						var fn   = method.value;
-						var ctx  = this.$scope || method.scope;
-						var args = this.$args;
-						if (args.constructor !== Array)
-							args = [args];
+						/**
+						 * Try to look up $function in the global scope.
+						 */
+						if (!method || 'function' != typeof method.value) {
+							console.warn(
+								'Use "global.%s" instead of "%s"!',
+								taskFnName, taskFnName
+							);
+							method = common.getByPath(taskFnName);
+						}
 
-                        if ('function' == typeof fn) {
+                        if (method && 'function' == typeof method.value) {
+							var fn = method.value;
+							var ctx  = this.$scope || method.scope;
+							var args = this.$args || [ this ];
                             try {
                                 var returnVal = fn.apply(ctx, args);
                             } catch (e) {
-								this.failed(e);
-								return;
+								failed = e;
+								this.failed(failed);
                             }
-							this.completed(returnVal);
+							if (!failed) this.completed(returnVal);
                         } else {
-							this.failed(taskFnName + ' is not a function');
+							failed = taskFnName + ' is not a function';
+							this.failed(failed);
                         }
-						return;
-                    /**
-                     * Otherwise run $function as method in the initiator.
-					 */
-					} else if (taskFnName) {
-						var fn = $mainModule[taskFnName];
-						if (fn && fn.constructor == Function) {
-							this.completed (fn (this));
-						} else {
-							// this is solution for nodejs scope:
-							// exports can be redefined
-							var mainExports = eval ($scope);
-							var fn = mainExports[taskFnName];
-							if (fn && fn.constructor == Function) {
-								$mainModule = mainExports;
-								this.completed (fn (this));
-							} else {
-								// TODO: fix description for window
-								failed = "you defined functionName as " + taskFnName
-								+ " but we cannot find this name in current scope (" + $scope
-								+ ").\nplease add " + ($isClientSide ? "'window." : "'module.exports.")
-								+ taskFnName + " = function (params) {...}}' in your main module";
-							}
-						}
 					} else {
 						// TODO: detailed error description
-						this.completed (actualTaskParams.coderef (this));
+						this.completed(actualTaskParams.coderef(this));
 					}
 					if (failed) throw failed;
 				}

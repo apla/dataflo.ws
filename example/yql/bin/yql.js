@@ -9,6 +9,9 @@
 
 var httpdi  = require('initiator/http');
 
+module.exports.pimp = function (config) {
+	return config.obj.toLowerCase();
+};
 
 project.on ('ready', function () {
 	var config = {
@@ -26,21 +29,28 @@ project.on ('ready', function () {
 			}, {
                 $function: "log",
                 $args: [ "POST FIELDS", "{$data.post.fields}" ],
-				$origin: "console"
+				$origin: "{$global.console}"
 			}, {
                 $function: "String.prototype.trim",
 				$scope: "{$data.post.fields.q}",
                 $args: [],
 				produce: "data.trimmedText"
 			}, {
-                $function: "String.prototype.toLowerCase",
-				$scope: "{$data.trimmedText}",
+                $function: "toUpperCase",
+				$origin: "{$data.trimmedText}",
                 $args: [],
-				produce: "data.lowerCasedText"
+				produce: "data.upperCasedText"
+			}, {
+                $function: "global.console.log",
+                $args: [ "UPPER CASE", "{$data.upperCasedText}" ]
+			}, {
+                $function: "pimp",
+				obj: "{$data.upperCasedText}",
+				produce: "data.pimpedText"
 			}, {
                 $function: "encodeURIComponent",
                 $args: [ 'select * from contentanalysis.analyze ' +
-                         'where text="{$data.lowerCasedText}"' ],
+                         'where text="{$data.pimpedText}"' ],
                 produce: "data.yql"
 			}, {
                 $function: "console.log",
