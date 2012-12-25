@@ -2,9 +2,8 @@ var util = require ('util');
 
 // Safe and universal type check
 Object.typeOf = function (obj) {
-	return Object.prototype.toString.call(obj).replace(
-		/\[object (.+)\]/, '$1'
-	);
+	// [object Boolean] -> Boolean
+	return Object.prototype.toString.call(obj).slice(8, -1);
 };
 
 Object.is = function (type, obj) {
