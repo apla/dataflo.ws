@@ -18,12 +18,12 @@ var hasOwnProperty = Object.prototype.hasOwnProperty;
 function isEmpty(obj) {
 	var type = Object.typeOf(obj);
     return (
-		('Undefined' == type || 'Null' == type)  ||
-		('Boolean'   == type && false === obj)   ||
-		('Number'    == type && obj == 0)        ||
-		('Array'     == type && obj.length == 0) ||
-		('String'    == type && obj.length == 0) ||
-		('Object'    == type && Object.keys(obj).length == 0)
+		('Undefined' == type || 'Null' == type)            ||
+		('Boolean'   == type && false === obj)             ||
+		('Number'    == type && (0 === obj || isNaN(obj))) ||
+		('String'    == type && 0 == obj.length)           ||
+		('Array'     == type && 0 == obj.length)           ||
+		('Object'    == type && 0 == Object.keys(obj).length)
 	);
 }
 
