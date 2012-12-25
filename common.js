@@ -6,7 +6,7 @@ Object.typeOf = function (obj) {
 	return Object.prototype.toString.call(obj).slice(8, -1);
 };
 
-Object.is = function (type, obj) {
+Object.is = function (type, obj) { // lemme unseen this
 	return Object.typeOf(obj).toLowerCase() == type.toLowerCase();
 };
 
@@ -377,7 +377,13 @@ if (typeof define === "undefined")
 	define = function () {}
 var _exports = module.exports;
 define (function (require, exports, module) {
-	return _exports;
+	return {
+		pathToVal: pathToVal,
+		findInterpolation: findInterpolation,
+		loadIncludes: loadIncludes,
+		mergeObjects: mergeObjects,
+		getByPath: getByPath
+	};
 });
 
 
