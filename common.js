@@ -377,13 +377,7 @@ if (typeof define === "undefined")
 	define = function () {}
 var _exports = module.exports;
 define (function (require, exports, module) {
-	return {
-		pathToVal: pathToVal,
-		findInterpolation: findInterpolation,
-		loadIncludes: loadIncludes,
-		mergeObjects: mergeObjects,
-		getByPath: getByPath
-	};
+	return _exports;
 });
 
 
