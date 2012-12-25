@@ -12,8 +12,14 @@ Object.is = function (type, obj) {
 };
 
 console.print = function () {
-	var BLUE = '\033[34m';
-	var RESET = '\033[0m';
+	var BLUE = '';
+	var RESET = '';
+
+	if ($isServerSide) {
+		BLUE = '\033[34m';
+		RESET = '\033[0m';
+	}
+
 	var err = new Error();
 	var stack = err.stack.split('\n');
 	var prev = stack[2];
