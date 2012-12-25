@@ -961,8 +961,7 @@ util.extend (mongoRequestTask.prototype, {
 				if (err) {
 					self.failed(err);
 				} else {
-					console.log('MAPREDUCE', coll.documents[0].results);
-					self.completed({ ok: true, collection: coll });
+					self.completed(coll);
 				}
 			});
 		});
