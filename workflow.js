@@ -16,26 +16,15 @@ var taskStateNames = taskClass.prototype.stateNames;
 var hasOwnProperty = Object.prototype.hasOwnProperty;
 
 function isEmpty(obj) {
-
-    if (obj === void 0)
-		return true;
-	// Assume if it has a length property with a non-zero value
-    // that that property is correct.
-    if (obj === true)
-		return !obj;
-
-	if (obj.toFixed && obj !== 0)
-		return false;
-
-	if (obj.length && obj.length > 0)
-		return false;
-
-    for (var key in obj) {
-        if (hasOwnProperty.call(obj, key))
-			return false;
-    }
-
-    return true;
+	var type = Object.typeOf(obj);
+    return (
+		('Undefined' == type || 'Null' == type)  ||
+		('Boolean'   == type && false === obj)   ||
+		('Number'    == type && obj == 0)        ||
+		('Array'     == type && obj.length == 0) ||
+		('String'    == type && obj.length == 0) ||
+		('Object'    == type && Object.keys(obj).length == 0)
+	);
 }
 
 function taskRequirements (requirements, dict) {
@@ -57,13 +46,16 @@ function taskRequirements (requirements, dict) {
 	return result;
 }
 
-
 function checkTaskParams (params, dict, prefix) {
-
 	// parse task params
 	// TODO: modify this function because recursive changes of parameters works dirty (indexOf for value)
 
-//console.log('CHECK TASK PARAMS', params);
+	var AllowedValueTypes = {
+		Boolean: true,
+		Number: true,
+		Function: true,
+		Date: true
+	};
 
 	if (prefix == void 0) prefix = '';
 	if (prefix) prefix += '.';
@@ -71,13 +63,12 @@ function checkTaskParams (params, dict, prefix) {
 	var modifiedParams;
 	var failedParams = [];
 
-	if (params.constructor === Array) { // params is array
+	if (Object.is('Array', params)) { // params is array
 
 		modifiedParams = [];
 
 		params.forEach(function (val, index, arr) {
-
-			if (val.interpolate) { // string
+			if (Object.is('String', val)) { // string
 
 				try {
 					var tmp = val.interpolate (dict);
@@ -94,34 +85,35 @@ function checkTaskParams (params, dict, prefix) {
 					failedParams.push (prefix+'['+index+']');
 				}
 
-			} else if (val.toFixed || val.constructor == Boolean) {
+			} else if (Object.typeOf(val) in AllowedValueTypes) {
 				modifiedParams.push(val);
 			} else {
 				var result = checkTaskParams(val, dict, prefix+'['+index+']');
+
 				modifiedParams.push(result.modified);
 				failedParams = failedParams.concat (result.failed);
 			}
 		});
 
 	} else { // params is hash
-
 		modifiedParams = {};
 
-		for (var key in params) {
+		Object.keys(params).forEach(function (key) {
 			var val = params[key];
 			var valCheck = val;
-			if (val.interpolate) { // val is string
-				try {
-					//console.log('- interpolate');
-					var tmp = modifiedParams[key] = val.interpolate (dict);
-					//console.log('- interpolate', typeof(tmp), tmp === void 0);
-					if (tmp === void 0)
-						modifiedParams[key] = val;
-//					if (tmp === false || tmp === 0 || tmp === "")
 
-//					console.log (val, ' interpolated to the "', modifiedParams[key], '" and ', isEmpty (modifiedParams[key]) ? ' is empty' : 'is not empty');
-					if (isEmpty (modifiedParams[key]))
+			if (Object.is('String', val)) {
+				try {
+					var tmp = modifiedParams[key] = val.interpolate (dict);
+
+
+					if (tmp === void 0) {
+						modifiedParams[key] = val;
+					}
+
+					if (isEmpty(modifiedParams[key])) {
 						throw "EMPTY VALUE";
+					}
 
 				} catch (e) {
 
@@ -130,7 +122,7 @@ function checkTaskParams (params, dict, prefix) {
 
 				}
 
-			} else if (val.toFixed || val.constructor == Boolean) {
+			} else if (Object.typeOf(val) in AllowedValueTypes) {
 				modifiedParams[key] = val;
 			} else { // val is hash || array
 				var result = checkTaskParams(val, dict, prefix+key);
@@ -138,9 +130,9 @@ function checkTaskParams (params, dict, prefix) {
 				modifiedParams[key] = result.modified;
 				failedParams = failedParams.concat (result.failed);
 			}
-		}
+		});
 	}
-//console.log('FAILED', failedParams);
+
 	return {
 		modified: modifiedParams,
 		failed: failedParams || []
@@ -314,10 +306,6 @@ var workflow = module.exports = function (config, reqParam) {
 						 * Try to look up $function in the global scope.
 						 */
 						if (!method || 'function' != typeof method.value) {
-							console.warn(
-								'Use "global.%s" instead of "%s"!',
-								taskFnName, taskFnName
-							);
 							method = common.getByPath(taskFnName);
 						}
 

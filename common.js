@@ -1,5 +1,32 @@
 var util = require ('util');
 
+// Safe and universal type check
+Object.typeOf = function (obj) {
+	return Object.prototype.toString.call(obj).replace(
+		/\[object (.+)\]/, '$1'
+	);
+};
+
+Object.is = function (type, obj) {
+	return Object.typeOf(obj).toLowerCase() == type.toLowerCase();
+};
+
+console.print = function () {
+	var BLUE = '\033[34m';
+	var RESET = '\033[0m';
+	var err = new Error();
+	var stack = err.stack.split('\n');
+	var prev = stack[2];
+	var msg = [ BLUE + prev + RESET + '\n' ];
+	msg.push.apply(msg, arguments);
+	msg.push(
+		'\n' + BLUE +
+		'============================================================' +
+		RESET
+	);
+	return console.log.apply(console, msg);
+};
+
 var projectRoot;
 
 if (!util.inherits) {
@@ -164,22 +191,22 @@ var getByPath = module.exports.getByPath = function (path, origin) {
 };
 
 var pathToVal = module.exports.pathToVal = function (dict, path, value, method) {
-//	console.log ('pathToVal ('+ dict + ', '+ path + ', '+value+')');
-	var chunks = (path.constructor === Array ? path : path.split ('.'));
+	var chunks = 'string' == typeof path ? path.split('.') : path;
+	var chunk = chunks[0];
+	var rest = chunks.slice(1);
 	if (chunks.length == 1) {
-		var oldValue = dict[chunks[0]];
-		if (value !== void(0)){
-			if (method !== void 0) {
-				method (value, dict, chunks[0]);
+		var oldValue = dict[chunk];
+		if (value !== undefined) {
+			if (method !== undefined) {
+				method(value, dict, chunk);
 			} else {
-				dict[chunks[0]] = value;
+				dict[chunk] = value;
 			}
 		}
-//		console.log (''+oldValue);
 		return oldValue;
 	}
-	return pathToVal (dict[chunks.shift()], chunks, value, method)
-}
+	return pathToVal(dict[chunk], rest, value, method);
+};
 
 // - - -
 
@@ -329,6 +356,7 @@ var findInterpolation = module.exports.findInterpolation = function (params, pre
 
 			} else if (!val.toFixed) { // array and object (check for function and boolean)
 				var result = findInterpolation (val, prefix+key);
+
 				for (var attrname in result) {
 					found[attrname] = result[attrname];
 				}
