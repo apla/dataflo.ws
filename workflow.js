@@ -313,6 +313,8 @@ var workflow = module.exports = function (config, reqParam) {
 							var fn = method.value;
 							var ctx  = this.$scope || method.scope;
 							var args = this.$args || [ this ];
+							if (args.typeOf != 'Array')
+								args = [args];
                             try {
                                 var returnVal = fn.apply(ctx, args);
                             } catch (e) {
