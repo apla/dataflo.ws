@@ -2,15 +2,15 @@ var OAuth2 = require('oauth').OAuth2,
 	querystring = require('querystring'),
 	task = require('task/base'),
 	util = require('util');
-	
-// - - - static	
-	
+
+// - - - static
+
 var googleConfig = project.config.consumerConfig.google;
 var googleScopes = (googleConfig ? googleConfig.scopes : null);
 
 if (!googleScopes) {
 
-	util.extend (googleConfig, {		
+	util.extend (googleConfig, {
 		"scopes": {
 			"profile"			: "https://www.googleapis.com/auth/userinfo.profile",
 			"userinfo"			: "https://www.googleapis.com/auth/userinfo.email",
@@ -42,17 +42,17 @@ if (!googleScopes) {
 			"youtube"			: "https://gdata.youtube.com"
 		}
 	});
-	
+
 	googleScopes = googleConfig.scopes;
-	
+
 	for (var scope in googleScopes) {
 		googleScopes[scope] = [googleScopes[scope], querystring.escape(googleScopes[scope])];
 	}
-	
+
 //	console.log ('<------------------ google',  googleConfig);
 
 }
-	
+
 // - - -
 
 var google = module.exports = function(config) {
@@ -63,7 +63,7 @@ var google = module.exports = function(config) {
 	];
 
 	this.init (config);
-	this.oa = new OAuth2(googleConfig.clientId,  googleConfig.clientSecret,  googleConfig.baseUrl, googleConfig.authorizePath, googleConfig.requestTokenUrl);		
+	this.oa = new OAuth2(googleConfig.clientId,  googleConfig.clientSecret,  googleConfig.baseUrl, googleConfig.authorizePath, googleConfig.requestTokenUrl);
 
 };
 
@@ -72,50 +72,50 @@ util.inherits (google, task);
 util.extend (google.prototype, {
 
 	run: function() {
-		
+
 		var self = this;
 		self.failed('use method [login|callback|profile]');
-		
+
 	},
-	
+
 	login: function () {
-		
+
 		var self = this;
 		var req = self.req;
-		
+
 		var scopes = [];
-		
+
 		self.scopes.map(function(scope) {
 			scopes.push(googleScopes[scope][1]);
 		});
-		
+
 		var getParams = {
 			client_id: googleConfig.clientId,
 			redirect_uri: googleConfig.callbackUrl,
 			response_type: 'code',
 			state: 'profile'
 		};
-		
+
 		var redirectUrl = this.oa.getAuthorizeUrl(getParams)+'&scope='+scopes.join('+');
-		
+
 		self.completed(redirectUrl);
-		
+
 	},
-	
+
 	callback: function() {
-		
+
 		var self = this,
 			req = self.req,
 			query = req.url.query;
-		
+
 		req.user  = {
 			tokens : {}
 		};
-		
+
 		if (query.error || !query.code) {
 			self.failed (query.error_description || "token was not accepted");
 		}
-		
+
 		this.oa.getOAuthAccessToken(
 			query.code,
 			{
@@ -123,33 +123,33 @@ util.extend (google.prototype, {
 				grant_type: 'authorization_code'
 			},
 			function( error, access_token, refresh_token ){
-				
+
 				if (error) {
-					
+
 					self.failed(error);
-				
+
 				} else {
-					
+
 					req.user.tokens.oauth_access_token = access_token;
 					if (refresh_token) req.user.tokens.oauth_refresh_token = refresh_token;
-					
+
 					var redirectUrl = (query.action && query.action != "") ? query.action : "/";
 					self.completed (redirectUrl)
-					
+
 				}
 		});
 	},
-	
+
 	profile: function() {
 		var self = this;
 		var req = self.req;
 		var tokens = req.user.tokens;
-		
+
 		this.oa.getProtectedResource(
 			googleConfig.apiUrl+"/userinfo/v2/me",
 			tokens.oauth_access_token,
 			function (error, data, response) {
-				
+
 				if (error) {
 					self.failed(error);
 				} else {
@@ -162,9 +162,9 @@ util.extend (google.prototype, {
 				}
 		});
 	},
-	
+
 	mappingUser: function(user) {
-		
+
 		return {
 			name: user.name,
 			email: user.email,
@@ -172,6 +172,6 @@ util.extend (google.prototype, {
 			link: user.link,
 			authType: 'google'
 		};
-		
+
 	}
 });

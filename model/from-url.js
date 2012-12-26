@@ -6,9 +6,9 @@ var events  = require ('events'),
 
 
 var model = module.exports = function (url) {
-	
+
 	var self = this;
-	
+
 	if (url.constructor === String) {
 		try {
 			this.url = urlUtil.parse (url, true);
@@ -19,33 +19,33 @@ var model = module.exports = function (url) {
 	} else {
 		this.url = url;
 	}
-	
+
 	this.modelName = this.url.protocol.substr (0, this.url.protocol.length - 1);
-	
+
 	// console.log (this.modelName);
 	var requiredModel = require ('../model/'+this.modelName);
 	this.dataSource = new  requiredModel (this);
-	
+
 	// fetch method
-	
+
 	this.fetch = function (target) {
-		
+
 		self.dataSource.fetch(target);
-		
+
 	}
-	
+
 	this.store = function (target) {
-		
+
 		self.dataSource.store(target);
-		
+
 	}
-	
+
 	this.stop = function () {
-		
+
 		if (self.dataSource.stop) self.dataSource.stop();
-		
+
 	}
-	
+
 	// this.init();
 }
 

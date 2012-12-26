@@ -7,7 +7,7 @@
 */
 
 var _required = {
-	
+
 };
 
 define ('util', [], function () {
@@ -85,14 +85,14 @@ define ('events', [], function () {
 	var events = module.exports = {
 		EventEmitter: function () {}
 	};
-	
+
 	// move to event emitter
 	events.EventEmitter.prototype.on = function (type, cb) {
 		if (!this.cb)
 			this.cb = {};
 		if (!this.cb[type])
 			this.cb[type] = [];
-		
+
 		this.cb[type].push (cb);
 	}
 
@@ -103,20 +103,20 @@ define ('events', [], function () {
 			return;
 		if (!this.cb[type])
 			return;
-		
+
 		var args = Array.prototype.slice.call(arguments);
-		
+
 		args.shift ();
-		
+
 		var self = this;
-		
+
 		this.cb[type].map (function (item) {
 			item.apply (self, args)
 		});
 	}
-	
+
 	return events;
-	
+
 });
 
 

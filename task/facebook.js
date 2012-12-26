@@ -181,18 +181,18 @@ util.extend (facebook.prototype, {
 			authType: 'facebook'
 		};
 
-        var emailName;
-        if (user.username) {
-            emailName = user.username;
-            mapped.avatar = 'http://graph.facebook.com/' +
+		var emailName;
+		if (user.username) {
+			emailName = user.username;
+			mapped.avatar = 'http://graph.facebook.com/' +
 				user.username + '/picture';
-        } else {
-            emailName = user.id;
-            mapped.avatar = '';
-        }
-        mapped.email = user.email || (emailName + '@facebook.com');
+		} else {
+			emailName = user.id;
+			mapped.avatar = '';
+		}
+		mapped.email = user.email || (emailName + '@facebook.com');
 
-        return mapped;
+		return mapped;
 	},
 
 	grouplist: function() {

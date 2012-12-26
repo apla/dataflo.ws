@@ -84,7 +84,7 @@ test('check task requirements', {
 			"checkFalse.emptyExp",
 			"checkFalse.emptyArr",
 			"checkFalse.emptyObj",
-			
+
 			"exception.stringExp2",
 			"exception.nothing"
 		]);
@@ -99,7 +99,7 @@ test('compare interpolation', {
 
 		var interpolateWhat  = common.findInterpolation (data);
 		var taskWaitingFor   = taskRequirements (interpolateWhat, dict);
-		
+
 		// strictly saying string exception below is incorrect
 		// because pathToVal is flawed
 		assert.deepEqual (taskWaitingFor, [
@@ -110,9 +110,9 @@ test('compare interpolation', {
 			'checkFalse.emptyObj',
 			'exception.nothing'
 		]);
-		
+
 		console.log (taskWaitingFor);
-		
+
 //		var byDirectValueSet = ;
 
 		assert.strictEqual (byTreeWalk.modified.arrayExtExp[1], 123);
@@ -122,7 +122,7 @@ test('compare interpolation', {
 			"checkFalse.emptyExp",
 			"checkFalse.emptyArr",
 			"checkFalse.emptyObj",
-			
+
 			"exception.stringExp2",
 			"exception.nothing"
 		]);

@@ -13,7 +13,7 @@ module.exports = {
 };
 
 project.on ('ready', function () {
-	
+
 	var config = {
 		port: 50088,
 		static: {

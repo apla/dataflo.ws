@@ -48,18 +48,18 @@ util.extend (twitter.prototype, {
 
 		oa.getOAuthRequestToken(function(error, oauth_token, oauth_token_secret, oauth_authorize_url, additionalParameters ) {
 
-          if (error) {
+		  if (error) {
 
 			self.failed(error);
 
 		  } else {
 
-            //req.twitter_redirect_url = req.url;
-            req.twitter_oauth_token_secret = oauth_token_secret;
-            req.twitter_oauth_token = oauth_token;
+			//req.twitter_redirect_url = req.url;
+			req.twitter_oauth_token_secret = oauth_token_secret;
+			req.twitter_oauth_token = oauth_token;
 
 			self.completed("http://twitter.com/oauth/authenticate?oauth_token=" + oauth_token);
-          }
+		  }
 
 		});
 	},

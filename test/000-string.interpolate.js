@@ -78,19 +78,19 @@ test('interpolate', {
 			number: 123
 		});
 	},
-	
+
 	'expandIndexed': function() {
 		var result = data.indexedExp.interpolate (dict);
 		console.log(result);
 		assert.deepEqual (result, { record: 'a' });
 	},
-	
+
 	'expandIndexedZeroProp': function() {
 		var result = data.indexedZeroPropExp.interpolate (dict);
 		console.log(result);
 		assert.equal (result, 'a');
 	},
-	
+
 	'expandIndexedNonZeroProp': function() {
 		var result = data.indexedNonZeroPropExp.interpolate (dict);
 		console.log(result);

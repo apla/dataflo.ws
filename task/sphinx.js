@@ -9,17 +9,17 @@ var sphinxConfig = project.config.db.sphinx;
 //var sphinxPort   = sphinxConfig.port;
 
 var sphinx = module.exports = function (config) {
-	this.init (config);	
+	this.init (config);
 };
 
 util.inherits(sphinx, task);
 
 util.extend(sphinx.prototype, {
-	
+
 	_getConnection: function () {
-		
+
 		var self = this;
-		
+
 		if (this.connection)
 			return this.connection;
 
@@ -27,19 +27,19 @@ util.extend(sphinx.prototype, {
 		self.connection.on('error', function (err) {
 			if (!err.fatal) {
 			  self.failed('Fatal error while connecting to server');
-		      return;
-		    }
-		    if (err.code !== 'PROTOCOL_CONNECTION_LOST') {
-		      throw err;
-		    }
-		    if (self.verbose) console.log('Re-connecting lost connection'/* + err.stack*/);
-		    self.connection = sphinxQLClient.createConnection(sphinxConfig);
+			  return;
+			}
+			if (err.code !== 'PROTOCOL_CONNECTION_LOST') {
+			  throw err;
+			}
+			if (self.verbose) console.log('Re-connecting lost connection'/* + err.stack*/);
+			self.connection = sphinxQLClient.createConnection(sphinxConfig);
 		});
 
 		if (self.verbose) console.log('Sphinx connection created');
-		return self.connection;		
+		return self.connection;
 	},
-	
+
 	_openConnection: function (cb) {
 		var self = this;
 		var sphinxQL = self._getConnection();
@@ -58,7 +58,7 @@ util.extend(sphinx.prototype, {
 
 	run: function () {
 		// http://sphinxsearch.com/docs/current.html#sphinxql-select
-		
+
 		var self         = this,
 			select_expr  = self.select_expr || '*',
 			index        = self.index || sphinxConfig.index,
@@ -68,15 +68,15 @@ util.extend(sphinx.prototype, {
 			options		 = self.options || 'ranker=sph04';
 
 		//TODO: skip if match is empty
-		
+
 		if (!match) {
 			return self.completed({
 				ids: null
 			});
 		}
-		
+
 		// add asterisks
-		
+
 		match = match.split(' ');
 		match = match.map(function (item) {
 			return item + '*';
@@ -98,10 +98,10 @@ util.extend(sphinx.prototype, {
 
 		var limit = [pager.start, pager.limit].join(',');
 
-		self._openConnection(function (sphinxQL) { 
+		self._openConnection(function (sphinxQL) {
 			var query = [
-				"SELECT " + select_expr, 
-				"FROM " + index, 
+				"SELECT " + select_expr,
+				"FROM " + index,
 				"WHERE MATCH(" + sphinxQL.escape(match_fields + match) + ")",
 				"LIMIT " + limit,
 				"OPTION " + options
@@ -109,19 +109,19 @@ util.extend(sphinx.prototype, {
 
 			var data = [];
 			var res = sphinxQL.query(query);
-			
+
 			res.on('result', function(row) {
 				if (self.verbose) console.log('row',row);
 				data.push(row._id);
 			})
 			.on('error', function(err) {
 				console.log('Query to execute', query);
-		    	console.log('Query error', err);
+				console.log('Query error', err);
 				self.failed({
 					'code'  : err.code,
 					'err' : err.fatal
 				});
-		    })
+			})
 			.on('end', function() {
 				if (self.verbose) console.log('Done with all results');
 				self.completed({
@@ -150,7 +150,7 @@ util.extend(sphinx.prototype, {
 			records = self.records,
 			mapping = self.mapping,
 			index   = self.index || sphinxConfig.index
-		
+
 		self._openConnection(function (sphinxQL) {
 			// prepare values to insert
 			values = [];
@@ -169,31 +169,31 @@ util.extend(sphinx.prototype, {
 
 			// prepare insert query
 			var query = [
-				"INSERT INTO " + index, 
+				"INSERT INTO " + index,
 				"VALUES ",
 				values.join(',')
 			].join(' ');
 
-			if (self.verbose) 
+			if (self.verbose)
 				console.log('Query to execute', query);
-			
+
 			// execute query
 			var res = sphinxQL.query(query);
-			
+
 			res.on('error', function(err) {
 				console.log('Query to execute', query);
-		    	console.log('Query error', err);
+				console.log('Query error', err);
 				self.failed({
 					'code'  : err.code,
 					'err' : err.fatal
 				});
-		    }).on('end', function() {
+			}).on('end', function() {
 				if (self.verbose) console.log('Done with all results');
 				self.completed({
 					ok: true
 				});
 			});
-			
+
 		});
 	}
 });

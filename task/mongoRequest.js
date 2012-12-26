@@ -151,13 +151,13 @@ util.extend (mongoRequestTask.prototype, {
 		// otherwise create connector from project config and add to project.connectors
 
 		var connectorConfig = project.config.db[this.connector];
-		
+
 		var connOptions;
 		if (!connectorConfig.options)
 			connectorConfig.options = {};
-		
+
 		connOptions = connectorConfig.options;
-		
+
 		if (!connOptions['native_parser'])
 			connOptions['native_parser'] = true;
 

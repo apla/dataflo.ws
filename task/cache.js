@@ -12,11 +12,11 @@ if (!project.caching) {
 }
 
 var cacheTask = module.exports = function (config) {
-	
+
 	this.url = config.url;
-	
+
 	this.init (config);
-	
+
 };
 
 util.inherits (cacheTask, task);
@@ -25,17 +25,17 @@ util.extend (cacheTask.prototype, {
 	/**
 	 * Generates file name as a hash sum
 	 * based on the cached file original URL.
-     */
+	 */
 	generateCacheFileName: function () {
-		
+
 		if (this.cacheFileName)
 			return this.cacheFileName;
-		
+
 		var shasum = crypto.createHash('sha1');
 		shasum.update(this.url.href);
 		this.cacheFile = project.root.file_io (cachePath, shasum.digest('hex'));
 		this.cacheFileName = this.cacheFile.path;
-		
+
 		return this.cacheFileName;
 	}
 });
@@ -53,13 +53,13 @@ util.extend (cacheTask.prototype, {
 	run: function () {
 
 		var self = this;
-		
+
 		self.activityCheck ('task run');
-				
+
 		// create model and listen
 		// model is a class for working with particular network protocol
 		if (!self.model) {
-			
+
 			// console.log("self.model.url -> ", self.url.fetch.uri);
 			try {
 				self.model = new urlModel (self.url);
@@ -72,12 +72,12 @@ util.extend (cacheTask.prototype, {
 			self.model.on ('data', function (chunks) {
 				self.activityCheck ('model.fetch data');
 			});
-			
+
 			self.model.on ('error', function (e) {
 				// console.log("%%%%%%%%%%cache failed");
 				self.emitError(e);
 			});
-			
+
 			self.model.on ('end', function () {
 				/*var srcName = self.model.dataSource.res.headers['content-disposition'].match(/filename=\"([^"]+)/)[1];
 				self.res = {};
@@ -92,16 +92,16 @@ util.extend (cacheTask.prototype, {
 					self.completed (self.cacheFileName);
 				});
 			});
-			
+
 		}
-		
+
 		this.generateCacheFileName ();
 
 		// other task is caching requested url
 		var anotherTask = project.caching[self.cacheFileName];
-		
+
 		if (anotherTask && anotherTask != self) {
-		
+
 			this.emit ('log', 'another process already downloading ' + this.url.href + ' to ' + this.cacheFileName);
 			// we simply wait for another task
 			anotherTask.on ('complete', function () {
@@ -118,16 +118,16 @@ util.extend (cacheTask.prototype, {
 		self.cacheFile.stat (function (err, stats) {
 
 			if (!err && (stats.mode & 0644 ^ 0600)) {
-				
+
 				self.clearOperationTimeout();
-				
+
 				self.emit ('log', 'file already downloaded from ' + self.url.href + ' to ' + self.cacheFileName);
 				delete project.caching[self.cacheFileName];
 				self.completed (self.cacheFileName);
-				
+
 				return;
 			}
-			
+
 			try {
 				var writeStream = self.cacheFile.writeStream ({
 					flags: 'w', // constants.O_CREAT | constants.O_WRONLY
@@ -137,14 +137,14 @@ util.extend (cacheTask.prototype, {
 				self.emitError(e);
 				return;
 			}
-			
+
 			self.emit ('log', 'start caching from ' + self.url.href + ' to ' + self.cacheFileName);
-			
+
 			self.activityCheck ('model.fetch start');
 			self.model.fetch ({to: writeStream});
 		});
 	},
-	
+
 	emitError: function (e) {
 		if (e) {
 			this.state = 5;

@@ -209,7 +209,7 @@ util.extend (task.prototype, taskStateMethods, {
 				}, this.timeout.seconds());
 			}
 
-		    /**
+			/**
 			 * @event cancel
 			 * Published on task cancel.
 			 */

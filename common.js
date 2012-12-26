@@ -181,7 +181,7 @@ var mergeObjects = module.exports.mergeObjects = function (object, subjectParent
 var getByPath = module.exports.getByPath = function (path, origin) {
 	var value = origin || $global;
 	var scope, key;
-    var validPath = path.split('.').every(function (prop) {
+	var validPath = path.split('.').every(function (prop) {
 		scope = value;
 		key = prop;
 		if (null == scope) {
@@ -191,7 +191,7 @@ var getByPath = module.exports.getByPath = function (path, origin) {
 			value = scope[key];
 			return true;
 		}
-    });
+	});
 	return validPath && { value: value, scope: scope, key: key };
 };
 

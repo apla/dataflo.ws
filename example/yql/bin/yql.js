@@ -27,46 +27,46 @@ project.on ('ready', function () {
 				request: "{$request}",
 				produce: "data.post"
 			}, {
-                $function: "print",
-                $args: "{$data.post.fields}",
+				$function: "print",
+				$args: "{$data.post.fields}",
 				$origin: "{$global.console}"
 			}, {
-                $function: "String.prototype.trim",
+				$function: "String.prototype.trim",
 				$scope: "{$data.post.fields.q}",
-                $args: [],
+				$args: [],
 				produce: "data.trimmedText"
 			}, {
-                $function: "toUpperCase",
+				$function: "toUpperCase",
 				$origin: "{$data.trimmedText}",
-                $args: [],
+				$args: [],
 				produce: "data.upperCasedText"
 			}, {
-                $function: "global.console.log",
-                $args: [ "UPPER CASE", "{$data.upperCasedText}" ]
+				$function: "global.console.log",
+				$args: [ "UPPER CASE", "{$data.upperCasedText}" ]
 			}, {
-                $function: "pimp",
+				$function: "pimp",
 				obj: "{$data.upperCasedText}",
 				produce: "data.pimpedText"
 			}, {
-                $function: "encodeURIComponent",
-                $args: [ 'select * from contentanalysis.analyze ' +
-                         'where text="{$data.pimpedText}"' ],
-                produce: "data.yql"
+				$function: "encodeURIComponent",
+				$args: [ 'select * from contentanalysis.analyze ' +
+						 'where text="{$data.pimpedText}"' ],
+				produce: "data.yql"
 			}, {
-                $function: "console.log",
-                $args: [ "ENCODED ", "{$data.yql}" ]
+				$function: "console.log",
+				$args: [ "ENCODED ", "{$data.yql}" ]
 			}, {
 				$class: "task/download",
 				url: "http://query.yahooapis.com/v1/public/yql?" +
 					"format=json&q={$data.yql}",
-                timeout: 10000,
-                retries: 10,
+				timeout: 10000,
+				retries: 10,
 				produce: "data.results"
-            }],
-            presenter: {
-                type: "asis",
-                vars: "{$data.results.data}"
-            }
+			}],
+			presenter: {
+				type: "asis",
+				vars: "{$data.results.data}"
+			}
 		}]
 	};
 

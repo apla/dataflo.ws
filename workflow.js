@@ -17,7 +17,7 @@ var hasOwnProperty = Object.prototype.hasOwnProperty;
 
 function isEmpty(obj) {
 	var type = Object.typeOf(obj);
-    return (
+	return (
 		('Undefined' == type || 'Null' == type)            ||
 		('Boolean'   == type && false === obj)             ||
 		('Number'    == type && (0 === obj || isNaN(obj))) ||
@@ -295,10 +295,10 @@ var workflow = module.exports = function (config, reqParam) {
 				run: function () {
 					var failed = false;
 
-                    /**
-                     * Apply $function to $args in $scope.
-                     */
-                    if (taskFnName) {
+					/**
+					 * Apply $function to $args in $scope.
+					 */
+					if (taskFnName) {
 						var origin = this.$origin || $mainModule.exports;
 						var method = common.getByPath(taskFnName, origin);
 
@@ -309,7 +309,7 @@ var workflow = module.exports = function (config, reqParam) {
 							method = common.getByPath(taskFnName);
 						}
 
-                        if (method && 'function' == typeof method.value) {
+						if (method && 'function' == typeof method.value) {
 							var fn = method.value;
 							var ctx  = this.$scope || method.scope;
 
@@ -323,18 +323,18 @@ var workflow = module.exports = function (config, reqParam) {
 								args = [ args ];
 							}
 
-                            try {
-                                var returnVal = fn.apply(ctx, args);
-                            } catch (e) {
+							try {
+								var returnVal = fn.apply(ctx, args);
+							} catch (e) {
 								failed = e;
 								this.failed(failed);
-                            }
+							}
 
 							if (!failed) this.completed(returnVal);
-                        } else {
+						} else {
 							failed = taskFnName + ' is not a function';
 							this.failed(failed);
-                        }
+						}
 					} else {
 						// TODO: detailed error description
 						this.completed(actualTaskParams.coderef(this));
@@ -610,4 +610,3 @@ util.extend (workflow.prototype, {
 });
 
 });
-

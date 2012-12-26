@@ -18,7 +18,7 @@ util.inherits(rabbit, task);
 
 util.extend(rabbit.prototype, {
 	DESTROY_DELAY: 5,//* 60 * 1000,
-	
+
 	run: function () {
 		this.failed('use method [publish|subsribe]');
 	},
@@ -30,7 +30,7 @@ util.extend(rabbit.prototype, {
 			this.onError.bind(this)
 		);
 	},
-	
+
 	subscribe: function () {
 		rabbitManager.getOrCreate(
 			rabbitConfig,
@@ -38,7 +38,7 @@ util.extend(rabbit.prototype, {
 			this.onError.bind(this)
 		);
 	},
-	
+
 	onError: function (connection) {
 		console.log('rabbit connection.error');
 		this.failed({
@@ -46,7 +46,7 @@ util.extend(rabbit.prototype, {
 			msg: 'Rabbit connection error!'
 		});
 	},
-	
+
 	onPublishConnect: function (connection) {
 		var self = this;
 		var messages = this.data;
@@ -72,7 +72,7 @@ util.extend(rabbit.prototype, {
 			}
 		);
 	},
-	
+
 	onSubscribeConnect: function (conn) {
 		var self = this;
 		var queueName = this.queueName;
@@ -105,7 +105,7 @@ util.extend(rabbit.prototype, {
 			}
 		);
 	},
-	
+
 	addSocket: function (queueName, q, socket, ctag) {
 		OpenSockets[queueName] = OpenSockets[queueName] || [];
 		OpenSockets[queueName].push({
@@ -113,14 +113,14 @@ util.extend(rabbit.prototype, {
 			ctag: ctag
 		});
 		OpenSockets[queueName].queue = q;
-		
+
 		socket.on('disconnect', this.onSocketDisconnect.bind(this, socket));
 	},
-	
+
 	onSocketDisconnect: function (socket) {
 		var sockets = OpenSockets[this.queueName];
 		var queue = sockets.queue;
-		
+
 		if (sockets) {
 			sockets.forEach(function (obj, index) {
 				if (obj.socket == socket) {
@@ -134,19 +134,19 @@ util.extend(rabbit.prototype, {
 			}
 		}
 	},
-	
+
 	delayedDestroyQueue: function () {
 		var self = this;
 		var sockets = OpenSockets[this.queueName];
-		
+
 		if (!sockets) {
 			return;
 		}
-		
+
 		if (sockets.destroyTimeout) {
 			clearTimeout(sockets.destroyTimeout);
 		}
-		
+
 		sockets.destroyTimeout = setTimeout(function () {
 			if (!sockets.length) {
 				console.log(
@@ -158,9 +158,9 @@ util.extend(rabbit.prototype, {
 				delete OpenSockets[self.queueName];
 			}
 		}, this.DESTROY_DELAY);
-		
+
 	},
-	
+
 	onMessage: function (message) {
 		//console.log('onSubscribeConnect EMIT %o', message);
 

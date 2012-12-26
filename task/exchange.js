@@ -11,7 +11,7 @@ var wsdlUrl = exchangeConfig.wsdlUrl;
 var servicesUrl = exchangeConfig.servicesUrl;
 
 var exchange = module.exports = function (config) {
-	this.init (config);	
+	this.init (config);
 };
 
 util.inherits(exchange, task);
@@ -28,25 +28,25 @@ util.extend(exchange.prototype, {
 
 		var auth = 'Basic ' + new Buffer(login + ":" + password).toString('base64'),
 			options = url.parse(wsdlUrl);
-		
+
 		options.method = 'GET';
 		options.auth = login + ":" + password;
-				
+
 		var req = https.request(options, function(response){
 			switch (response.statusCode)
 			{
-				case 200: 
+				case 200:
 					self.completed({
-						statusCode: 200, 
-						err: '', 
+						statusCode: 200,
+						err: '',
 						accessAllowed: true,
 						success: true
 					});
 					break;
-				default: 
+				default:
 					self.completed({
-						statusCode: 401, 
-						err: 'User not authorized', 
+						statusCode: 401,
+						err: 'User not authorized',
 						accessAllowed: false,
 						success: false
 					});
@@ -54,7 +54,7 @@ util.extend(exchange.prototype, {
 			}
 			response.destroy();
 		});
-		
+
 		req.on('error', function(e) {
 		  console.error(e);
 		});
@@ -68,14 +68,14 @@ util.extend(exchange.prototype, {
 	decode: function (str) {
 		return new Buffer(str, 'base64').toString('utf8');
 	},
-	
+
 	profile: function() {
 		var self = this,
 			ldapRequest = self.ldapResponse,
 			sessionUID = self.sessionUID,
 			user = ldapRequest.data && ldapRequest.data.length && ldapRequest.data[0],
 			credentials = self.credentials;
-			
+
 		if (user) {
 			if (Object.prototype.toString.call( user.memberof ) === '[object String]') {
 				// we came here from login
@@ -86,7 +86,7 @@ util.extend(exchange.prototype, {
 					return item.split(',')[0].split('=')[1];
 				});
 			}
-			
+
 			var result = {
 				email: user.mail || user.email,
 				name: user.cn || user.name,
@@ -94,18 +94,18 @@ util.extend(exchange.prototype, {
 				sessionUIDs: sessionUID,
 				authType: 'exchange',
 				tokens: {
-					login: credentials.login, 
+					login: credentials.login,
 					password: this.encode(credentials.password)
 				}
 			};
-			
+
 			if (user.thumbnailphoto){
 				var shasum = crypto.createHash('sha1');
 				shasum.update(user.mail);
 				var filePath = '/images/avatars/'+shasum.digest('hex')+'.png';
 				var cacheFileStream = project.root.fileIO('htdocs'+filePath).writeStream({flags: 'w', mode: 0666});
 				cacheFileStream.write(new Buffer(user.thumbnailphoto, 'base64'));
-				
+
 				result.avatar = filePath;
 			}
 			if (user.department){
@@ -114,7 +114,7 @@ util.extend(exchange.prototype, {
 			if (user.division){
 				result.division = user.division;
 			}
-			
+
 			self.completed(result);
 		} else {
 			self.failed({
@@ -122,28 +122,28 @@ util.extend(exchange.prototype, {
 				msg: 'User Not Found!'
 			});
 		}
-		
+
 	},
-	
+
 	check: function() {
 		var self = this,
 			user = self.user;
-			
+
 		if (user && user.authType == 'exchange' && user.tokens && user.tokens.login && user.tokens.password) {
-			
+
 			self.credentials = {
 				login: user.tokens.login,
 				password: this.decode(user.tokens.password)
 			};
-			
+
 			self.login();
-			
+
 		} else {
-			
+
 			self.completed({
 				accessAllowed: true
 			});
-			
+
 		}
 	},
 
@@ -180,10 +180,10 @@ util.extend(exchange.prototype, {
 			user = self.user;
 
 		if (user && user.authType == 'exchange' && user.tokens && user.tokens.login && user.tokens.password) {
-			
+
 			var login    = user.tokens.login,
 				password = this.decode(user.tokens.password);
-			
+
 			var options = url.parse(servicesUrl);
 
 			var queryTpl = [
@@ -201,11 +201,11 @@ util.extend(exchange.prototype, {
 
 			options.auth = login + ':' + password;
 			options.port = 443;
-			options.headers = { 
+			options.headers = {
 				'Content-Type': 'text/xml'
 			};
 			options.method = 'POST';
-					
+
 			var req = https.request(options, function (response) {
 				var exchangeXmlAnswer = [];
 
@@ -226,62 +226,62 @@ util.extend(exchange.prototype, {
 						var objResponse = crackedResponse.toJS();
 
 						if (objResponse.Body.Fault) {
-					        console.log('!!!!!!!!!!!!!!! RESPONSE FAULT:', objResponse.Body.Fault.faultstring.__content);
-					        self.failed({
+							console.log('!!!!!!!!!!!!!!! RESPONSE FAULT:', objResponse.Body.Fault.faultstring.__content);
+							self.failed({
 								statusCode: 500,
 								msg: 'Response Fault!'
 							});
-					        return;
-					    }
+							return;
+						}
 
-					    var objResolveNamesResponseMessage = objResponse.Body.ResolveNamesResponse.ResponseMessages.ResolveNamesResponseMessage;
+						var objResolveNamesResponseMessage = objResponse.Body.ResolveNamesResponse.ResponseMessages.ResolveNamesResponseMessage;
 
-					    if (objResolveNamesResponseMessage.ResponseClass != 'Success' && objResolveNamesResponseMessage.ResponseClass != 'Warning'){
-					        console.log('!!!!!!!!!!!!!!! NOT SUCCESS!');
-					        self.failed({
+						if (objResolveNamesResponseMessage.ResponseClass != 'Success' && objResolveNamesResponseMessage.ResponseClass != 'Warning'){
+							console.log('!!!!!!!!!!!!!!! NOT SUCCESS!');
+							self.failed({
 								statusCode: 500,
 								msg: 'Response Not Success!'
 							});
 							error = 'Response Not Success!';
-					        //return;
-					    }
+							//return;
+						}
 
-					    if (!error) {	
-						    var objResolutionSet = objResolveNamesResponseMessage.ResolutionSet;
-						    if (Object.prototype.toString.call( objResolutionSet ) === '[object Array]') {
-						    	console.log('Found: ' + objResolutionSet.TotalItemsInView);
-						    	console.log('Query:', self.pager.filter);
+						if (!error) {
+							var objResolutionSet = objResolveNamesResponseMessage.ResolutionSet;
+							if (Object.prototype.toString.call( objResolutionSet ) === '[object Array]') {
+								console.log('Found: ' + objResolutionSet.TotalItemsInView);
+								console.log('Query:', self.pager.filter);
 							}
-						    if (Object.prototype.toString.call( objResolutionSet.Resolution ) === '[object Array]') {
-						        objResolutionSet.Resolution.forEach(function (objResolution){
-						            var objMailbox = objResolution.Mailbox;
-						            var objContact = objResolution.Contact;
-						            users.push({
-						            	name: objMailbox.Name,
-									    authType: 'exchange',
-									    avatar: '',
-									    email: objMailbox.EmailAddress,
-									    _id: objMailbox.EmailAddress,
-									    text: objMailbox.Name,
-									    memberof: objContact.Department
-						            });
-						            //console.log('Name: ' + objMailbox.Name);
-						            //console.log('Email: ' + objMailbox.EmailAddress);
-						        });
-						    } else if (Object.prototype.toString.call( objResolutionSet.Resolution ) === '[object Object]') {
-						    	users.push({
-					            	name: objResolutionSet.Resolution.Mailbox.Name,
-								    link: undefined,
-								    authType: 'exchange',
-								    avatar: '',
-								    email: objResolutionSet.Resolution.Mailbox.EmailAddress,
-								    _id: objResolutionSet.Resolution.Mailbox.EmailAddress,
-								    text: objResolutionSet.Resolution.Mailbox.Name,
-								    memberof: objResolutionSet.Resolution.Contact.Department
-					            });
-						        //console.log('Name: ' + objResolutionSet.Resolution.Mailbox.Name);
-						        //console.log('Email: ' + objResolutionSet.Resolution.Mailbox.EmailAddress);
-						    }
+							if (Object.prototype.toString.call( objResolutionSet.Resolution ) === '[object Array]') {
+								objResolutionSet.Resolution.forEach(function (objResolution){
+									var objMailbox = objResolution.Mailbox;
+									var objContact = objResolution.Contact;
+									users.push({
+										name: objMailbox.Name,
+										authType: 'exchange',
+										avatar: '',
+										email: objMailbox.EmailAddress,
+										_id: objMailbox.EmailAddress,
+										text: objMailbox.Name,
+										memberof: objContact.Department
+									});
+									//console.log('Name: ' + objMailbox.Name);
+									//console.log('Email: ' + objMailbox.EmailAddress);
+								});
+							} else if (Object.prototype.toString.call( objResolutionSet.Resolution ) === '[object Object]') {
+								users.push({
+									name: objResolutionSet.Resolution.Mailbox.Name,
+									link: undefined,
+									authType: 'exchange',
+									avatar: '',
+									email: objResolutionSet.Resolution.Mailbox.EmailAddress,
+									_id: objResolutionSet.Resolution.Mailbox.EmailAddress,
+									text: objResolutionSet.Resolution.Mailbox.Name,
+									memberof: objResolutionSet.Resolution.Contact.Department
+								});
+								//console.log('Name: ' + objResolutionSet.Resolution.Mailbox.Name);
+								//console.log('Email: ' + objResolutionSet.Resolution.Mailbox.EmailAddress);
+							}
 						}
 					}
 					self.completed({
@@ -291,21 +291,21 @@ util.extend(exchange.prototype, {
 						error: error
 					});
 				});
-			});			
+			});
 			req.on('error', function(e) {
 			  console.error('!!!!!!!!!!!!!', e);
 			});
 
-			
+
 			req.write(query);
 			req.end();
-			
+
 		} else {
-			
+
 			self.completed({
-				
+
 			});
-			
+
 		}
 	}
 });
