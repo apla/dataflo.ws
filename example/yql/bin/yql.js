@@ -27,8 +27,8 @@ project.on ('ready', function () {
 				request: "{$request}",
 				produce: "data.post"
 			}, {
-                $function: "log",
-                $args: [ "POST FIELDS", "{$data.post.fields}" ],
+                $function: "print",
+                $args: "{$data.post.fields}",
 				$origin: "{$global.console}"
 			}, {
                 $function: "String.prototype.trim",

@@ -312,15 +312,23 @@ var workflow = module.exports = function (config, reqParam) {
                         if (method && 'function' == typeof method.value) {
 							var fn = method.value;
 							var ctx  = this.$scope || method.scope;
-							var args = this.$args || [ this ];
-							if (args.typeOf != 'Array')
-								args = [args];
+
+							var args = this.$args;
+							var argsType = Object.typeOf(args);
+							if (null == args) {
+								args = [ this ];
+							} else if ('Array' != argsType ||
+								'Arguments' != argsType) {
+								args = [ args ];
+							}
+
                             try {
                                 var returnVal = fn.apply(ctx, args);
                             } catch (e) {
 								failed = e;
 								this.failed(failed);
                             }
+
 							if (!failed) this.completed(returnVal);
                         } else {
 							failed = taskFnName + ' is not a function';
