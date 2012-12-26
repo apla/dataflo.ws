@@ -315,9 +315,10 @@ var workflow = module.exports = function (config, reqParam) {
 
 							var args = this.$args;
 							var argsType = Object.typeOf(args);
+
 							if (null == args) {
 								args = [ this ];
-							} else if ('Array' != argsType ||
+							} else if ('Array' != argsType &&
 								'Arguments' != argsType) {
 								args = [ args ];
 							}
