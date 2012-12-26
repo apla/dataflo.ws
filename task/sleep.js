@@ -1,6 +1,6 @@
 define (function (require, exports, module) {
 
-var task = require ('task/base');
+var task = require ('./base');
 
 var sleepTask = module.exports = function (config) {
 	this.init (config);

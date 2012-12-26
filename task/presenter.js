@@ -1,5 +1,4 @@
-var task = require ('task/base'),
-	jade = require ('jade'),
+var task = require ('./base'),
 	ejs  = require ('ejs'),
 	util = require ('util');
 
@@ -63,10 +62,6 @@ util.extend (presenterTask.prototype, {
 				var tplStr = tpl.toString();
 
 				switch (self.type) {
-
-					case 'jade':
-						render = jade.compile (tplStr, {});
-						break;
 
 					case 'ejs':
 						render = ejs.compile (tplStr, {});
@@ -132,7 +127,6 @@ util.extend (presenterTask.prototype, {
 		 *
 		 * Possible values:
 		 *
-		 * - `jade`, Jade template
 		 * - `ejs`, EJS template
 		 * - `json`, JSON string
 		 * - `asis`, plain text.
@@ -158,7 +152,6 @@ util.extend (presenterTask.prototype, {
 
 		switch (self.type) {
 
-			case 'jade':
 			case 'ejs':
 				this.setContentType('text/html; charset=utf-8');
 				self.renderCompile();

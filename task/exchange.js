@@ -1,10 +1,10 @@
-var task = require('task/base'),
-	util = require('util'),
+var util = require('util'),
 	https = require('https'),
 	url	= require('url'),
-	io = require ('io/easy'),
 	crypto = require ('crypto'),
-	crack = require("crack");
+	crack = require('crack'),
+	task = require('./base'),
+	io = require ('./io/easy');
 
 var exchangeConfig = project.config.consumerConfig.exchange;
 var wsdlUrl = exchangeConfig.wsdlUrl;

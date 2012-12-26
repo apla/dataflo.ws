@@ -1,8 +1,8 @@
 var OAuth = require('oauth').OAuth,
 	querystring = require('querystring'),
-	task = require('task/base'),
 	twitterClient = require('node-twitter'),
-	util = require('util');
+	util = require('util'),
+	task = require('./base');
 
 // - - - static
 

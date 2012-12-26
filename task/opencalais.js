@@ -4,8 +4,8 @@ var
 	 */
 
 	Calais = require('calais').Calais,
-	task = require('task/base'),
-	util = require('util');
+	util = require('util'),
+	task = require('./base');
 
 // - - - static
 

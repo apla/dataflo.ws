@@ -1,9 +1,9 @@
 var EventEmitter = require ('events').EventEmitter,
-	task         = require ('task/base'),
 	util         = require ('util'),
 	urlUtil      = require ('url'),
-	urlModel     = require ('model/from-url'),
-	mime		 = require ('mime');
+	mime		 = require ('mime'),
+	task         = require ('./base'),
+	urlModel     = require ('./model/from-url');
 
 var downloadTask = module.exports = function (config) {
 

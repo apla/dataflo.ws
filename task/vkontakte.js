@@ -1,7 +1,7 @@
 var OAuth2 = require('oauth').OAuth2,
 	querystring = require('querystring'),
-	task = require('task/base'),
-	util = require('util');
+	util = require('util'),
+	task = require('./base');
 
 // - - - static
 

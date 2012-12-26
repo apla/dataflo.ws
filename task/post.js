@@ -1,7 +1,7 @@
-var task        = require ('task/base'),
-	util        = require ('util'),
+var util        = require ('util'),
 	qs			= require ('querystring'),
-	formidable  = require ('formidable');
+	formidable  = require ('formidable'),
+	task        = require ('./base');
 
 
 var postTask = module.exports = function (config) {

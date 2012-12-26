@@ -250,17 +250,17 @@ var workflow = module.exports = function (config, reqParam) {
 			self.logError ('defined both className and functionName, using className');
 
 		if (taskClassName) {
-//			self.log (taskParams.className + ': initializing task from class');
 			var xTaskClass;
 
-			// TODO: need check all task classes, because some compile errors may be there
-//			console.log ('task/'+taskParams.className);
+			// TODO: need check all task classes,
+			// because some compile errors may be there
+			var taskPath = './' + taskClassName;
 			try {
-				xTaskClass = require (taskClassName);
+				xTaskClass = require (taskPath);
 			} catch (e) {
-				console.log ('requirement "'+taskClassName+'" failed:');
+				console.log ('requirement "' + taskPath + '" failed:');
 				console.log (e.stack);
-				throw ('requirement "'+taskClassName+'" failed:');
+				throw ('requirement "' + taskPath + '" failed:');
 				self.ready = false;
 			}
 
