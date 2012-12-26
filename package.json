@@ -1,5 +1,4 @@
 {
-<<<<<<< HEAD
 	"name": "dataflo.ws",
 	"description": "Zero-code JSON config-based workflow engine for Node, PhoneGap and browser.",
 	"version": "0.0.1",
@@ -109,5 +108,4 @@
     "test": "exit 0"
   },
   "license": "GPLv3"
->>>>>>> 7e9a0ffeb856850ab4a750069d96a43aae500dcf
 }
