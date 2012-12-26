@@ -51,5 +51,5 @@
 	"scripts": {
 		"test": "exit 0"
 	},
-	"license": "GPLv3"
+	"license": "Dual-licensed under GPLv3 and commercial license"
 }
