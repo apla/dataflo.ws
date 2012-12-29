@@ -268,10 +268,18 @@ util.extend (httpdi.prototype, {
 
 			/* Pattern match. */
 			if (!match && 'pattern' in tree) {
-				match = new RegExp(tree.pattern).test(path);
+				var match = path.match (tree.pattern);
 			}
 
 			if (match) {
+				if (match.constructor === Array && match.length > 1) {
+					if (!req.capture)
+						req.capture = [];
+					var capture = match;
+					match = capture.shift();
+					req.capture = req.capture.concat (capture);
+				}
+
 				if (level >= maxLevel) {
 					if (tree.tasks) {
 						wf = self.createWorkflow(tree, req, res);
