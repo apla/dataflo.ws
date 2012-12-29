@@ -263,6 +263,8 @@ util.extend (httpdi.prototype, {
 			level = level || 1;
 			var path = pathes[level];
 
+//			console.log ('matching ' + (tree.path || tree.pattern) + ' at level ' + level + ' for ' + path);
+			
 			/* Exact match. */
 			var match = path === tree.path;
 
@@ -287,19 +289,33 @@ util.extend (httpdi.prototype, {
 						match = false;
 					}
 				} else if (tree.workflows) {
-					tree.workflows.forEach(function (item) {
-						findPath(item, level + 1);
+					var foundPath = tree.workflows.filter (function (node) {
+						if (node.path)
+							return findPath(node, level + 1);
 					});
+					if (!foundPath || !foundPath[0]) {
+						tree.workflows.filter (function (node) {
+							if (node.pattern)
+								return findPath(node, level + 1);
+						});
+					}
 				}
 			}
 
 			return match;
 		};
 
-		this.workflows.some(function (tree) {
-			return findPath(tree);
+		var foundPath = this.workflows.filter (function (tree) {
+			if (tree.path)
+				return findPath(tree);
 		});
 
+		if (!foundPath || !foundPath[0]) {
+			this.workflows.filter (function (tree) {
+				if (tree.pattern)
+					return findPath(tree);
+			});
+		}
 		return wf;
 	},
 
