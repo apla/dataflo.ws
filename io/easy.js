@@ -24,7 +24,7 @@ io.prototype.isDirectory = function () {
 io.prototype.file_io = function () {
 	var p = this.path;
 	for (var i = 0; i < arguments.length; i++) {
-		p = Path.join (p, arguments[i]);	
+		p = Path.join (p, arguments[i]);
 	}
 	return new io (p);
 }
@@ -100,9 +100,7 @@ io.prototype.parent = function () {
 	return new io (Path.dirname (this.path));
 }
 
-io.prototype.fileIO = function (path) {
-	return new io (Path.join (this.path, path instanceof io ? path.path : path));
-}
+io.prototype.fileIO = io.prototype.file_io;
 
 io.prototype.readFile = function (cb) {
 	var self = this;
