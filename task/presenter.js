@@ -69,13 +69,23 @@ util.extend (presenterTask.prototype, {
 				// doesn't have such function, you must extend renderer
 				// via renderer.prototype.compile
 				var compileMethod = self.compileMethod || 'compile';
-				
+
 				if (!presenters[self.type])
 					presenters[self.type] = require (self.type);
+
+				if (!presenters[self.type][compileMethod]) {
+					console.error (
+						'renderer \"' + self.type +
+						'\" doesn\'t have a template compilation method named \"'
+						+ compileMethod + '\"'
+					);
+				}
+
 				render = presenters[self.type][compileMethod] (tplStr, self.compileParams || {});
-				
+
+				// TODO: check for result. render MUST be a function
 				cache[self.file] = render;
-				
+
 				self.renderProcess(render);
 			
 			});		
