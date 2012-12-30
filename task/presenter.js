@@ -1,7 +1,7 @@
 var task = require ('task/base'),
-	jade = require ('jade'),
-	ejs  = require ('ejs'),
 	util = require ('util');
+
+var presenters = {};
 
 /**
  * @class task.presenterTask
@@ -64,17 +64,15 @@ util.extend (presenterTask.prototype, {
 				
 				var tplStr = tpl.toString();
 				
-				switch (self.type) {
-
-					case 'jade':
-						render = jade.compile (tplStr, {});
-						break;
-					
-					case 'ejs':						
-						render = ejs.compile (tplStr, {});
-						break;
+				// compile class method must return function. we call
+				// this function with presentation data. if your renderer
+				// doesn't have such function, you must extend renderer
+				// via renderer.prototype.compile
+				var compileMethod = self.compileMethod || 'compile';
 				
-				}
+				if (!presenters[self.type])
+					presenters[self.type] = require (self.type);
+				render = presenters[self.type][compileMethod] (tplStr, self.compileParams || {});
 				
 				cache[self.file] = render;
 				
