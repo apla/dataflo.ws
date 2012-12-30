@@ -205,6 +205,9 @@ var workflow = module.exports = function (config, reqParam) {
 //	console.log ('!!!!!!!!!!!!!!!!!!!' + this.data.keys.length);
 	
 //	console.log ('config, reqParam', config, reqParam);
+
+	if (!this.tasks)
+		return;
 	
 	self.ready = true;
 	
@@ -405,6 +408,13 @@ util.extend (workflow.prototype, {
 		this.taskStates = [0, 0, 0, 0, 0, 0, 0];
 		
 		// check task states
+		
+		if (!this.ready) {
+			self.emit ('failed', self);
+			self.log (this.stage + ' failed immediately due unready state');
+			self.isIdle = true;
+		}
+			
 		
 		this.tasks.map (function (task) {
 			
