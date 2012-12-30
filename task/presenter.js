@@ -50,13 +50,15 @@ util.extend (presenterTask.prototype, {
 			
 		} else {
 		
-			var templateIO = project.root.fileIO (this.file);
+			// TODO: add absolute paths
+			// no more presentation files in strange places
+			var templateIO = project.root.fileIO ('share', 'presentation', this.file);
 		
 			self.readTemplate (templateIO, function (err, tpl) {
 				
 				if (err) {
-					console.error ("can't access " + self.file + " file. create one and define project id");
-					process.kill ();
+					console.error ("can't access file at share/presentation/" + self.file);
+					// process.kill (); // bad idea
 					return;
 				};
 				
