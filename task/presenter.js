@@ -1,6 +1,7 @@
 var task = require ('./base'),
-	ejs  = require ('ejs'),
 	util = require ('util');
+
+var presenters = {};
 
 /**
  * @class task.presenterTask
@@ -48,27 +49,40 @@ util.extend (presenterTask.prototype, {
 			self.renderProcess(render);
 
 		} else {
-
-			var templateIO = project.root.fileIO (this.file);
+			// TODO: add absolute paths
+			// no more presentation files in strange places
+			var templateIO = project.root.fileIO ('share', 'presentation', this.file);
 
 			self.readTemplate (templateIO, function (err, tpl) {
 
 				if (err) {
-					console.error ("can't access " + self.file + " file. create one and define project id");
-					process.kill ();
+					console.error ("can't access file at share/presentation/" + self.file);
+					// process.kill (); // bad idea
 					return;
 				};
 
 				var tplStr = tpl.toString();
 
-				switch (self.type) {
+				// compile class method must return function. we call
+				// this function with presentation data. if your renderer
+				// doesn't have such function, you must extend renderer
+				// via renderer.prototype.compile
+				var compileMethod = self.compileMethod || 'compile';
 
-					case 'ejs':
-						render = ejs.compile (tplStr, {});
-						break;
+				if (!presenters[self.type])
+					presenters[self.type] = require (self.type);
 
+				if (!presenters[self.type][compileMethod]) {
+					console.error (
+						'renderer \"' + self.type +
+						'\" doesn\'t have a template compilation method named \"'
+						+ compileMethod + '\"'
+					);
 				}
 
+				render = presenters[self.type][compileMethod] (tplStr, self.compileParams || {});
+
+				// TODO: check for result. render MUST be a function
 				cache[self.file] = render;
 
 				self.renderProcess(render);
