@@ -4,7 +4,8 @@ var task = require('task/base'),
 	url	= require('url'),
 	io = require ('io/easy'),
 	crypto = require ('crypto'),
-	crack = require("crack");
+	crack = require("crack"),
+	spawn = require('child_process').spawn;
 
 var exchangeConfig = project.config.consumerConfig.exchange;
 var wsdlUrl = exchangeConfig.wsdlUrl;
@@ -18,47 +19,131 @@ util.inherits(exchange, task);
 
 util.extend(exchange.prototype, {
 	run: function () {
-		this.failed('use method [login|profile|check]');
+		this.failed('use method [login|profile|check|searchUsers]');
 	},
 
 	login: function () {
 		var self = this,
-			login = self.credentials.login,
-			password = self.credentials.password;
+		    login = self.credentials.login,
+		    password = self.credentials.password;
 
-		var auth = 'Basic ' + new Buffer(login + ":" + password).toString('base64'),
-			options = url.parse(wsdlUrl);
+		//var auth = 'Basic ' + new Buffer(login + ":" + password).toString('base64');
+		var options = url.parse(wsdlUrl);
 
 		options.method = 'GET';
-		options.auth = login + ":" + password;
 
-		var req = https.request(options, function(response){
-			switch (response.statusCode)
-			{
-				case 200:
-					self.completed({
-						statusCode: 200,
-						err: '',
-						accessAllowed: true,
-						success: true
-					});
-					break;
-				default:
-					self.completed({
-						statusCode: 401,
-						err: 'User not authorized',
-						accessAllowed: false,
-						success: false
-					});
-					break;
-			}
-			response.destroy();
-		});
+    var processNtlmResponse = function(exit_code, err, data){
+        //console.log('data', data, exit_code);
+		    switch (exit_code)
+		    {
+          case 0:
+              console.log('login completed 200');
+              self.completed({
+                statusCode: 200,
+                err: '',
+                accessAllowed: true,
+                success: true
+              });
+              break;
+          default:
+              console.log('login completed 401');
+              self.completed({
+                statusCode: 401,
+                err: 'User not authorized',
+                accessAllowed: false,
+                success: false
+              });
+              break;
+		    }
+		};
 
-		req.on('error', function(e) {
-		  console.error(e);
-		});
-		req.end();
+		var processBasicResponse = function(response){
+		    switch (response.statusCode)
+		    {
+          case 200:
+              self.completed({
+                statusCode: 200,
+                err: '',
+                accessAllowed: true,
+                success: true
+              });
+              break;
+          default:
+              self.completed({
+                statusCode: 401,
+                err: 'User not authorized',
+                accessAllowed: false,
+                success: false
+              });
+              break;
+		    }
+		    response.destroy();
+		};
+
+		
+		if (self.exchangeAuthType == 'ntlm') {
+        this.getNtlmRequest(
+          [
+            wsdlUrl,
+            '--ntlm', 
+            '-f',
+            '-s',
+            '-S',
+            '--user', 
+            login + ':' + password
+          ],
+          processNtlmResponse
+        );
+		} else {
+        options.auth = login + ":" + password;
+        var req = this.getBasicRequest(options, processBasicResponse);
+        req.on('error', function(e) {
+          console.error(e);
+		    });
+		    req.end();
+		}
+	},
+	
+	getBasicRequest: function (options, responseCb) {
+	    var req = https.request(options, responseCb);
+	    return req;
+	},
+	
+	getNtlmRequest: function (options, callback) {
+      //console.log('options', options);
+	    var curl = spawn('curl', 
+          options
+          /*[
+            'https://pochta.rian.ru/EWS/Exchange.asmx',
+            '-H', 
+            'Content-Type: text/xml', 
+            '--ntlm', 
+            '-f',
+            '-s',
+            '-S',
+            '--user', 
+            login + ':' + password,
+            '-d',
+            '<?xml version="1.0" encoding="utf-8"?><soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:t="http://schemas.microsoft.com/exchange/services/2006/types"><soap:Body><ResolveNames xmlns="http://schemas.microsoft.com/exchange/services/2006/messages" xmlns:t="http://schemas.microsoft.com/exchange/services/2006/types" ReturnFullContactData="true"><UnresolvedEntry>bakhcheev</UnresolvedEntry></ResolveNames></soap:Body></soap:Envelope>'
+          ]*/
+        ),
+        data = '',
+        err  = null;
+
+        curl.stdout.on('data', function(chunk) {
+            data += chunk;
+        });
+
+        curl.stderr.on('data', function(err_msg) {
+            if (err === null) { err = ''; }
+                err += err_msg;
+        });
+        
+        curl.on('error', function (err){console.error(err);});
+
+        curl.on('exit', function(exit_code) {
+            callback(exit_code, err, data);
+        });
 	},
 
 	encode: function (str) {
@@ -182,7 +267,7 @@ util.extend(exchange.prototype, {
 		if (user && user.authType == 'exchange' && user.tokens && user.tokens.login && user.tokens.password) {
 
 			var login    = user.tokens.login,
-				password = this.decode(user.tokens.password);
+			    password = this.decode(user.tokens.password);
 
 			var options = url.parse(servicesUrl);
 
@@ -205,8 +290,104 @@ util.extend(exchange.prototype, {
 				'Content-Type': 'text/xml'
 			};
 			options.method = 'POST';
+      
+      var processNtlmResponse = function(exit_code, err, data){
+        //console.log('data', data, exit_code);
+        
+        switch (exit_code)
+        {
+          case 0:
+              console.log('searchUsers completed 200');
+              // process data
+              processData(data);
+              break;
+          default:
+              console.log('searchUsers completed 401');
+              self.completed({
+                data: null,
+                total: 0,
+                success: false,
+                error: '401 - not authorized'
+              });
+              break;
+        }
+      };
 
-			var req = https.request(options, function (response) {
+      var processData = function (exchangeXmlAnswer) {
+        var error = '';
+				var users = [];
+				
+				var crackedResponse = crack(exchangeXmlAnswer);
+        var objResponse = crackedResponse.toJS();
+
+        if (objResponse.Body.Fault) {
+          console.log('!!!!!!!!!!!!!!! RESPONSE FAULT:', objResponse.Body.Fault.faultstring.__content);
+          self.failed({
+            statusCode: 500,
+            msg: 'Response Fault!'
+          });
+          return;
+        }
+
+        var objResolveNamesResponseMessage = objResponse.Body.ResolveNamesResponse.ResponseMessages.ResolveNamesResponseMessage;
+
+        if (objResolveNamesResponseMessage.ResponseClass != 'Success' && objResolveNamesResponseMessage.ResponseClass != 'Warning'){
+          console.log('!!!!!!!!!!!!!!! NOT SUCCESS!');
+          self.failed({
+            statusCode: 500,
+            msg: 'Response Not Success!'
+          });
+          error = 'Response Not Success!';
+          //return;
+        }
+
+        if (!error) {
+          var objResolutionSet = objResolveNamesResponseMessage.ResolutionSet;
+          if (Object.prototype.toString.call( objResolutionSet ) === '[object Array]') {
+            console.log('Found: ' + objResolutionSet.TotalItemsInView);
+            console.log('Query:', self.pager.filter);
+          }
+          if (Object.prototype.toString.call( objResolutionSet.Resolution ) === '[object Array]') {
+            objResolutionSet.Resolution.forEach(function (objResolution){
+              var objMailbox = objResolution.Mailbox;
+              var objContact = objResolution.Contact;
+              users.push({
+                name: objMailbox.Name,
+                authType: 'exchange',
+                avatar: '',
+                email: objMailbox.EmailAddress,
+                _id: objMailbox.EmailAddress,
+                text: objMailbox.Name,
+                memberof: objContact.Department
+              });
+              //console.log('Name: ' + objMailbox.Name);
+              //console.log('Email: ' + objMailbox.EmailAddress);
+            });
+          } else if (Object.prototype.toString.call( objResolutionSet.Resolution ) === '[object Object]') {
+            users.push({
+              name: objResolutionSet.Resolution.Mailbox.Name,
+              link: undefined,
+              authType: 'exchange',
+              avatar: '',
+              email: objResolutionSet.Resolution.Mailbox.EmailAddress,
+              _id: objResolutionSet.Resolution.Mailbox.EmailAddress,
+              text: objResolutionSet.Resolution.Mailbox.Name,
+              memberof: objResolutionSet.Resolution.Contact.Department
+            });
+            //console.log('Name: ' + objResolutionSet.Resolution.Mailbox.Name);
+            //console.log('Email: ' + objResolutionSet.Resolution.Mailbox.EmailAddress);
+          }
+        }
+        
+        self.completed({
+          data: users || null,
+          total: users ? users.length : 0,
+          success: !error,
+          error: error
+        });
+      }
+
+			var processBasicResponse = function (response) {
 				var exchangeXmlAnswer = [];
 
 				response.setEncoding('utf-8');
@@ -216,73 +397,13 @@ util.extend(exchange.prototype, {
 				});
 
 				response.on('end', function () {
-					var error = '';
-					var users = [];
+					
 
 					if (exchangeXmlAnswer.length) {
 						exchangeXmlAnswer = exchangeXmlAnswer.join('');
 
-						var crackedResponse = crack(exchangeXmlAnswer);
-						var objResponse = crackedResponse.toJS();
-
-						if (objResponse.Body.Fault) {
-							console.log('!!!!!!!!!!!!!!! RESPONSE FAULT:', objResponse.Body.Fault.faultstring.__content);
-							self.failed({
-								statusCode: 500,
-								msg: 'Response Fault!'
-							});
-							return;
-						}
-
-						var objResolveNamesResponseMessage = objResponse.Body.ResolveNamesResponse.ResponseMessages.ResolveNamesResponseMessage;
-
-						if (objResolveNamesResponseMessage.ResponseClass != 'Success' && objResolveNamesResponseMessage.ResponseClass != 'Warning'){
-							console.log('!!!!!!!!!!!!!!! NOT SUCCESS!');
-							self.failed({
-								statusCode: 500,
-								msg: 'Response Not Success!'
-							});
-							error = 'Response Not Success!';
-							//return;
-						}
-
-						if (!error) {
-							var objResolutionSet = objResolveNamesResponseMessage.ResolutionSet;
-							if (Object.prototype.toString.call( objResolutionSet ) === '[object Array]') {
-								console.log('Found: ' + objResolutionSet.TotalItemsInView);
-								console.log('Query:', self.pager.filter);
-							}
-							if (Object.prototype.toString.call( objResolutionSet.Resolution ) === '[object Array]') {
-								objResolutionSet.Resolution.forEach(function (objResolution){
-									var objMailbox = objResolution.Mailbox;
-									var objContact = objResolution.Contact;
-									users.push({
-										name: objMailbox.Name,
-										authType: 'exchange',
-										avatar: '',
-										email: objMailbox.EmailAddress,
-										_id: objMailbox.EmailAddress,
-										text: objMailbox.Name,
-										memberof: objContact.Department
-									});
-									//console.log('Name: ' + objMailbox.Name);
-									//console.log('Email: ' + objMailbox.EmailAddress);
-								});
-							} else if (Object.prototype.toString.call( objResolutionSet.Resolution ) === '[object Object]') {
-								users.push({
-									name: objResolutionSet.Resolution.Mailbox.Name,
-									link: undefined,
-									authType: 'exchange',
-									avatar: '',
-									email: objResolutionSet.Resolution.Mailbox.EmailAddress,
-									_id: objResolutionSet.Resolution.Mailbox.EmailAddress,
-									text: objResolutionSet.Resolution.Mailbox.Name,
-									memberof: objResolutionSet.Resolution.Contact.Department
-								});
-								//console.log('Name: ' + objResolutionSet.Resolution.Mailbox.Name);
-								//console.log('Email: ' + objResolutionSet.Resolution.Mailbox.EmailAddress);
-							}
-						}
+						// process data
+						processData(exchangeXmlAnswer);
 					}
 					self.completed({
 						data: users || null,
@@ -291,14 +412,35 @@ util.extend(exchange.prototype, {
 						error: error
 					});
 				});
-			});
-			req.on('error', function(e) {
-			  console.error('!!!!!!!!!!!!!', e);
-			});
-
-
-			req.write(query);
-			req.end();
+			}
+			
+			// RUN REQUEST!!!
+			if (self.exchangeAuthType=='ntlm') {
+          this.getNtlmRequest(
+            [
+            servicesUrl,
+            '-H', 
+            'Content-Type: text/xml', 
+            '--ntlm', 
+            '-f',
+            '-s',
+            '-S',
+            '--user', 
+            login + ':' + password,
+            '-d',
+            query
+          ],
+            processNtlmResponse
+          );
+      } else {
+          options.auth = login + ":" + password;
+          var req = this.getBasicRequest(options, processBasicResponse);
+          req.on('error', function(e) {
+            console.error(e);
+          });
+          req.write(query);
+          req.end();
+      }
 
 		} else {
 
