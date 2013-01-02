@@ -1,9 +1,9 @@
 var
-	task        = require('task/base'),
 	util        = require('util'),
 	path			= require('path'),
 	nodemailer	= require('nodemailer'),
 	emailTemplates	= require('email-templates');
+	task        = require('./base');
 
 /**
  * Batch sending of emails

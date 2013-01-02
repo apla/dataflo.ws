@@ -6,7 +6,7 @@ if (typeof define === "undefined")
 
 define (function (require, exports, module) {
 
-var task = require('task/base'),
+var task = require('./base'),
 	util = require ('util');
 
 // this task emits

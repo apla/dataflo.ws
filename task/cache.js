@@ -1,11 +1,11 @@
 var EventEmitter = require ('events').EventEmitter,
 	crypto       = require ('crypto'),
-	task         = require ('task/base'),
 	util         = require ('util'),
 	urlUtil      = require ('url'),
-	urlModel     = require ('model/from-url');
+	task         = require ('./base'),
+	urlModel     = require ('./model/from-url');
 
-var cachePath = project.config.cachePath || 'var/cache';
+var cachePath = project.config.cachePath;
 
 if (!project.caching) {
 	project.caching = {};

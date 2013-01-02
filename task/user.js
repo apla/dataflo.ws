@@ -1,4 +1,4 @@
-var task = require('task/base'),
+var task = require('./base'),
 	util = require('util');
 
 // - - - -

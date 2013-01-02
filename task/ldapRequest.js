@@ -1,9 +1,9 @@
 var EventEmitter = require ('events').EventEmitter,
 	crypto       = require ('crypto'),
-	task         = require ('task/base'),
 	util         = require ('util'),
 	urlUtil      = require ('url'),
-	spawn        = require('child_process').spawn;
+	spawn        = require('child_process').spawn,
+	task         = require ('./base');
 
 var COMMAND = 'ldapsearch';
 

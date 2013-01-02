@@ -198,6 +198,9 @@ var workflow = module.exports = function (config, reqParam) {
 
 //	console.log ('config, reqParam', config, reqParam);
 
+	if (!this.tasks)
+		return;
+
 	self.ready = true;
 
 	// TODO: optimize usage - find placeholders and check only placeholders
@@ -250,17 +253,17 @@ var workflow = module.exports = function (config, reqParam) {
 			self.logError ('defined both className and functionName, using className');
 
 		if (taskClassName) {
-//			self.log (taskParams.className + ': initializing task from class');
 			var xTaskClass;
 
-			// TODO: need check all task classes, because some compile errors may be there
-//			console.log ('task/'+taskParams.className);
+			// TODO: need check all task classes,
+			// because some compile errors may be there
+			var taskPath = './' + taskClassName;
 			try {
-				xTaskClass = require (taskClassName);
+				xTaskClass = require (taskPath);
 			} catch (e) {
-				console.log ('requirement "'+taskClassName+'" failed:');
+				console.log ('requirement "' + taskPath + '" failed:');
 				console.log (e.stack);
-				throw ('requirement "'+taskClassName+'" failed:');
+				throw ('requirement "' + taskPath + '" failed:');
 				self.ready = false;
 			}
 
@@ -413,6 +416,12 @@ util.extend (workflow.prototype, {
 		this.taskStates = [0, 0, 0, 0, 0, 0, 0];
 
 		// check task states
+
+		if (!this.ready) {
+			self.emit ('failed', self);
+			self.log (this.stage + ' failed immediately due unready state');
+			self.isIdle = true;
+		}
 
 		this.tasks.map (function (task) {
 

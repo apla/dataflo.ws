@@ -74,13 +74,12 @@ util.extend (httpdi.prototype, {
 		this.emit ('ready', this.server);
 
 	},
-
-	runPrepare: function(wf) {
-
+	runPrepare: function (wf, request, response) {
+		
+		var self = this;
+		
 		var prepareCfg = wf.prepare,
-			request = wf.request,
-			response = wf.response,
-			prepare = this.prepare;
+			prepare    = this.prepare;
 
 		if (prepare) {
 
@@ -102,7 +101,7 @@ util.extend (httpdi.prototype, {
 
 			});
 
-			// push basic wf to chain
+			// push main wf to chain
 
 			wfChain.push(wf)
 
@@ -114,15 +113,11 @@ util.extend (httpdi.prototype, {
 				currentWf.nextWf = wfChain[i+1];
 
 				currentWf.on('completed', function(cWF) {
-
 					setTimeout(cWF.nextWf.run.bind (cWF.nextWf), 0);
-
 				});
 
 				currentWf.on('failed', function(cWF) {
-
-					this.runPresenter(cWF, 'failed');
-
+					self.runPresenter(cWF, 'failed');
 				})
 
 			}
@@ -136,7 +131,7 @@ util.extend (httpdi.prototype, {
 		}
 	},
 
-	runPresenter: function (wf, state) {
+	runPresenter: function (wf, request, response, state) {
 		var self = this;
 		// presenter can be:
 		// {completed: ..., failed: ..., failedRequire: ...} — succeeded or failed tasks in workflow or failed require step
@@ -192,8 +187,8 @@ util.extend (httpdi.prototype, {
 		}, {
 			data:  wf.data,
 			error: wf.error,
-			request: wf.request,
-			response: wf.response
+			request: request,
+			response: response
 		});
 
 		presenterWf.on ('completed', function () {
@@ -248,6 +243,8 @@ util.extend (httpdi.prototype, {
 	},
 
 	// hierarchical router
+	// TODO: igzakt match + pathInfo
+	// TODO: dirInfo, fileName, fileExtension, fullFileName
 	hierarchical: function (req, res) {
 		var self = this;
 
@@ -263,41 +260,70 @@ util.extend (httpdi.prototype, {
 			level = level || 1;
 			var path = pathes[level];
 
+//			console.log ('matching \"' + (tree.path === void 0 ? tree.pattern : tree.path) + '\" at level ' + level + ' for \"' + path + '\"');
+			
 			/* Exact match. */
 			var match = path === tree.path;
 
 			/* Pattern match. */
 			if (!match && 'pattern' in tree) {
-				match = new RegExp(tree.pattern).test(path);
+				var match = path.match (tree.pattern);
 			}
 
 			if (match) {
+				if (match.constructor === Array && match.length > 1) {
+					if (!req.capture)
+						req.capture = [];
+					var capture = match;
+					match = capture.shift();
+					req.capture = req.capture.concat (capture);
+				}
+
 				if (level >= maxLevel) {
-					if (tree.tasks) {
-						wf = self.createWorkflow(tree, req, res);
+					var theWf = self.createWorkflow(tree, req, res);
+					if (theWf) {
+						wf = theWf
 					} else {
 						match = false;
 					}
 				} else if (tree.workflows) {
-					tree.workflows.forEach(function (item) {
-						findPath(item, level + 1);
+					var foundPath = tree.workflows.filter (function (node) {
+						if (node.path !== void 0)
+							return findPath(node, level + 1);
 					});
+					if (!foundPath || !foundPath[0]) {
+						tree.workflows.filter (function (node) {
+							if (node.pattern)
+								return findPath(node, level + 1);
+						});
+					}
 				}
 			}
 
 			return match;
 		};
 
-		this.workflows.some(function (tree) {
-			return findPath(tree);
+		var foundPath = this.workflows.filter (function (tree) {
+			if (tree.path !== void 0)
+				return findPath(tree);
 		});
 
+		if (!foundPath || !foundPath[0]) {
+			this.workflows.filter (function (tree) {
+				if (tree.pattern)
+					return findPath(tree);
+			});
+		}
 		return wf;
 	},
 
 	createWorkflow: function (cfg, req, res) {
 		var self = this;
 
+		// task MUST contain tasks or presenter
+		if (!cfg.tasks && !cfg.presenter)
+			return;
+		
 		console.log('httpdi match: ' + req.method + ' to ' + req.url.pathname);
 
 		var wf = new workflow(
@@ -306,19 +332,19 @@ util.extend (httpdi.prototype, {
 		);
 
 		wf.on('completed', function (wf) {
-			self.runPresenter(wf, 'completed');
+			self.runPresenter(wf, req, res, 'completed');
 		});
 
 		wf.on('failed', function (wf) {
-			self.runPresenter(wf, 'failed');
+			self.runPresenter(wf, req, res, 'failed');
 		});
 
 		self.emit('detected', req, res, wf);
 
-		if (!cfg.prepare && wf.ready) {
-			wf.run();
+		if (cfg.prepare) {
+			self.runPrepare(wf, req, res);
 		} else {
-			self.runPrepare(wf);
+			wf.run();
 		}
 
 		return wf;

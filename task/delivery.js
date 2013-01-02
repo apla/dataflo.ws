@@ -1,10 +1,10 @@
 var EventEmitter = require ('events').EventEmitter,
 	fs           = require ('fs'),
-	task         = require ('task/base'),
 	util         = require ('util'),
 	urlUtil      = require ('url'),
-	io           = require ('io/easy'),
-	urlModel     = require ('model/from-url');
+	task         = require ('./base'),
+	io           = require ('./io/easy'),
+	urlModel     = require ('./model/from-url');
 
 var deliveryTask = module.exports = function (config) {
 
