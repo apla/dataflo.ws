@@ -12,8 +12,6 @@
     "url": "git://github.com/apla/dataflo.ws.git"
   },
   "dependencies": {
-    "ejs": "*",
-    "iconv": "*",
     "formidable": "*",
     "mime": "*"
   },
