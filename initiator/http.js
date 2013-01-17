@@ -364,68 +364,83 @@ util.extend (httpdi.prototype, {
 			req.url = url.parse (req.url, true);
 			// use for workflow match
 			req[req.method] = true;
+			
+			if (self.static) {
 
-			var wf = self.router (req, res);
+				var pathName = req.url.pathname;
 
-			if (wf && !wf.ready) {
-				console.error ("workflow not ready and cannot be started");
-			}
+				if (self.win) {
+					pathName = pathName.split('/').join('\\');
+				}
 
-			if (!wf) {
-				if (self.static) {
+				if (pathName.match (/\/$/)) {
+					pathName += self.static.index;
+				}
 
-					var pathName = req.url.pathname;
+				var contentType, charset;
+				if (pathName.match (/\.html$/)) {
+					contentType = 'text/html';
+					charset = 'utf-8';
+				}
 
-					if (self.win) {
-						pathName = pathName.split('/').join('\\');
-					}
+				if (mime && mime.lookup) {
+					contentType = mime.lookup (pathName);
+					charset = mime.charsets.lookup(contentType);
+					if (charset) contentType += '; charset='+charset;
+				} else if (!contentType) {
+					console.error ('sorry, there is no content type for ' + pathName);
+				}
 
-					if (pathName.match (/\/$/)) {
-						pathName += self.static.index;
-					}
+				self.static.root.fileIO (pathName).readStream (function (readStream, stats) {
 
-					var contentType, charset;
-					if (pathName.match (/\.html$/)) {
-						contentType = 'text/html';
-						charset = 'utf-8';
-					}
+					if (stats) {
 
-					if (mime && mime.lookup) {
-						contentType = mime.lookup (pathName);
-						charset = mime.charsets.lookup(contentType);
-						if (charset) contentType += '; charset='+charset;
-					} else if (!contentType) {
-						console.error ('sorry, there is no content type for ' + pathName);
-					}
+						if (stats.isDirectory() && !readStream) {
 
-					self.static.root.fileIO (pathName).readStream (function (readStream, stats) {
+							res.statusCode = 303;
+							res.setHeader('Location', pathName +'/');
+							res.end('Redirecting to ' + pathName +'/');
+							return;
 
-						if (stats) {
+						} else if (stats.isFile() && readStream) {
 
-							if (stats.isDirectory() && !readStream) {
-
-								res.statusCode = 303;
-								res.setHeader('Location', pathName +'/');
-								res.end('Redirecting to ' + pathName +'/');
-								return;
-
-							} else if (stats.isFile() && readStream) {
-
-								res.writeHead (200, {
-									'Content-Type': contentType
-								});
-								readStream.pipe (res);
-								readStream.resume ();
-								return;
-							}
+							res.writeHead (200, {
+								'Content-Type': contentType
+							});
+							readStream.pipe (res);
+							readStream.resume ();
+							return;
 						}
+					}
+					
+					var wf = self.router (req, res);
 
+					if (wf && !wf.ready) {
+						console.error ("workflow not ready and cannot be started");
+					}
+
+					if (!wf) {
 						res.statusCode = 404;
 						res.end();
 
 						console.log ('httpdi not detected: ' + req.method + ' to ' + req.url.pathname);
 						self.emit ("unknown", req, res);
-					});
+					}
+				});
+			} else {
+				
+				var wf = self.router (req, res);
+
+				if (wf && !wf.ready) {
+					console.error ("workflow not ready and cannot be started");
+				}
+				
+				if (!wf) {
+					res.statusCode = 404;
+					res.end();
+
+					console.log ('httpdi not detected: ' + req.method + ' to ' + req.url.pathname);
+					self.emit ("unknown", req, res);
 				}
 			}
 		});
