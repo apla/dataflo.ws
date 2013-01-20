@@ -7,6 +7,7 @@
     "workflow",
     "dataflow"
   ],
+  "bin": { "dataflows": "bin/dataflows" },
   "repository": {
     "type": "git",
     "url": "git://github.com/apla/dataflo.ws.git"
