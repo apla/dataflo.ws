@@ -373,21 +373,22 @@ function pad(n) {
 }
 
 // one second low resolution timer
-$stash.currentDate = new Date ();
-$stash.currentDateInterval = setInterval (function () {
-	$stash.currentDate = new Date ();
+Date.dataflowsLowRes = new Date ();
+Date.dataflowsLowResInterval = setInterval (function () {
+	Date.dataflowsLowRes = new Date ();
 }, 1000);
 
 function timestamp () {
+	var lowRes = Date.dataflowsLowRes;
 	var time = [
-		pad($stash.currentDate.getHours()),
-		pad($stash.currentDate.getMinutes()),
-		pad($stash.currentDate.getSeconds())
+		pad(lowRes.getHours()),
+		pad(lowRes.getMinutes()),
+		pad(lowRes.getSeconds())
 	].join(':');
 	var date = [
-		$stash.currentDate.getFullYear(),
-		pad($stash.currentDate.getMonth() + 1),
-		pad($stash.currentDate.getDate())
+		lowRes.getFullYear(),
+		pad(lowRes.getMonth() + 1),
+		pad(lowRes.getDate())
 	].join ('-');
 	return [date, time].join(' ');
 }
