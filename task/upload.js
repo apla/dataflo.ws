@@ -29,9 +29,21 @@ util.extend (upload.prototype, {
 		form.on ('file', function (name, file) {
 			self.emit ('log', 'finished loading '+name);
 		});
+		
+		form.on ('error', function (error) {
+			self.emit ('error', 'form error '+ error);
+		});
+
+		form.on ('aborted', function () {
+			self.emit ('error', 'form aborted');
+		});
+
+		form.on ('end', function () {
+			self.emit ('log', 'form end');
+		});
 
 		form.parse(this.request, function(err, fields, files) {
-			self.completed ({fields: fields, files: files});
+			self.completed ({err: err, fields: fields, files: files});
 		});
 
 	}
