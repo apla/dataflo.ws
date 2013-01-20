@@ -357,6 +357,7 @@ httpdi.prototype.listen = function () {
 	var self = this;
 
 	this.server = http.createServer (function (req, res) {
+		req.pause ();
 		// console.log ('serving: ' + req.method + ' ' + req.url + ' for ', req.connection.remoteAddress + ':' + req.connection.remotePort);
 
 		// here we need to find matching workflows
