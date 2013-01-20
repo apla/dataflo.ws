@@ -265,6 +265,7 @@ var workflow = module.exports = function (config, reqParam) {
 					xTaskClass = require (taskClassName);
 				} catch (eLib) {
 					console.log ('requirement "' + taskClassName + '" failed:');
+					console.log (e.stack);
 					console.log (eLib.stack);
 					throw ('requirement "' + taskClassName + '" failed:');
 					self.ready = false;
