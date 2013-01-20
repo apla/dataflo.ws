@@ -68,7 +68,11 @@ util.inherits (httpdi, EventEmitter);
 
 httpdi.prototype.ready = function () {
 	// called from server listen
-	console.log('Server running at http://'+(this.host ? this.host : '127.0.0.1')+(this.port == 80 ? '' : ':'+this.port)+'/');
+	console.log(
+		'Server running at http://'
+		+(this.host ? this.host : '127.0.0.1')
+		+(this.port == 80 ? '' : ':'+this.port)+'/'
+	);
 
 	this.emit ('ready', this.server);
 }
@@ -116,7 +120,9 @@ httpdi.prototype.runPrepare = function (wf, request, response) {
 			});
 
 			currentWf.on('failed', function(cWF) {
-				self.runPresenter(cWF, 'failed');
+				var presenter = self.createPresenter(cWF, 'failed');
+				if (presenter)
+					presenter.run ();
 			})
 
 		}
@@ -131,7 +137,7 @@ httpdi.prototype.runPrepare = function (wf, request, response) {
 }
 
 
-httpdi.prototype.runPresenter = function (wf, request, response, state) {
+httpdi.prototype.createPresenter = function (wf, request, response, state) {
 	var self = this;
 	// presenter can be:
 	// {completed: ..., failed: ..., failedRequire: ...} — succeeded or failed tasks in workflow or failed require step
@@ -195,7 +201,44 @@ httpdi.prototype.runPresenter = function (wf, request, response, state) {
 		//self.log ('presenter done');
 	});
 
-	presenterWf.run ();
+	return presenterWf;
+}
+
+httpdi.prototype.createWorkflow = function (cfg, req, res) {
+	var self = this;
+
+	// task MUST contain tasks or presenter
+	if (!cfg.tasks && !cfg.presenter)
+		return;
+	
+	console.log('httpdi match: ' + req.method + ' to ' + req.url.pathname);
+
+	var wf = new workflow(
+		util.extend (true, {}, cfg),
+		{ request: req, response: res }
+	);
+
+	wf.on('completed', function (wf) {
+		var presenter = self.createPresenter(wf, req, res, 'completed');
+		if (presenter)
+			presenter.run ();
+	});
+
+	wf.on('failed', function (wf) {
+		var presenter = self.createPresenter(wf, req, res, 'failed');
+		if (presenter)
+			presenter.run ();
+	});
+
+	self.emit('detected', req, res, wf);
+
+	if (cfg.prepare) {
+		self.runPrepare(wf, req, res);
+	} else {
+		wf.run();
+	}
+
+	return wf;
 }
 
 httpdi.prototype.initWorkflow = function (wfConfig, req) {
@@ -316,39 +359,6 @@ httpdi.prototype.hierarchical = function (req, res) {
 				return findPath(tree);
 		});
 	}
-	return wf;
-}
-
-httpdi.prototype.createWorkflow = function (cfg, req, res) {
-	var self = this;
-
-	// task MUST contain tasks or presenter
-	if (!cfg.tasks && !cfg.presenter)
-		return;
-	
-	console.log('httpdi match: ' + req.method + ' to ' + req.url.pathname);
-
-	var wf = new workflow(
-		util.extend (true, {}, cfg),
-		{ request: req, response: res }
-	);
-
-	wf.on('completed', function (wf) {
-		self.runPresenter(wf, req, res, 'completed');
-	});
-
-	wf.on('failed', function (wf) {
-		self.runPresenter(wf, req, res, 'failed');
-	});
-
-	self.emit('detected', req, res, wf);
-
-	if (cfg.prepare) {
-		self.runPrepare(wf, req, res);
-	} else {
-		wf.run();
-	}
-
 	return wf;
 }
 
