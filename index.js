@@ -1,13 +1,15 @@
 var path = require('path');
 var fs = require('fs');
 
+var PACKAGE_NAME = 'dataflo.ws';
+var common = require(path.join(PACKAGE_NAME, 'common'));
 var directories = [ 'initiator', 'task' ];
 
 /**
  * Makes symlinks from modules to base dataflo.ws directory.
  */
 module.exports = function (moduleName) {
-	var baseDir = path.dirname(require.resolve('dataflo.ws'));
+	var baseDir = path.dirname(require.resolve(PACKAGE_NAME));
 	var nodePath = path.dirname(baseDir);
 	var moduleDir = path.join(nodePath, moduleName);
 
@@ -25,3 +27,13 @@ module.exports = function (moduleName) {
 		}
 	});
 };
+
+function getModule (type, name) {
+	return require(name) || require(path.join(PACKAGE_NAME, type, name));
+}
+
+// getInitiator, getTask
+directories.forEach(function (dir) {
+	var methodName = 'get' + dir.slice(0, 1).toUpperCase() + dir.slice(1);
+	module.exports[methodName] = getModule.bind(module.exports, dir);
+});

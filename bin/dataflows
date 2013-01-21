@@ -1,14 +1,14 @@
 #!/usr/local/bin/node
 
-var project;
+var common = require('dataflo.ws/common');
 
-// FIXME:
-// requiring `common` ingeniously creates a global variable `project`
-require('dataflo.ws/common');
+var projectRoot = process.argv[2] || process.cwd();
+var initiatorTypes = process.argv.slice(3);
 
-project && project.on('ready', function () {
-	var initiatorTypes = process.argv.slice(2);
+var project = common.getProject(projectRoot);
+common.$global.project = project; // used by initiators
 
+project.on('ready', function () {
 	// initiate all daemons if no arguments passed
 	if (0 == initiatorTypes.length) {
 		initiatorTypes = Object.keys(project.config.initiator);

@@ -1,2 +1,78 @@
 // json
-{"testData0": false}
+ {
+	"initiator" : {
+		"http" : {
+			"port":50088,
+			"static":{
+				"index":"index.html",
+				"root":"./"
+			},
+			"workflows":[
+				{
+					"url":"/search",
+					"tasks":[
+						{
+							"$class":"task/post",
+							"request":"{$request}",
+							"produce":"data.post"
+						},
+						{
+							"$function":"print",
+							"$args":"{$data.post.fields}",
+							"$origin":"{$global.console}"
+						},
+						{
+							"$function":"String.prototype.trim",
+							"$scope":"{$data.post.fields.q}",
+							"$args":[
+
+							],
+							"produce":"data.trimmedText"
+						},
+						{
+							"$function":"toUpperCase",
+							"$origin":"{$data.trimmedText}",
+							"$args":[
+
+							],
+							"produce":"data.upperCasedText"
+						},
+						{
+							"$function":"global.console.log",
+							"$args":[
+								"UPPER CASE",
+								"{$data.upperCasedText}"
+							]
+						},
+						{
+							"$function":"encodeURIComponent",
+							"$args":[
+"select * from contentanalysis.analyze where text=\"{$data.upperCasedText}\""
+							],
+							"produce":"data.yql"
+						},
+						{
+							"$function":"console.log",
+							"$args":[
+								"ENCODED ",
+								"{$data.yql}"
+							]
+						},
+						{
+							"$class":"task/download",
+							"url":
+"http://query.yahooapis.com/v1/public/yql?format=json&q={$data.yql}",
+							"timeout":10000,
+							"retries":10,
+							"produce":"data.results"
+						}
+					],
+					"presenter":{
+						"type":"asis",
+						"vars":"{$data.results.data}"
+					}
+				}
+			]
+		}
+	}
+}

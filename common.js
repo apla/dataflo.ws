@@ -32,7 +32,9 @@ console.print = function () {
 	return console.log.apply(console, msg);
 };
 
+var Project;
 var projectRoot;
+var projectInstance;
 
 if (!util.inherits) {
 	util.inherits = function (ctor, superCtor) {
@@ -165,6 +167,8 @@ Number.prototype.times = function (cb) {
 		a[i] = cb (i);
 	return a;
 }
+
+module.exports.$global = $global;
 
 // overwrite subject with values from object (merge object with subject)
 var mergeObjects = module.exports.mergeObjects = function (object, subjectParent, subjectKey) {
@@ -460,19 +464,9 @@ if ($isServerSide) {
 
 	var io = require ('./io/easy');
 
-	var project = function () {
-		// TODO: root directory object
-		var script = process.argv[1];
-		var rootPath = script.match (/(.*)\/(bin|t|lib)\//);
-
-		if (!rootPath) {//win
-			rootPath = script.match (/(.*)\\(bin|t|lib)\\/);
-		}
-
-		if (!rootPath)
-			return;
-
-		projectRoot = new io (rootPath[1]);
+	Project = function (rootPath) {
+		rootPath = rootPath || './';
+		projectRoot = new io(rootPath);
 
 		this.root = projectRoot;
 		var self = this;
@@ -583,13 +577,17 @@ if ($isServerSide) {
 
 	var EventEmitter = require ('events').EventEmitter;
 
-	util.inherits (project, EventEmitter);
+	util.inherits (Project, EventEmitter);
 
-	util.extend (project.prototype, {
+	util.extend (Project.prototype, {
 		connectors:  {},
 		connections: {}
 	});
-
-	global.project = new project ();
-
 }
+
+module.exports.getProject = function (rootPath) {
+	if (!projectInstance) {
+		projectInstance = new Project(rootPath);
+	}
+	return projectInstance;
+};
