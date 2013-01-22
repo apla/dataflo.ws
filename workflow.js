@@ -13,8 +13,6 @@ var EventEmitter = require ('events').EventEmitter,
 
 var taskStateNames = taskClass.prototype.stateNames;
 
-var hasOwnProperty = Object.prototype.hasOwnProperty;
-
 function isEmpty(obj) {
 	var type = Object.typeOf(obj);
 	return (

@@ -51,6 +51,8 @@ if (!util.inherits) {
 
 if (!util.extend) {
 util.extend = function extend () {
+	var hasOwnProperty = Object.prototype.hasOwnProperty;
+
 	// copy reference to target object
 	var target = arguments[0] || {}, i = 1, length = arguments.length, deep = false, options, name, src, copy;
 	// Handle a deep copy situation
@@ -67,7 +69,7 @@ util.extend = function extend () {
 		// Must be an Object.
 		// Because of IE, we also have to check the presence of the constructor property.
 		// Make sure that DOM nodes and window objects don't pass through, as well
-		if (!obj || toString.call(obj) !== "[object Object]" || obj.nodeType || obj.setInterval)
+		if (!obj || !Object.is('Object', obj) || obj.nodeType || obj.setInterval)
 			return false;
 		var has_own_constructor = hasOwnProperty.call(obj, "constructor");
 		var has_is_property_of_method = hasOwnProperty.call(obj.constructor.prototype, "isPrototypeOf");
@@ -77,7 +79,7 @@ util.extend = function extend () {
 		// Own properties are enumerated firstly, so to speed up,
 		// if last one is own, then all properties are own.
 		var last_key;
-		for (key in obj)
+		for (var key in obj)
 			last_key = key;
 		return typeof last_key === "undefined" || hasOwnProperty.call(obj, last_key);
 	};
@@ -579,9 +581,35 @@ if ($isServerSide) {
 
 	util.inherits (Project, EventEmitter);
 
+
+	function getModule (type, name) {
+		var inPackagePath = path.join('dataflo.ws', type, name);
+		var inProjectPath = path.join(this.root.path, type, name);
+
+		var mod;
+		try {
+			mod = require(inProjectPath);
+		} catch (e) {
+			try {
+				mod = require(inPackagePath);
+			} catch (e) {
+				mod = null;
+			}
+		}
+		return mod;
+	}
+
 	util.extend (Project.prototype, {
 		connectors:  {},
-		connections: {}
+		connections: {},
+
+		getInitiator: function (name) {
+			return getModule.call(this, 'initiator', name);
+		},
+
+		getTask: function (name) {
+			return getModule.call(this, 'task', name);
+		}
 	});
 }
 
