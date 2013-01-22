@@ -2,7 +2,7 @@ var HTTPClient		= require ('http'),
 	util			= require ('util'),
 	fs				= require ('fs'),
 	urlUtils		= require ('url'),
-	httpManager     = require ('model/http/model-manager');
+	httpManager     = require ('./http/model-manager');
 
 var pipeProgress = function (config) {
 	this.bytesTotal = 0;
