@@ -8,8 +8,11 @@ define (function (require, exports, module) {
 
 var EventEmitter = require ('events').EventEmitter,
 	util         = require ('util'),
+	path         = require ('path'),
 	common       = require ('./common'),
 	taskClass    = require ('./task/base');
+
+var $global = common.$global;
 
 var taskStateNames = taskClass.prototype.stateNames;
 
@@ -305,7 +308,22 @@ var workflow = module.exports = function (config, reqParam) {
 					 * Apply $function to $args in $scope.
 					 */
 					if (taskFnName) {
-						var origin = this.$origin || $mainModule.exports;
+						var origin = null;
+						var fnPath = taskFnName.split('#', 2);
+
+						if (fnPath.length == 2) {
+							origin = require(path.join(
+								$global.project.root.path,
+								'node_modules',
+								fnPath[0]
+							));
+							taskFnName = fnPath[1];
+						} else if (this.$origin) {
+							origin = this.$origin;
+						} else {
+							origin = $global.$mainModule.exports;
+						}
+
 						var method = common.getByPath(taskFnName, origin);
 
 						/**

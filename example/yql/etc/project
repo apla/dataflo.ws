@@ -7,7 +7,6 @@
 				"index":"index.html",
 				"root":"./"
 			},
-			"router":"hierarchical",
 			"workflows":[{
 				"path": "entity/search",
 				"workflows": [{
@@ -16,7 +15,7 @@
 						{
 							"$class":"task/post",
 							"request":"{$request}",
-							"produce":"data.post"
+							"$set":"data.post"
 						},
 						{
 							"$function":"print",
@@ -26,18 +25,19 @@
 						{
 							"$function":"String.prototype.trim",
 							"$scope":"{$data.post.fields.q}",
-							"$args":[
-
-							],
-							"produce":"data.trimmedText"
+							"$args":[],
+							"$set":"data.trimmedText"
+						},
+						{
+							"$function":"misc.js#pimp",
+							"$args":["{$data.trimmedText}"],
+							"$set":"data.pimpedText"
 						},
 						{
 							"$function":"toUpperCase",
-							"$origin":"{$data.trimmedText}",
-							"$args":[
-
-							],
-							"produce":"data.upperCasedText"
+							"$origin":"{$data.pimpedText}",
+							"$args":[],
+							"$set":"data.upperCasedText"
 						},
 						{
 							"$function":"global.console.log",
@@ -49,9 +49,9 @@
 						{
 							"$function":"encodeURIComponent",
 							"$args":[
-								"select * from contentanalysis.analyze where text=\"{$data.upperCasedText}\""
+"select * from contentanalysis.analyze where text=\"{$data.upperCasedText}\""
 							],
-							"produce":"data.yql"
+							"$set":"data.yql"
 						},
 						{
 							"$function":"console.log",
@@ -63,10 +63,10 @@
 						{
 							"$class":"task/download",
 							"url":
-							"http://query.yahooapis.com/v1/public/yql?format=json&q={$data.yql}",
+"http://query.yahooapis.com/v1/public/yql?format=json&q={$data.yql}",
 							"timeout":10000,
 							"retries":10,
-							"produce":"data.results"
+							"$set":"data.results"
 						}
 					],
 					"presenter":{

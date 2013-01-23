@@ -1,8 +1,9 @@
 #!/usr/local/bin/node
 
+var path = require('path');
 var common = require('dataflo.ws/common');
 
-var projectRoot = process.argv[2] || process.cwd();
+var projectRoot = path.resolve(process.argv[2] || process.cwd());
 var initiatorTypes = process.argv.slice(3);
 
 var project = common.getProject(projectRoot);

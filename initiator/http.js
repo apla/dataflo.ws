@@ -42,16 +42,10 @@ var httpdi = module.exports = function httpdIConstructor (config) {
 
 	//
 
-	this.router    = config.router;
-	// router is function in main module or initiator method
-	if (config.router === void 0) {
-		this.router = this.defaultRouter;
-	} else if (process.mainModule.exports[config.router]) {
+	if (config.router && process.mainModule.exports[config.router]) {
 		this.router = process.mainModule.exports[config.router];
-	} else if (this[config.router]) {
-		this.router = this[config.router];
 	} else {
-		throw "we cannot find " + config.router + " router method within initiator or function in main module";
+		this.router = this.defaultRouter;
 	}
 
 	if (this.host  == "auto") {
@@ -243,50 +237,7 @@ httpdi.prototype.createWorkflow = function (cfg, req, res) {
 }
 
 httpdi.prototype.initWorkflow = function (wfConfig, req) {
-
-}
-
-httpdi.prototype.defaultRouter = function (req, res) {
-	var wf;
-
-	var self = this;
-
-	if (self.workflows.constructor == Array) {
-
-		self.workflows.map (function (item) {
-
-			if (wf) return;
-
-			// TODO: make real work
-			var match = req.url.pathname.match(item.url);
-
-			if (match && match[0] == req.url.pathname) { //exact match
-
-				console.log ('httpdi match: ' + req.method + ' to ' + req.url.pathname);
-				wf = true;
-
-			} else if (req.url.pathname.indexOf(item.urlBeginsWith) == 0) {
-				console.log ('begins match');
-
-				req.pathInfo = req.url.pathname.substr (item.urlBeginsWith.length);
-				if (req.pathInfo == '/')
-					delete (req.pathInfo);
-
-				if (req.pathInfo && req.pathInfo[0] == '/')
-					req.pathInfo = req.pathInfo.substr (1);
-				wf = true;
-			}
-
-			if (!wf) return;
-
-			wf = self.createWorkflow(item, req, res);
-
-			return;
-		});
-	}
-
-	return wf;
-}
+};
 
 // hierarchical router
 // TODO: igzakt match + pathInfo
@@ -305,6 +256,8 @@ httpdi.prototype.hierarchical = function (req, res) {
 	}
 	return null;
 };
+
+httpdi.prototype.defaultRouter = httpdi.prototype.hierarchical;
 
 httpdi.prototype.hierarchical.walkList = function (
 	list, pathParts, level, callback
