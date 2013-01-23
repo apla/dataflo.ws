@@ -1,15 +1,17 @@
 // json
- {
-	"initiator" : {
-		"http" : {
+{
+	"initiator":{
+		"http":{
 			"port":50088,
 			"static":{
 				"index":"index.html",
 				"root":"./"
 			},
-			"workflows":[
-				{
-					"url":"/search",
+			"router":"hierarchical",
+			"workflows":[{
+				"path": "entity/search",
+				"workflows": [{
+					"path":"yql",
 					"tasks":[
 						{
 							"$class":"task/post",
@@ -47,7 +49,7 @@
 						{
 							"$function":"encodeURIComponent",
 							"$args":[
-"select * from contentanalysis.analyze where text=\"{$data.upperCasedText}\""
+								"select * from contentanalysis.analyze where text=\"{$data.upperCasedText}\""
 							],
 							"produce":"data.yql"
 						},
@@ -61,7 +63,7 @@
 						{
 							"$class":"task/download",
 							"url":
-"http://query.yahooapis.com/v1/public/yql?format=json&q={$data.yql}",
+							"http://query.yahooapis.com/v1/public/yql?format=json&q={$data.yql}",
 							"timeout":10000,
 							"retries":10,
 							"produce":"data.results"
@@ -71,8 +73,8 @@
 						"type":"asis",
 						"vars":"{$data.results.data}"
 					}
-				}
-			]
+				}]
+			}]
 		}
 	}
 }

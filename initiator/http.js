@@ -2,6 +2,7 @@ var EventEmitter = require ('events').EventEmitter,
 	http         = require ('http'),
 	util         = require ('util'),
 	workflow     = require ('../workflow'),
+	common       = require('../common'),
 	url          = require ('url'),
 	os			 = require ('os');
 
@@ -291,76 +292,83 @@ httpdi.prototype.defaultRouter = function (req, res) {
 // TODO: igzakt match + pathInfo
 // TODO: dirInfo, fileName, fileExtension, fullFileName
 httpdi.prototype.hierarchical = function (req, res) {
-	var self = this;
+	var pathParts = req.url.pathname.split('/').slice(1);
 
-	var pathes = req.url.pathname.split(/\/+/),
-		maxLevel = pathes.length - 1,
-		wf = null;
+	var capture = [];
+	var config = this.hierarchical.findByPath(
+		this, pathParts, 0, capture
+	);
 
-	if (maxLevel > 0 && '' === pathes[maxLevel]) {
-		maxLevel -= 1;
+	if (config) {
+		req.capture = capture;
+		return this.createWorkflow(config, req, res);
 	}
+	return null;
+};
 
-	var findPath = function (tree, level) {
-		level = level || 1;
-		var path = pathes[level];
+httpdi.prototype.hierarchical.walkList = function (
+	list, pathParts, level, callback
+) {
+	var pathLen = pathParts.length;
+	var listLen = list.length;
+	walkList: for (var i = 0; i < listLen; i += 1) {
+		var tree = list[i];
 
-//			console.log ('matching \"' + (tree.path === void 0 ? tree.pattern : tree.path) + '\" at level ' + level + ' for \"' + path + '\"');
-		
-		/* Exact match. */
-		var match = path === tree.path;
+		for (var j = pathLen; j > level; j -= 1) {
+			var pathFragment = pathParts.slice(level, j).join('/');
 
-		/* Pattern match. */
-		if (!match && 'pattern' in tree) {
-			var match = path.match (tree.pattern);
-		}
-
-		if (match) {
-			if (match.constructor === Array && match.length > 1) {
-				if (!req.capture)
-					req.capture = [];
-				var capture = match;
-				match = capture.shift();
-				req.capture = req.capture.concat (capture);
-			}
-
-			if (level >= maxLevel) {
-				var theWf = self.createWorkflow(tree, req, res);
-				if (theWf) {
-					wf = theWf
-				} else {
-					match = false;
-				}
-			} else if (tree.workflows) {
-				var foundPath = tree.workflows.filter (function (node) {
-					if (node.path !== void 0)
-						return findPath(node, level + 1);
-				});
-				if (!foundPath || !foundPath[0]) {
-					tree.workflows.filter (function (node) {
-						if (node.pattern)
-							return findPath(node, level + 1);
-					});
-				}
+			if (callback(tree, pathFragment, j - 1)) {
+				break walkList;
 			}
 		}
-
-		return match;
-	};
-
-	var foundPath = this.workflows.filter (function (tree) {
-		if (tree.path !== void 0)
-			return findPath(tree);
-	});
-
-	if (!foundPath || !foundPath[0]) {
-		this.workflows.filter (function (tree) {
-			if (tree.pattern)
-				return findPath(tree);
-		});
 	}
-	return wf;
-}
+};
+
+httpdi.prototype.hierarchical.findByPath = function (
+	tree, pathParts, level, capture
+) {
+	var list = tree.workflows;
+	var checkedLevel = level;
+	var branch = null;
+
+	// exact match
+	this.walkList(
+		list, pathParts, level,
+		function (tree, pathFragment, index) {
+			//console.print('PATH', tree.path, 'FRAGMENT', pathFragment);
+			if (tree.path == pathFragment) {
+				checkedLevel = index;
+				branch = tree;
+				return true;
+			}
+			return false;
+		}
+	);
+
+	// pattern match
+	!branch && this.walkList(
+		list, pathParts, level,
+		function (tree, pathFragment, index) {
+			//console.print('PATTERN', tree.pattern, 'FRAGMENT', pathFragment);
+			var match = tree.pattern && pathFragment.match(tree.pattern);
+			if (match) {
+				checkedLevel = index;
+				branch = tree;
+				capture.push.apply(capture, match.slice(1));
+				return true;
+			}
+			return false;
+		}
+	);
+
+	if (checkedLevel >= pathParts.length - 1) {
+		return branch;
+	} else {
+		return branch && this.findByPath(
+			branch, pathParts, checkedLevel + 1, capture
+		);
+	}
+};
 
 httpdi.prototype.listen = function () {
 
