@@ -4,9 +4,10 @@ workflow processing for node.js
 example
 -------------------------------
 
-you can see example by running
+you can see a working example by running
 
-	./node example/bin/httpd.js
+	npm install -g dataflo.ws
+	dataflows /usr/local/share/npm/lib/node_modules/dataflo.ws/example/yql/
 
 
 abstract
