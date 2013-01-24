@@ -6,19 +6,39 @@ var common = require('dataflo.ws/common');
 var projectRoot = path.resolve(process.argv[2] || process.cwd());
 var initiatorTypes = process.argv.slice(3);
 
+var $global = common.$global;
 var project = common.getProject(projectRoot);
-common.$global.project = project; // used by initiators
+$global.project = project; // used by initiators
 
 project.on('ready', function () {
+	var conf = project.config;
+
+	// load local modules
+	var requires = conf.requires;
+	if (requires) {
+		if (!Object.is('Array', requires)) {
+			requires = [ requires ];
+		}
+		requires.forEach(function (modName) {
+			var mod = project.require(modName);
+
+			// exporting everything to mainModule,
+			// be careful about name conflicts
+			Object.keys(mod).forEach(function (key) {
+				$global.$mainModule[key] = mod[key];
+			});
+		});
+	}
+
 	// initiate all daemons if no arguments passed
 	if (0 == initiatorTypes.length) {
-		initiatorTypes = Object.keys(project.config.initiator);
+		initiatorTypes = Object.keys(conf.initiator);
 	}
 
 	initiatorTypes.forEach(function (type) {
 		var Initiator = require('dataflo.ws/initiator/' + type);
 		if ('function' == typeof Initiator) {
-			new Initiator(project.config.initiator[type]);
+			new Initiator(conf.initiator[type]);
 		}
 	});
 });

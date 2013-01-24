@@ -312,16 +312,12 @@ var workflow = module.exports = function (config, reqParam) {
 						var fnPath = taskFnName.split('#', 2);
 
 						if (fnPath.length == 2) {
-							origin = require(path.join(
-								$global.project.root.path,
-								'node_modules',
-								fnPath[0]
-							));
+							origin = $global.project.require(fnPath[0]);
 							taskFnName = fnPath[1];
 						} else if (this.$origin) {
 							origin = this.$origin;
 						} else {
-							origin = $global.$mainModule.exports;
+							origin = $global.$mainModule;
 						}
 
 						var method = common.getByPath(taskFnName, origin);

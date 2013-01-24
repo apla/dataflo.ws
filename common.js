@@ -581,34 +581,37 @@ if ($isServerSide) {
 
 	util.inherits (Project, EventEmitter);
 
-
-	function getModule (type, name) {
-		var inPackagePath = path.join('dataflo.ws', type, name);
-		var inProjectPath = path.join(this.root.path, type, name);
-
-		var mod;
-		try {
-			mod = require(inProjectPath);
-		} catch (e) {
-			try {
-				mod = require(inPackagePath);
-			} catch (e) {
-				mod = null;
-			}
-		}
-		return mod;
-	}
-
 	util.extend (Project.prototype, {
 		connectors:  {},
 		connections: {},
 
+		getModule: function (type, name) {
+			var inPackagePath = path.join('dataflo.ws', type, name);
+			var inProjectPath = path.join(this.root.path, type, name);
+
+			var mod;
+			try {
+				mod = require(inProjectPath);
+			} catch (e) {
+				try {
+					mod = require(inPackagePath);
+				} catch (e) {
+					mod = null;
+				}
+			}
+			return mod;
+		},
+
 		getInitiator: function (name) {
-			return getModule.call(this, 'initiator', name);
+			return this.getModule('initiator', name);
 		},
 
 		getTask: function (name) {
-			return getModule.call(this, 'task', name);
+			return this.getModule('task', name);
+		},
+
+		require: function (name) {
+			return this.getModule('node_modules', name);
 		}
 	});
 }
