@@ -1,7 +1,7 @@
 {
   "name": "dataflo.ws",
   "description": "Zero-code JSON config-based workflow engine for Node, PhoneGap and browser.",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "keywords": [
     "flow-based-programming",
     "workflow",
