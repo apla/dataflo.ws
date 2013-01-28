@@ -1,5 +1,6 @@
 var task = require ('./base'),
 	path = require ('path'),
+	fs   = require ('fs'),
 	util = require ('util');
 
 var presenters = {};
@@ -25,6 +26,8 @@ util.inherits (presenterTask, task);
 var cache = {};
 
 util.extend (presenterTask.prototype, {
+	DEFAULT_TEMPLATE_DIR: 'share/presentation',
+
 	/**
 	 * @private
 	 */
@@ -59,29 +62,40 @@ util.extend (presenterTask.prototype, {
 		return false;
 	},
 
-	getTemplateIO: function () {
-		var templateIO = project.root.fileIO(this.file);
+	getTemplateIO: function (callback) {
+		var self = this;
+		var defTemplate = path.resolve(
+			project.root.path, this.DEFAULT_TEMPLATE_DIR, this.file
+		);
+		var origTemplate = path.resolve(project.root.path, this.file);
+		var theTemplate;
 
-		// warn if file is in static HTTP directory
-		if (this.isInStaticDir(templateIO.path)) {
-			console.warn(
-				'Publicly accessible template file at %s!',
-				templateIO.path
-			);
-		}
+		fs.exists(defTemplate, function (exists) {
+			theTemplate = exists ? defTemplate : origTemplate;
 
-		return templateIO;
+			// warn if file is in static HTTP directory
+			if (self.isInStaticDir(theTemplate)) {
+				throw new Error(
+					'Publicly accessible template file at %s!',
+					theTemplate
+				);
+			}
+
+			callback(project.root.fileIO(theTemplate));
+		});
 	},
 
 	renderFile: function () {
 		var self = this;
 
-		this.getTemplateIO().readFile(function (err, data) {
-			if (err) {
-				console.error("can't access file %s", self.file);
-			} else {
-				self.renderResult(data.toString());
-			}
+		this.getTemplateIO(function (templateIO) {
+			templateIO.readFile(function (err, data) {
+				if (err) {
+					console.error("can't access file %s", templateIO.path);
+				} else {
+					self.renderResult(data.toString());
+				}
+			});
 		});
 	},
 
@@ -93,15 +107,14 @@ util.extend (presenterTask.prototype, {
 		var self = this;
 
 		if (self.file in cache) {
-
 			self.renderProcess(cache[self.file]);
+			return;
+		}
 
-		} else {
-			var templateIO = this.getTemplateIO();
-
+		var templateIO = this.getTemplateIO(function (templateIO) {
 			self.readTemplate (templateIO, function (err, tpl) {
 				if (err) {
-					console.error ("can't access file %s", this.file);
+					console.error ("can't access file %s", templateIO.path);
 					// process.kill (); // bad idea
 					return;
 				}
@@ -120,8 +133,9 @@ util.extend (presenterTask.prototype, {
 				if (!presenters[self.type][compileMethod]) {
 					console.error (
 						'renderer \"' + self.type +
-						'\" doesn\'t have a template compilation method named \"'
-						+ compileMethod + '\"'
+						'\" doesn\'t have a template' +
+						'compilation method named \"' +
+						compileMethod + '\"'
 					);
 				}
 
@@ -132,13 +146,12 @@ util.extend (presenterTask.prototype, {
 				self.renderProcess(cache[self.file]);
 
 			});
-		}
+		});
 	},
 
 	/**
 	 * @private
 	 */
-
 	renderProcess: function(render) {
 
 		this.renderResult (
