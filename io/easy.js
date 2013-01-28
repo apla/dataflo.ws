@@ -21,13 +21,10 @@ io.prototype.isDirectory = function () {
 	return this.stats ? this.stats.isDirectory () : null;
 }
 
-io.prototype.file_io = function () {
-	var p = this.path;
-	for (var i = 0; i < arguments.length; i++) {
-		p = Path.join (p, arguments[i]);
-	}
-	return new io (p);
-}
+io.prototype.fileIO = io.prototype.file_io = function () {
+	var path = Path.join.apply(Path, arguments);
+	return new io(Path.resolve(this.path, path));
+};
 
 io.prototype.chmod = function (mode, cb) {
 	var p = this.path;
@@ -99,8 +96,6 @@ io.prototype.stat = function (cb) {
 io.prototype.parent = function () {
 	return new io (Path.dirname (this.path));
 }
-
-io.prototype.fileIO = io.prototype.file_io;
 
 io.prototype.readFile = function (cb) {
 	var self = this;

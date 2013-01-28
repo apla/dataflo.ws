@@ -1,4 +1,5 @@
 var task = require ('./base'),
+	path = require ('path'),
 	util = require ('util');
 
 var presenters = {};
@@ -34,32 +35,76 @@ util.extend (presenterTask.prototype, {
 
 	},
 
+	isInStaticDir: function (filePath) {
+		var httpStatic;
+		try {
+			httpStatic =
+				project.config.initiator.http.static.root.path ||
+				project.config.initiator.http.static.root;
+		} catch (e) {}
+
+		if (httpStatic) {
+			httpStatic = path.resolve(httpStatic, rootPath);
+			var rootPath = project.root.path;
+			var dirName = filePath;
+
+			while (dirName != rootPath) {
+				dirName = path.dirname(dirName);
+				if (dirName == httpStatic) {
+					return true;
+					break;
+				}
+			}
+		}
+		return false;
+	},
+
+	getTemplateIO: function () {
+		var templateIO = project.root.fileIO(this.file);
+
+		// warn if file is in static HTTP directory
+		if (this.isInStaticDir(templateIO.path)) {
+			console.warn(
+				'Publicly accessible template file at %s!',
+				templateIO.path
+			);
+		}
+
+		return templateIO;
+	},
+
+	renderFile: function () {
+		var self = this;
+
+		this.getTemplateIO().readFile(function (err, data) {
+			if (err) {
+				console.error("can't access file %s", self.file);
+			} else {
+				self.renderResult(data.toString());
+			}
+		});
+	},
+
 	/**
 	 * @private
 	 */
 	// TODO: add cache management
 	renderCompile: function() {
-
 		var self = this;
 
-		var render = cache[self.file];
+		if (self.file in cache) {
 
-		if (render) {
-
-			self.renderProcess(render);
+			self.renderProcess(cache[self.file]);
 
 		} else {
-			// TODO: add absolute paths
-			// no more presentation files in strange places
-			var templateIO = project.root.fileIO ('share', 'presentation', this.file);
+			var templateIO = this.getTemplateIO();
 
 			self.readTemplate (templateIO, function (err, tpl) {
-
 				if (err) {
-					console.error ("can't access file at share/presentation/" + self.file);
+					console.error ("can't access file %s", this.file);
 					// process.kill (); // bad idea
 					return;
-				};
+				}
 
 				var tplStr = tpl.toString();
 
@@ -80,12 +125,11 @@ util.extend (presenterTask.prototype, {
 					);
 				}
 
-				render = presenters[self.type][compileMethod] (tplStr, self.compileParams || {});
+				cache[self.file] = presenters[self.type][compileMethod](
+					tplStr, self.compileParams || {}
+				);
 
-				// TODO: check for result. render MUST be a function
-				cache[self.file] = render;
-
-				self.renderProcess(render);
+				self.renderProcess(cache[self.file]);
 
 			});
 		}
@@ -108,17 +152,16 @@ util.extend (presenterTask.prototype, {
 	 */
 
 	renderResult: function(result) {
-
-		this.headers.connection = 'close';
-
 		if (this.headers) {
 			for (var key in this.headers) {
-					this.response.setHeader(key, this.headers[key]);
+				this.response.setHeader(key, this.headers[key]);
 			}
 		}
 
-		this.response.end (result);
-		this.completed ();
+		this.headers.connection = 'close';
+
+		this.response.end(result);
+		this.completed();
 
 	},
 
@@ -165,29 +208,33 @@ util.extend (presenterTask.prototype, {
 		}
 
 		switch (self.type) {
+			case 'html':
+				self.setContentType('text/html; charset=utf-8');
+				self.renderFile();
+				break;
 
 			case 'ejs':
-				this.setContentType('text/html; charset=utf-8');
+				self.setContentType('text/html; charset=utf-8');
 				self.renderCompile();
 				break;
 
 			case 'json':
-				this.setContentType('application/json; charset=utf-8');
+				self.setContentType('application/json; charset=utf-8');
 				self.renderResult (
 					JSON.stringify (self.vars)
 				);
 				break;
 
 			case 'asis':
-
-				if (!this.headers['content-type']) {
+			default:
+				if (!self.headers['content-type']) {
 					var contentType = (self.contentType) ? self.contentType : 'text/plain';
 
 					if (!self.noUTF8 || contentType.indexOf ('application/') != 0) {
 						contentType += '; charset=utf-8';
 					}
 
-					this.setContentType(contentType);
+					self.setContentType(contentType);
 				}
 
 				self.renderResult (self.vars);

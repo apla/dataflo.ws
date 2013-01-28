@@ -4,6 +4,7 @@ var EventEmitter = require ('events').EventEmitter,
 	workflow     = require ('../workflow'),
 	common       = require('../common'),
 	url          = require ('url'),
+	path         = require ('path'),
 	os			 = require ('os');
 
 try {
@@ -157,7 +158,7 @@ httpdi.prototype.createPresenter = function (wf, request, response, state) {
 		// "template.name"
 		tasks.push ({
 			file:      presenter,
-			vars:      "{$vars}",
+			//vars:      "{$vars}",
 			response:  "{$response}",
 			className: "task/presenter"
 		});
@@ -167,7 +168,7 @@ httpdi.prototype.createPresenter = function (wf, request, response, state) {
 			var task = {};
 			util.extend (true, task, item);
 			task.response  = "{$response}";
-			task.vars      = task.vars || "{$vars}";
+			task.vars      = task.vars || {};
 			if (!task.functionName)
 				task.className = task.className || "task/presenter";
 			tasks.push (task);
@@ -175,7 +176,7 @@ httpdi.prototype.createPresenter = function (wf, request, response, state) {
 	} else {
 		// {"type": "json"}
 		presenter.response  = "{$response}";
-		presenter.vars      = presenter.vars || "{$vars}";
+		presenter.vars      = presenter.vars || {};
 		if (!presenter.functionName)
 			presenter.className = presenter.className || "task/presenter";
 		tasks.push (presenter);
@@ -205,7 +206,7 @@ httpdi.prototype.createWorkflow = function (cfg, req, res) {
 	// task MUST contain tasks or presenter
 	if (!cfg.tasks && !cfg.presenter)
 		return;
-	
+
 	console.log('httpdi match: ' + req.method + ' to ' + req.url.pathname);
 
 	var wf = new workflow(
@@ -220,9 +221,11 @@ httpdi.prototype.createWorkflow = function (cfg, req, res) {
 	});
 
 	wf.on('failed', function (wf) {
-		var presenter = self.createPresenter(wf, req, res, 'failed');
-		if (presenter)
-			presenter.run ();
+		self.createWorkflowByCode(req, res) || (function () {
+			var presenter = self.createPresenter(wf, req, res, 'failed');
+			if (presenter)
+				presenter.run ();
+		}());
 	});
 
 	self.emit('detected', req, res, wf);
@@ -235,6 +238,27 @@ httpdi.prototype.createWorkflow = function (cfg, req, res) {
 
 	return wf;
 }
+
+httpdi.prototype.createWorkflowByCode = function (req, res) {
+	// find a workflow w/ presenter by HTTP response code
+	if (!this.workflows._codeWorkflows) {
+		this.workflows._codeWorkflows = {};
+	}
+	if (!(res.statusCode in this.workflows._codeWorkflows)) {
+		this.workflows._codeWorkflows[
+			res.statusCode
+		] = this.workflows.filter(function (wf) {
+			return wf.code == res.statusCode;
+		})[0];
+	}
+	var codeWf = this.workflows._codeWorkflows[res.statusCode];
+	if (codeWf) {
+		if (!codeWf.tasks) { codeWf.tasks = []; }
+		this.createWorkflow(codeWf, req, res);
+		return true;
+	}
+	return false;
+};
 
 httpdi.prototype.initWorkflow = function (wfConfig, req) {
 };
@@ -342,19 +366,16 @@ httpdi.prototype.listen = function () {
 		// NOTE: but for rapid development this is acceptable.
 		// NOTE: you MUST write static: false for production
 		if (self.static && req.method == 'GET') {
-
-			var pathName = req.url.pathname;
-
-			if (self.win) {
-				pathName = pathName.split('/').join('\\');
-			}
-
-			if (pathName.match (/\/$/)) {
-				pathName += self.static.index;
-			}
+			// TODO: factor out static file handling
+			// - - - - -
+			var pathName = path.join(
+				self.static.root.path,
+				path.join('.', req.url.pathname),
+				self.static.index
+			);
 
 			var contentType, charset;
-			if (pathName.match (/\.html$/)) {
+			if ('.html' == path.extname(pathName)) {
 				contentType = 'text/html';
 				charset = 'utf-8';
 			}
@@ -364,10 +385,13 @@ httpdi.prototype.listen = function () {
 				charset = mime.charsets.lookup(contentType);
 				if (charset) contentType += '; charset='+charset;
 			} else if (!contentType) {
-				console.error ('sorry, there is no content type for ' + pathName);
+				console.error(
+					'sorry, there is no content type for %s', pathName
+				);
 			}
 
-			self.static.root.fileIO (pathName).readStream (function (readStream, stats) {
+			var file = project.root.fileIO(pathName);
+			file.readStream (function (readStream, stats) {
 
 				if (stats) {
 
@@ -388,7 +412,9 @@ httpdi.prototype.listen = function () {
 						return;
 					}
 				}
-				
+
+				// TODO: factor this out
+				// - - - - -
 				var wf = self.router (req, res);
 
 				if (wf && !wf.ready) {
@@ -397,27 +423,32 @@ httpdi.prototype.listen = function () {
 
 				if (!wf) {
 					res.statusCode = 404;
-					res.end();
 
 					console.log ('httpdi not detected: ' + req.method + ' to ' + req.url.pathname);
 					self.emit ("unknown", req, res);
+					self.createWorkflowByCode(req, res) || res.end();
 				}
+				// - - - - - end of router creation
 			});
+			// - - - - - end of static file handling
 		} else {
-			
+			// TODO: factor this out
+			// - - - - -
 			var wf = self.router (req, res);
 
 			if (wf && !wf.ready) {
 				console.error ("workflow not ready and cannot be started");
 			}
-			
+
 			if (!wf) {
 				res.statusCode = 404;
 				res.end();
 
 				console.log ('httpdi not detected: ' + req.method + ' to ' + req.url.pathname);
 				self.emit ("unknown", req, res);
+				self.createWorkflowByCode(req, res) || res.end();
 			}
+			// - - - - - end of router creation
 		}
 	});
 

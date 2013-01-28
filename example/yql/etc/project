@@ -5,9 +5,12 @@
 			"port":50088,
 			"static":{
 				"index":"index.html",
-				"root":"./"
+				"root":"htdocs"
 			},
 			"workflows":[{
+				"code":"404",
+				"presenter":"templates/404.html"
+			}, {
 				"path": "entity/search",
 				"workflows": [{
 					"path":"yql",

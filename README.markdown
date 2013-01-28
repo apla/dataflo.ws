@@ -7,7 +7,9 @@ example
 you can see a working example by running
 
 	npm install -g dataflo.ws
-	dataflows /usr/local/share/npm/lib/node_modules/dataflo.ws/example/yql/
+	dataflows $NODE_PATH/dataflo.ws/example/yql/
+
+(assuming you have your $NODE_PATH set correctly).
 
 
 abstract
