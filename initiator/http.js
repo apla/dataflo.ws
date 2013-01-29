@@ -371,7 +371,7 @@ httpdi.prototype.listen = function () {
 			var pathName = path.join(
 				self.static.root.path,
 				path.join('.', req.url.pathname),
-				self.static.index
+				/\/$/.test(req.url.pathname) ? self.static.index : ''
 			);
 
 			var contentType, charset;
