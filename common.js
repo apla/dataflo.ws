@@ -587,7 +587,7 @@ if ($isServerSide) {
 
 		getModule: function (type, name) {
 			var inPackagePath = path.join('dataflo.ws', type, name);
-			var inProjectPath = path.join(this.root.path, type, name);
+			var inProjectPath = path.resolve(this.root.path, type, name);
 
 			var mod;
 			try {
@@ -611,7 +611,8 @@ if ($isServerSide) {
 		},
 
 		require: function (name) {
-			return this.getModule('node_modules', name);
+			return this.getModule('node_modules', name) ||
+				this.getModule('', name);
 		}
 	});
 }

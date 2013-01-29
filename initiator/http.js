@@ -34,9 +34,9 @@ var httpdi = module.exports = function httpdIConstructor (config) {
 	this.static    = config.static;
 
 	// - change static root by path
-	if (this.static.root && this.static.root.substring) {
-		this.static.root = project.root.fileIO (this.static.root);
-	}
+	this.static.root = this.static.root ?
+		project.root.fileIO(this.static.root) :
+		project.root;
 
 	// - - - prepare configs
 	this.prepare = config.prepare;
@@ -287,15 +287,15 @@ httpdi.prototype.hierarchical.walkList = function (
 	list, pathParts, level, callback
 ) {
 	var pathLen = pathParts.length;
-	var listLen = list.length;
-	walkList: for (var i = 0; i < listLen; i += 1) {
+	var listLen = list && list.length;
+	outer: for (var i = 0; i < listLen; i += 1) {
 		var tree = list[i];
 
 		for (var j = pathLen; j > level; j -= 1) {
 			var pathFragment = pathParts.slice(level, j).join('/');
 
 			if (callback(tree, pathFragment, j - 1)) {
-				break walkList;
+				break outer;
 			}
 		}
 	}
