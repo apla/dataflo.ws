@@ -3,7 +3,7 @@ var EventEmitter = require ('events').EventEmitter,
 	util         = require ('util'),
 	urlUtil      = require ('url'),
 	task         = require ('./base'),
-	urlModel     = require ('./model/from-url');
+	urlModel     = require ('../model/from-url');
 
 var cachePath = project.config.cachePath;
 
