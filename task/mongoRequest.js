@@ -461,8 +461,8 @@ util.extend (mongoRequestTask.prototype, {
 
 								dataToInsert = self.data.filter(function(item) {
 									var uniqueField;
-									for ( k = 0; k < alreadyStoredDocs.length; k++) {
-										for (l = 0; l < unique.length; l++) {
+									for (var k = 0; k < alreadyStoredDocs.length; k++) {
+										for (var l = 0; l < unique.length; l++) {
 											uniqueField = unique[l];
 											if (alreadyStoredDocs[k][uniqueField] != item[uniqueField]) return true;
 										}
@@ -663,36 +663,41 @@ util.extend (mongoRequestTask.prototype, {
 		});
 	},
 
+
 	remove: function () {
 		var self = this;
+
+		self.options = self.options || { safe: true };
 
 		if (self.verbose) {
 			self.emit('log', 'remove called ', self.data);
 		}
 
-		self._openCollection (function (err, collection) {
+		var ids = self.data.filter(function (item) {
+			return null != item._id;
+		}).map(function (item) {
+			return item._id;
+		});
 
-			if (self.data.constructor != Array) {
+		self._openCollection(function (err, collection) {
+			if (!Object.is('Array', self.data)) {
 				self.data = [self.data];
 			}
 
 			if (self.verbose) {
-				console.log ('data for update', self.data);
+				console.log('data for update', self.data);
 			}
 
-			var idList = self.data.map(function (item) {
-				if (item._id) {
-					collection.remove({
-						_id: self._objectId(item._id)
-					}/*, options, callback */);
-
-					return item._id;
-				} else {
-					// something wrong. this couldn't happen
-					self.emit('log', 'strange things with _id: "'+item._id+'"');
-				}
+			collection.remove({
+				_id: { $in: ids }
+			}, self.options, function (err, records) {
+				self.completed ({
+					err: err,
+					success: err == null,
+					total: records.length,
+					data: records
+				});
 			});
-			self.completed(idList);
 		});
 	},
 
