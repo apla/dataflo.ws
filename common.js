@@ -13,6 +13,7 @@ Object.is = function (type, obj) { // lemme unseen this
 console.print = function () {
 	var BLUE = '';
 	var RESET = '';
+	var line = '============================================================';
 
 	if ($isServerSide) {
 		BLUE = '\033[34m';
@@ -21,14 +22,11 @@ console.print = function () {
 
 	var err = new Error();
 	var stack = err.stack.split('\n');
-	var prev = stack[2];
-	var msg = [ BLUE + prev + RESET + '\n' ];
+	var lastFunc = stack[2];
+	var msg = [];
 	msg.push.apply(msg, arguments);
-	msg.push(
-		'\n' + BLUE +
-		'============================================================' +
-		RESET
-	);
+	msg[0] = BLUE + line + '\n' + lastFunc + RESET + '\n' + msg[0];
+	msg.push('\n' + BLUE + line + RESET);
 	return console.log.apply(console, msg);
 };
 
