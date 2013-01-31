@@ -31,12 +31,10 @@ var httpdi = module.exports = function httpdIConstructor (config) {
 		this.port  = config.port;
 
 	this.workflows = config.workflows;
-	this.static    = config.static;
+	this.static    = config.static || {};
 
 	// - change static root by path
-	this.static.root = this.static.root ?
-		project.root.fileIO(this.static.root) :
-		project.root;
+	this.static.root = project.root.fileIO(this.static.root || 'htdocs');
 
 	// - - - prepare configs
 	this.prepare = config.prepare;
@@ -267,7 +265,14 @@ httpdi.prototype.initWorkflow = function (wfConfig, req) {
 // TODO: igzakt match + pathInfo
 // TODO: dirInfo, fileName, fileExtension, fullFileName
 httpdi.prototype.hierarchical = function (req, res) {
-	var pathParts = req.url.pathname.split('/').slice(1);
+	var pathName = req.url.pathname;
+
+	// strip trailing slashes
+	if (pathName.length > 1) {
+		pathName = pathName.replace(/\/+$/, '');
+	}
+
+	var pathParts = pathName.split(/\/+/).slice(1);
 
 	var capture = [];
 	var config = this.hierarchical.findByPath(

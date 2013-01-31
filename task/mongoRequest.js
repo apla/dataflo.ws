@@ -1007,7 +1007,7 @@ util.extend (mongoRequestTask.prototype, {
 	};
 
 	// export wrappers into mongoRequestTask
-	Objects.keys(mongoNativeAPI).forEach(function (httpMethod) {
+	Object.keys(mongoNativeAPI).forEach(function (httpMethod) {
 		var api = mongoNativeAPI[httpMethod];
 
 		mongoRequestTask[httpMethod] = function () {
