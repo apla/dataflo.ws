@@ -2,6 +2,7 @@ var EventEmitter = require ('events').EventEmitter,
 	crypto       = require ('crypto'),
 	util         = require ('util'),
 	urlUtil      = require ('url'),
+	path         = require ('path'),
 	task         = require ('./base'),
 	urlModel     = require ('../model/from-url');
 
@@ -28,15 +29,16 @@ util.extend (cacheTask.prototype, {
 	 */
 	generateCacheFileName: function () {
 
-		if (this.cacheFileName)
-			return this.cacheFileName;
+		if (this.cacheFilePath)
+			return this.cacheFilePath;
 
 		var shasum = crypto.createHash('sha1');
 		shasum.update(this.url.href);
 		this.cacheFile = project.root.file_io (cachePath, shasum.digest('hex'));
-		this.cacheFileName = this.cacheFile.path;
+		this.cacheFilePath = this.cacheFile.path;
+		this.cacheFileName = path.filename(this.cacheFile.path);
 
-		return this.cacheFileName;
+		return this.cacheFilePath;
 	}
 });
 
@@ -86,8 +88,8 @@ util.extend (cacheTask.prototype, {
 				self.clearOperationTimeout();
 				self.cacheFile.chmod (0640, function (err) {
 					// TODO: check for exception (and what's next?)
-					delete project.caching[self.cacheFileName];
-					// self.res.cacheFileName = self.cacheFileName
+					delete project.caching[self.cacheFilePath];
+					// self.res.cacheFilePath = self.cacheFilePath
 					// self.completed (self.res);
 					self.completed (self.cacheFileName);
 				});
@@ -98,11 +100,11 @@ util.extend (cacheTask.prototype, {
 		this.generateCacheFileName ();
 
 		// other task is caching requested url
-		var anotherTask = project.caching[self.cacheFileName];
+		var anotherTask = project.caching[self.cacheFilePath];
 
 		if (anotherTask && anotherTask != self) {
 
-			this.emit ('log', 'another process already downloading ' + this.url.href + ' to ' + this.cacheFileName);
+			this.emit ('log', 'another process already downloading ' + this.url.href + ' to ' + this.cacheFilePath);
 			// we simply wait for another task
 			anotherTask.on ('complete', function () {
 				self.completed (self.cacheFileName);
@@ -112,7 +114,7 @@ util.extend (cacheTask.prototype, {
 			});
 			return;
 		} else {
-			project.caching[self.cacheFileName] = self;
+			project.caching[self.cacheFilePath] = self;
 		}
 
 		self.cacheFile.stat (function (err, stats) {
@@ -121,8 +123,8 @@ util.extend (cacheTask.prototype, {
 
 				self.clearOperationTimeout();
 
-				self.emit ('log', 'file already downloaded from ' + self.url.href + ' to ' + self.cacheFileName);
-				delete project.caching[self.cacheFileName];
+				self.emit ('log', 'file already downloaded from ' + self.url.href + ' to ' + self.cacheFilePath);
+				delete project.caching[self.cacheFilePath];
 				self.completed (self.cacheFileName);
 
 				return;
@@ -138,7 +140,7 @@ util.extend (cacheTask.prototype, {
 				return;
 			}
 
-			self.emit ('log', 'start caching from ' + self.url.href + ' to ' + self.cacheFileName);
+			self.emit ('log', 'start caching from ' + self.url.href + ' to ' + self.cacheFilePath);
 
 			self.activityCheck ('model.fetch start');
 			self.model.fetch ({to: writeStream});
