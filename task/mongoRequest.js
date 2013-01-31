@@ -970,5 +970,58 @@ util.extend (mongoRequestTask.prototype, {
 				}
 			});
 		});
+	},
+
+	_openColOrFail: function (callback) {
+		this._openCollection(function (err, collection) {
+			if (err) {
+				this.failed(err);
+			} else {
+				callback.call(this, collection);
+			}
+		});
+	},
+
+	_onResult: function (err, data) {
+		err ? this.failed(err) : this.completed(data);
 	}
 });
+
+// create REST wrappers
+(function () {
+	'use strict';
+
+	var mongoNativeAPI = {
+		GET : {
+			method: 'find',
+			params: [ 'query', 'fields', 'options' ]
+		},
+		POST: {
+			method: 'update',
+			params: [ 'criteria', 'data', 'options' ]
+		},
+		PUT : {
+			method: 'insert',
+			params: [ 'data', 'options' ]
+		}
+	};
+
+	// export wrappers into mongoRequestTask
+	Objects.keys(mongoNativeAPI).forEach(function (httpMethod) {
+		var api = mongoNativeAPI[httpMethod];
+
+		mongoRequestTask[httpMethod] = function () {
+			// params
+			var args = api.params.map(function (prop) {
+				return self[prop] || {};
+			});
+
+			// callback
+			args.push(this._onResult.bind(this));
+
+			this._openColOrFail(function (collection) {
+				collection[api.method].apply(collection, args);
+			});
+		};
+	});
+}());
