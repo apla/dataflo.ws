@@ -3,18 +3,16 @@
 var path = require('path');
 var common = require('dataflo.ws/common');
 
-var projectRoot = path.resolve(process.argv[2] || process.cwd());
 var initiatorTypes = process.argv.slice(3);
 
 var $global = common.$global;
-var project = common.getProject(projectRoot);
-$global.project = project; // used by initiators
+$global.project = common.getProject(); // used by initiators
 
 project.on('ready', function () {
 	var conf = project.config;
 
 	// load local modules
-	var requires = conf.requires;
+	var requires = conf.requires || ['main'];
 	if (requires) {
 		if (!Object.is('Array', requires)) {
 			requires = [ requires ];
@@ -40,9 +38,20 @@ project.on('ready', function () {
 	}
 
 	initiatorTypes.forEach(function (type) {
-		var Initiator = require('dataflo.ws/initiator/' + type);
-		if ('function' == typeof Initiator) {
-			new Initiator(conf.initiator[type]);
+		var initiator;
+		try {
+			initiator = require('dataflo.ws/initiator/' + type);
+		} catch (e) {
+			var fixedIName = type.match (/(.*)d$/);
+			if (fixedIName && fixedIName[1]) try {
+				initiator = require('dataflo.ws/initiator/' + fixedIName[1]);
+				console.error ('[NOTE] please convert your "'+type+'" initiator configuration to use names without "d" at end');
+			} catch (ee) {
+				throw e;
+			}
+		}
+		if ('function' == typeof initiator) {
+			new initiator(conf.initiator[type]);
 		}
 	});
 });

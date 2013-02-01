@@ -465,7 +465,7 @@ if ($isServerSide) {
 	var io = require ('./io/easy');
 
 	Project = function (rootPath) {
-		rootPath = rootPath || './';
+		rootPath = rootPath || process.env['PROJECT_ROOT'] || process.cwd();
 		projectRoot = new io(rootPath);
 
 		this.root = projectRoot;
