@@ -36,7 +36,7 @@ util.extend (cacheTask.prototype, {
 		shasum.update(this.url.href);
 		this.cacheFile = project.root.file_io (cachePath, shasum.digest('hex'));
 		this.cacheFilePath = this.cacheFile.path;
-		this.cacheFileName = path.filename(this.cacheFile.path);
+		this.cacheFileName = path.basename(this.cacheFile.path);
 
 		return this.cacheFilePath;
 	}
