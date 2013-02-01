@@ -614,7 +614,9 @@ util.extend (mongoRequestTask.prototype, {
 
 					var criteriaObj = self.criteria || {};
 					if (item._id) {
-						criteriaObj = self._objectId(item._id);
+						criteriaObj = {
+							_id: self._objectId(item._id)
+						};
 					}
 
 					var newObj;
