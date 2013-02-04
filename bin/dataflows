@@ -40,6 +40,7 @@ project.on('ready', function () {
 
 	initiatorTypes.forEach(function (iName) {
 		var initiator;
+		var initiatorConf = conf.initiator[iName];
 		try {
 			initiator = require(
 				path.join(MODULE_NAME, INITIATOR_PATH, iName
@@ -50,7 +51,7 @@ project.on('ready', function () {
 			if (fixedIName !== iName) {
 				iName = fixedIName;
 				console.warn(
-'[DEPRECATED] Remove trailing "d" from "%s" in your initiator config', iName
+					'[DEPRECATED] Remove trailing "d" from "%s" in your initiator config', iName
 				);
 
 				try {
@@ -64,7 +65,7 @@ project.on('ready', function () {
 		}
 
 		if ('function' == typeof initiator) {
-			new initiator(conf.initiator[iName]);
+			new initiator(initiatorConf);
 		}
 	});
 });
