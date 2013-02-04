@@ -991,6 +991,12 @@ util.extend (mongoRequestTask.prototype, {
 		err ? this.failed(err) : this.completed(data);
 	},
 
+	aggregate: function () {
+		this._openColOrFail(function (collection) {
+			collection.aggregate(this.params, this._onResult.bind(this));
+		});
+	},
+
 	GET: function () {
 		this._openColOrFail(function (collection) {
 			collection.find(
