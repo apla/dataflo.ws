@@ -623,6 +623,8 @@ util.extend (workflow.prototype, {
 				} else if (t.$mergeWith) {
 					common.pathToVal (self, t.$mergeWith, result, common.mergeObjects);
 				}
+			} else if (t.$empty) {
+				common.pathToVal(self, t.$empty, true);
 			}
 
 			self.logTask (task, 'task completed');
@@ -631,6 +633,10 @@ util.extend (workflow.prototype, {
 				self.run ();
 			else
 				self.haveCompletedTasks = true;
+		});
+
+		task.on('failed', function (t, err) {
+			common.pathToVal(self, t.$empty, true);
 		});
 
 	}
