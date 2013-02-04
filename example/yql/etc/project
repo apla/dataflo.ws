@@ -16,26 +16,6 @@
 					"path":"yql",
 					"tasks":[
 						{
-							"$function": "Number",
-							"$args": [ "0" ],
-							"$set": "data.number",
-							"$empty": "data.zero"
-						},
-						{
-							"$function": "console.print",
-							"isZero": "{$data.zero}",
-							"$args": [
-								"The previous task has returned %d", "0"
-							]
-						},
-						{
-							"$function": "console.print",
-							"$args": [
-								"This one won't even print %d",
-								"{$data.number}"
-							]
-						},
-						{
 							"$class":"task/post",
 							"request":"{$request}",
 							"$set":"data.post"
