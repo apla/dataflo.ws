@@ -227,6 +227,7 @@ var workflow = module.exports = function (config, reqParam) {
 			var dict    = util.extend(true, {}, reqParam);
 			dict.data   = self.data;
 			dict.global = $global;
+			dict.appMain = $mainModule.exports;
 
 			if ($isServerSide) {
 				dict.project = project;
