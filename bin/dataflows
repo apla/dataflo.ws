@@ -26,7 +26,7 @@ project.on('ready', function () {
 		// be careful about name conflicts
 		if (mod) {
 			Object.keys(mod).forEach(function (key) {
-				$global.$mainModule[key] = mod[key];
+				$global.$mainModule.exports[key] = mod[key];
 			});
 		} else {
 			console.warn('Module %s not found', modName);
