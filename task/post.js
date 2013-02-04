@@ -74,6 +74,7 @@ util.extend (postTask.prototype, {
 			self.request.on("end", function () {
 
 				var fields, err;
+				var body = {fields: fields};
 
 				if (self.dumpData) {
 					self.emit ('log', self.data);
@@ -84,11 +85,6 @@ util.extend (postTask.prototype, {
 				} catch (e) {
 					err = e;
 				}
-
-// TODO : move to httpd.js
-				var body = {fields: fields};
-				self.request.body = body;
-// =======
 
 				if (err) {
 
@@ -103,7 +99,6 @@ util.extend (postTask.prototype, {
 
 				var body = (err) ? self.data : {fields: fields};
 
-				self.request.body = body;
 				self.completed (body);
 			});
 
