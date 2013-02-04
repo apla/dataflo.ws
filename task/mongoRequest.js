@@ -410,7 +410,9 @@ util.extend (mongoRequestTask.prototype, {
 							return;
 						}
 
-						collection.update(filter, updateData, false, true);
+						collection.update(
+							filter, updateData, { safe: true }, Boolean
+						);
 
 						self._log(alreadyStoredDocs);
 
@@ -610,9 +612,12 @@ util.extend (mongoRequestTask.prototype, {
 					util.extend(true, set, item);
 					delete set._id;
 
-					var criteriaObj = (self.criteria) ? self.criteria : {};
-
-					if (!criteriaObj._id && item._id) criteriaObj._id = self._objectId(item._id);
+					var criteriaObj = self.criteria || {};
+					if (item._id) {
+						criteriaObj = {
+							_id: self._objectId(item._id)
+						};
+					}
 
 					var newObj;
 
@@ -984,44 +989,37 @@ util.extend (mongoRequestTask.prototype, {
 
 	_onResult: function (err, data) {
 		err ? this.failed(err) : this.completed(data);
+	},
+
+	GET: function () {
+		this._openColOrFail(function (collection) {
+			collection.find(
+				this.query   || {},
+				this.fields  || {},
+				this.options || {},
+				this._onResult.bind(this)
+			);
+		});
+	},
+
+	POST: function () {
+		this._openColOrFail(function (collection) {
+			collection.update(
+				this.criteria || {},
+				this.data     || {},
+				this.options  || {},
+				this._onResult.bind(this)
+			);
+		});
+	},
+
+	PUT: function () {
+		this._openColOrFail(function (collection) {
+			collection.insert(
+				this.data    || {},
+				this.options || {},
+				this._onResult.bind(this)
+			);
+		});
 	}
 });
-
-// create REST wrappers
-(function () {
-	'use strict';
-
-	var mongoNativeAPI = {
-		GET : {
-			method: 'find',
-			params: [ 'query', 'fields', 'options' ]
-		},
-		POST: {
-			method: 'update',
-			params: [ 'criteria', 'data', 'options' ]
-		},
-		PUT : {
-			method: 'insert',
-			params: [ 'data', 'options' ]
-		}
-	};
-
-	// export wrappers into mongoRequestTask
-	Object.keys(mongoNativeAPI).forEach(function (httpMethod) {
-		var api = mongoNativeAPI[httpMethod];
-
-		mongoRequestTask[httpMethod] = function () {
-			// params
-			var args = api.params.map(function (prop) {
-				return self[prop] || {};
-			});
-
-			// callback
-			args.push(this._onResult.bind(this));
-
-			this._openColOrFail(function (collection) {
-				collection[api.method].apply(collection, args);
-			});
-		};
-	});
-}());

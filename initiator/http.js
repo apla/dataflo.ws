@@ -152,31 +152,35 @@ httpdi.prototype.createPresenter = function (wf, request, response, state) {
 
 	var tasks = [];
 
-	if (presenter.substring) {
+	if (Object.is('String', presenter)) {
 		// "template.name"
 		tasks.push ({
 			file:      presenter,
 			//vars:      "{$vars}",
 			response:  "{$response}",
-			className: "task/presenter"
+			$class: "task/presenter"
 		});
-	} else if (presenter.constructor == Array) {
+	} else if (Object.is('Array', presenter)) {
 		// TODO: [{...}, {...}]
 		presenter.map (function (item) {
 			var task = {};
 			util.extend (true, task, item);
 			task.response  = "{$response}";
 			task.vars      = task.vars || {};
-			if (!task.functionName)
-				task.className = task.className || "task/presenter";
+			if (!task.functionName || !task.$function) {
+				task.className = task.$class || task.className ||
+					"task/presenter";
+			}
 			tasks.push (task);
 		});
 	} else {
 		// {"type": "json"}
 		presenter.response  = "{$response}";
 		presenter.vars      = presenter.vars || {};
-		if (!presenter.functionName)
-			presenter.className = presenter.className || "task/presenter";
+		if (!presenter.functionName || !presenter.$function) {
+			presenter.className = presenter.$class || presenter.className ||
+				"task/presenter";
+		}
 		tasks.push (presenter);
 	}
 

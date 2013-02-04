@@ -1,8 +1,11 @@
 #!/usr/bin/env node
 
-var path = require('path');
-var common = require('dataflo.ws/common');
+var MODULE_NAME = 'dataflo.ws';
+var INITIATOR_PATH = 'initiator';
+var DEFAULT_REQUIRE = 'main';
 
+var path = require('path');
+var common = require(MODULE_NAME + '/common');
 var initiatorTypes = process.argv.slice(3);
 
 var $global = common.$global;
@@ -12,46 +15,56 @@ project.on('ready', function () {
 	var conf = project.config;
 
 	// load local modules
-	var requires = conf.requires || ['main'];
-	if (requires) {
-		if (!Object.is('Array', requires)) {
-			requires = [ requires ];
-		}
-		requires.forEach(function (modName) {
-			var mod = project.require(modName);
-
-			// exporting everything to mainModule,
-			// be careful about name conflicts
-			if (mod) {
-				Object.keys(mod).forEach(function (key) {
-					$global.$mainModule[key] = mod[key];
-				});
-			} else {
-				console.warn('Module %s not found', modName);
-			}
-		});
+	var requires = conf.requires || [ DEFAULT_REQUIRE ];
+	if (!Object.is('Array', requires)) {
+		requires = [ requires ];
 	}
+	requires.forEach(function (modName) {
+		var mod = project.require(modName);
+
+		// exporting everything to mainModule,
+		// be careful about name conflicts
+		if (mod) {
+			Object.keys(mod).forEach(function (key) {
+				$global.$mainModule.exports[key] = mod[key];
+			});
+		} else {
+			console.warn('Module %s not found', modName);
+		}
+	});
 
 	// initiate all daemons if no arguments passed
 	if (0 == initiatorTypes.length) {
 		initiatorTypes = Object.keys(conf.initiator);
 	}
 
-	initiatorTypes.forEach(function (type) {
+	initiatorTypes.forEach(function (iName) {
 		var initiator;
 		try {
-			initiator = require('dataflo.ws/initiator/' + type);
+			initiator = require(
+				path.join(MODULE_NAME, INITIATOR_PATH, iName
+			));
 		} catch (e) {
-			var fixedIName = type.match (/(.*)d$/);
-			if (fixedIName && fixedIName[1]) try {
-				initiator = require('dataflo.ws/initiator/' + fixedIName[1]);
-				console.error ('[NOTE] please convert your "'+type+'" initiator configuration to use names without "d" at end');
-			} catch (ee) {
-				throw e;
+			// FIXME later: legacy initiator names
+			var fixedIName = iName.replace(/d$/, '');
+			if (fixedIName !== iName) {
+				iName = fixedIName;
+				console.warn(
+'[DEPRECATED] Remove trailing "d" from "%s" in your initiator config', iName
+				);
+
+				try {
+					initiator = require(
+						path.join(MODULE_NAME, INITIATOR_PATH, iName)
+					);
+				} catch (ee) {
+					throw e;
+				}
 			}
 		}
+
 		if ('function' == typeof initiator) {
-			new initiator(conf.initiator[type]);
+			new initiator(conf.initiator[iName]);
 		}
 	});
 });

@@ -25,8 +25,17 @@ console.print = function () {
 	var lastFunc = stack[2];
 	var msg = [];
 	msg.push.apply(msg, arguments);
-	msg[0] = BLUE + line + '\n' + lastFunc + RESET + '\n' + msg[0];
-	msg.push('\n' + BLUE + line + RESET);
+
+	var start = BLUE + line + '\n' + lastFunc + RESET + '\n';
+	var end ='\n' + BLUE + line + RESET;
+
+	if (Object.is('String', msg[0])) {
+		msg[0] = start + msg[0];
+	} else {
+		msg.unshift(start);
+	}
+	msg.push(end);
+
 	return console.log.apply(console, msg);
 };
 

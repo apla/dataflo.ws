@@ -318,7 +318,7 @@ var workflow = module.exports = function (config, reqParam) {
 						} else if (this.$origin) {
 							origin = this.$origin;
 						} else {
-							origin = $global.$mainModule;
+							origin = $global.$mainModule.exports;
 						}
 
 						var method = common.getByPath(taskFnName, origin);

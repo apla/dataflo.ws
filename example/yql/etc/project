@@ -1,5 +1,6 @@
 // json
 {
+	"requires": [ "misc" ],
 	"initiator":{
 		"http":{
 			"port":50088,
@@ -37,8 +38,13 @@
 							"$set":"data.pimpedText"
 						},
 						{
+							"$function":"unPimp",
+							"$args":["{$data.pimpedText}"],
+							"$set":"data.unPimpedText"
+						},
+						{
 							"$function":"toUpperCase",
-							"$origin":"{$data.pimpedText}",
+							"$origin":"{$data.unPimpedText}",
 							"$args":[],
 							"$set":"data.upperCasedText"
 						},
