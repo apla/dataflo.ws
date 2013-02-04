@@ -49,14 +49,13 @@ project.on('ready', function () {
 			// FIXME later: legacy initiator names
 			var fixedIName = iName.replace(/d$/, '');
 			if (fixedIName !== iName) {
-				iName = fixedIName;
 				console.warn(
-					'[DEPRECATED] Remove trailing "d" from "%s" in your initiator config', iName
+'[DEPRECATED] Remove trailing "d" from "%s" in your initiator config', iName
 				);
 
 				try {
 					initiator = require(
-						path.join(MODULE_NAME, INITIATOR_PATH, iName)
+						path.join(MODULE_NAME, INITIATOR_PATH, fixedIName)
 					);
 				} catch (ee) {
 					throw e;
