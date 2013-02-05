@@ -259,12 +259,17 @@ var workflow = module.exports = function (config, reqParam) {
 
 			// TODO: need check all task classes,
 			// because some compile errors may be there
-			var taskPath = './' + taskClassName;
+			var taskPath = path.resolve(
+				$global.project.root.path,
+				taskClassName
+			);
 			try {
 				xTaskClass = require (taskPath);
 			} catch (e) {
 				try {
-					xTaskClass = require (taskClassName);
+					xTaskClass = require(
+						path.join('dataflo.ws', taskClassName)
+					);
 				} catch (eLib) {
 					console.log ('requirement "' + taskClassName + '" failed:');
 					console.log (e.stack);
