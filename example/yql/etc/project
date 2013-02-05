@@ -76,11 +76,18 @@
 							"timeout":10000,
 							"retries":10,
 							"$set":"data.results"
+						}, {
+						   "$function":"formatData",
+						   "$args":["{$data.trimmedText}", "{$data.results}"],
+						   "$set":"data.mappedResults"
+						}, {
+							"$function":"console.print",
+							"$args":["{$data.mappedResults}"]
 						}
 					],
 					"presenter":{
-						"type":"asis",
-						"vars":"{$data.results.data}"
+						"file":"templates/results.ejs",
+						"vars":"{$data.mappedResults}"
 					}
 				}]
 			}]
