@@ -22,7 +22,9 @@ module.exports = function (moduleName) {
 			files.forEach(function (fileName) {
 				var srcPath = path.join(srcDir, fileName);
 				var destPath = path.join(destDir, fileName);
-				fs.symlinkSync(srcPath, destPath);
+				if (!fs.existsSync(destPath)) {
+					fs.symlinkSync(srcPath, destPath);
+				}
 			});
 		}
 	});
