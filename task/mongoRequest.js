@@ -335,6 +335,10 @@ util.extend (mongoRequestTask.prototype, {
 						err:		err,
 						data:		docs
 					});
+
+					if (!err & 0 == n) {
+						self.empty();
+					}
 				});
 			});
 		});
@@ -407,6 +411,11 @@ util.extend (mongoRequestTask.prototype, {
 								err: null,
 								data: []
 							});
+
+							if (0 == alreadyStoredDocs.length) {
+								self.empty();
+							}
+
 							return;
 						}
 
@@ -422,6 +431,10 @@ util.extend (mongoRequestTask.prototype, {
 							err:		false,
 							data:		alreadyStoredDocs
 						});
+
+						if (0 == alreadyStoredDocs.length) {
+							self.empty();
+						}
 
 						return;
 
@@ -486,6 +499,10 @@ util.extend (mongoRequestTask.prototype, {
 								data:		alreadyStoredDocs
 							});
 
+							if (!err && 0 == alreadyStoredDocs.length) {
+								self.empty();
+							}
+
 							return;
 						}
 
@@ -523,6 +540,9 @@ util.extend (mongoRequestTask.prototype, {
 								data:		insertedRecords
 							});
 
+							if (!err && 0 == insertedRecords.length) {
+								self.empty();
+							}
 						});
 					}
 
@@ -563,6 +583,9 @@ util.extend (mongoRequestTask.prototype, {
 						data:		docs
 					});
 
+					if (!err && 0 == docs.length) {
+						self.empty();
+					}
 				});
 
 			}
@@ -588,6 +611,10 @@ util.extend (mongoRequestTask.prototype, {
 					self.completed ({
 						_id: idList[0]
 					});
+				}
+
+				if (0 == idList.length) {
+					self.empty();
 				}
 			}
 		};
@@ -988,7 +1015,15 @@ util.extend (mongoRequestTask.prototype, {
 	},
 
 	_onResult: function (err, data) {
-		err ? this.failed(err) : this.completed(data);
+		if (err) {
+			this.failed();
+		} else {
+			this.completed(data);
+
+			if (!data || 0 === data.length) {
+				this.empty();
+			}
+		}
 	},
 
 	aggregate: function () {

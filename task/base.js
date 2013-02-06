@@ -286,6 +286,19 @@ util.extend (task.prototype, taskStateMethods, {
 	},
 
 	/**
+	 * @method empty
+	 * Run when the task has been completed correctly,
+	 * but the result is a non-value (null or empty).
+	 *
+	 * Publishes {@link #event-empty}.
+	 *
+	 */
+	empty: function () {
+		this.state = 6; // completed
+		this.emit('empty', this);
+	},
+
+	/**
 	 * @method mapFields
 	 * Translates task configuration from custom field-naming cheme.
 	 *
@@ -396,6 +409,7 @@ util.extend (task.prototype, taskStateMethods, {
 	 * - `complete`
 	 * - `failed`
 	 * - `skipped`
+     * - `empty`
 	 */
 	stateNames: taskStateNames,
 

@@ -17,6 +17,28 @@
 					"path":"yql",
 					"tasks":[
 						{
+							"$function": "Number",
+							"$args": [ "0" ],
+							"$set": "data.zero",
+							"$empty": "data.isZero"
+						},
+						{
+							"$function": "console.print",
+							"$args": [
+				"This won't be displayed, because %d is a non-value",
+								"{$data.zero}"
+							]
+						},
+						{
+							"$function": "console.print",
+							"$args": [
+				"This is displayed, because Number returned a non-value",
+								"{$data.isZero}"
+							]
+						},
+
+
+						{
 							"$class":"task/post",
 							"request":"{$request}",
 							"$set":"data.post"

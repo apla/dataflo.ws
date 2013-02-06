@@ -356,7 +356,13 @@ var workflow = module.exports = function (config, reqParam) {
 								this.failed(failed);
 							}
 
-							if (!failed) this.completed(returnVal);
+							if (!failed) {
+								this.completed(returnVal);
+
+								if (isEmpty(returnVal)) {
+									this.empty();
+								}
+							}
 						} else {
 							failed = taskFnName + ' is not a function';
 							this.failed(failed);
@@ -365,6 +371,7 @@ var workflow = module.exports = function (config, reqParam) {
 						// TODO: detailed error description
 						this.completed(actualTaskParams.coderef(this));
 					}
+
 					if (failed) throw failed;
 				}
 			});
@@ -637,6 +644,12 @@ util.extend (workflow.prototype, {
 				self.run ();
 			else
 				self.haveCompletedTasks = true;
+		});
+
+		task.on('empty', function (t) {
+			if (t.$empty) {
+				common.pathToVal(self, t.$empty, true);
+			}
 		});
 
 	}
