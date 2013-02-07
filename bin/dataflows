@@ -5,6 +5,7 @@ var INITIATOR_PATH = 'initiator';
 var DEFAULT_REQUIRE = 'main';
 
 var path = require('path');
+var dataflows = require(MODULE_NAME);
 var common = require(MODULE_NAME + '/common');
 var initiatorTypes = process.argv.slice(3);
 
@@ -38,33 +39,14 @@ project.on('ready', function () {
 		initiatorTypes = Object.keys(conf.initiator);
 	}
 
-	initiatorTypes.forEach(function (iName) {
-		var initiator;
-		var initiatorConf = conf.initiator[iName];
-		try {
-			initiator = require(
-				path.join(MODULE_NAME, INITIATOR_PATH, iName
-			));
-		} catch (e) {
-			// FIXME later: legacy initiator names
-			var fixedIName = iName.replace(/d$/, '');
-			if (fixedIName !== iName) {
-				console.warn(
-'[DEPRECATED] Remove trailing "d" from "%s" in your initiator config', iName
-				);
-
-				try {
-					initiator = require(
-						path.join(MODULE_NAME, INITIATOR_PATH, fixedIName)
-					);
-				} catch (ee) {
-					throw e;
-				}
-			}
-		}
-
-		if ('function' == typeof initiator) {
-			new initiator(initiatorConf);
+	initiatorTypes.forEach(function (initiatorType) {
+		
+		var initiatorConf = conf.initiator[initiatorType];
+		
+		var initiatorClass = dataflows.getEntityClass('initiator', initiatorType);
+		
+		if ('function' == typeof initiatorClass) {
+			new initiatorClass(initiatorConf);
 		}
 	});
 });
