@@ -19,7 +19,7 @@ util.extend(FileTask.prototype, {
 
 	read: function () {
 		var self = this;
-		var filePath = path.resolve(this.filePath, $global.project.root.path);
+		var filePath = path.resolve($global.project.root.path, this.filePath);
 
 		fs.readFile(filePath, function (err, data) {
 			if (err) {
@@ -32,13 +32,13 @@ util.extend(FileTask.prototype, {
 
 	write: function () {
 		var self = this;
-		var filePath = path.resolve(this.filePath, $global.project.root.path);
+		var filePath = path.resolve($global.project.root.path, this.filePath);
 
-		fs.writeFile(filePath, this.fileData, function (err, data) {
+		fs.writeFile(filePath, this.fileData, function (err) {
 			if (err) {
 				self.failed(err);
 			} else {
-				self.completed(data);
+				self.completed(filePath);
 			}
 		});
 	}
