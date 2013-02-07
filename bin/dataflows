@@ -6,11 +6,11 @@ var DEFAULT_REQUIRE = 'main';
 
 var path = require('path');
 var dataflows = require(MODULE_NAME);
-var common = require(MODULE_NAME + '/common');
+var common = require(path.join(MODULE_NAME, 'common'));
 var initiatorTypes = process.argv.slice(3);
 
 var $global = common.$global;
-$global.project = common.getProject(); // used by initiators
+var project = $global.project = common.getProject(); // used by initiators
 
 project.on('ready', function () {
 	var conf = project.config;
@@ -40,11 +40,11 @@ project.on('ready', function () {
 	}
 
 	initiatorTypes.forEach(function (initiatorType) {
-		
 		var initiatorConf = conf.initiator[initiatorType];
-		
-		var initiatorClass = dataflows.getEntityClass('initiator', initiatorType);
-		
+		var initiatorClass = dataflows.getEntityClass(
+			'initiator', initiatorType
+		);
+
 		if ('function' == typeof initiatorClass) {
 			new initiatorClass(initiatorConf);
 		}
