@@ -261,6 +261,7 @@ var workflow = module.exports = function (config, reqParam) {
 			// because some compile errors may be there
 			var taskPath = path.resolve(
 				$global.project.root.path,
+				'node_modules',
 				taskClassName
 			);
 			try {
