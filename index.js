@@ -10,74 +10,13 @@ var MODULE_NAME = 'dataflo.ws',
 
 // - - -
 
-instanceTypes.forEach(function(instanceType) {
-	registry[instanceType] = {};
-});
-
-// - - -
-
-module.exports = {
-
-	/**
-	 * Makes symlinks from modules to base dataflo.ws directory.
-	 */
-
-	install: function (moduleName) {
-
-		var baseDir = path.dirname(require.resolve(MODULE_NAME));
-		var nodePath = path.dirname(baseDir);
-		var moduleDir = path.join(nodePath, moduleName);
-
-		instanceTypes.forEach(function (dir) {
-			var srcDir = path.join(moduleDir, dir);
-			var destDir = path.join(baseDir, dir);
-
-			if (fs.existsSync(srcDir)) {
-				var files = fs.readdirSync(srcDir);
-				files.forEach(function (fileName) {
-					var srcPath = path.join(srcDir, fileName);
-					var destPath = path.join(destDir, fileName);
-					if (!fs.existsSync(destPath)) {
-						fs.symlinkSync(srcPath, destPath);
-					}
-				});
-			}
-		});
-
-	},
-
-	/**
-	 * Register base entities for dataflo.ws processing.
-	 */
-
-	register: function(instanceType, instanceName, instanceClass) {
-
-		if (!registry[instanceType]) {
-
-			console.warn(
-				'Unexpected instance type. Predefined types [' +
-				instanceTypes.join(', ') +
-				']'
-			);
-
-			return;
-		}
-
-		registry[instanceType][instanceName] = instanceClass;
-
-	},
-
-	/**
-	 * Get base entities for dataflo.ws processing from reqister or FS.
-	 */
-
-	getEntityClass: function(instanceType, instanceName) {
+function registryLookup (instanceType, instanceName) {
 
 		var instanceClass = registry[instanceType] && registry[instanceType][instanceName];
 
 		if (!instanceClass) {
 
-			// get from symlink
+			// console.log ('get from symlink');
 			try {
 
 				instanceClass = require(
@@ -104,7 +43,70 @@ module.exports = {
 
 		return instanceClass;
 
-	},
+	};
 
-	common: common
-};
+instanceTypes.forEach(function(instanceType) {
+	registry[instanceType] = {};
+	module.exports[instanceType] = function (instanceName) {
+		return registryLookup (instanceType, instanceName);
+	}
+});
+
+// - - -
+
+
+	/**
+	 * Makes symlinks from modules to base dataflo.ws directory.
+	 */
+
+module.exports.install = function (moduleName) {
+
+		var baseDir = path.dirname(require.resolve(MODULE_NAME));
+		var nodePath = path.dirname(baseDir);
+		var moduleDir = path.join(nodePath, moduleName);
+
+		instanceTypes.forEach(function (dir) {
+			var srcDir = path.join(moduleDir, dir);
+			var destDir = path.join(baseDir, dir);
+
+			if (fs.existsSync(srcDir)) {
+				var files = fs.readdirSync(srcDir);
+				files.forEach(function (fileName) {
+					var srcPath = path.join(srcDir, fileName);
+					var destPath = path.join(destDir, fileName);
+					if (!fs.existsSync(destPath)) {
+						fs.symlinkSync(srcPath, destPath);
+					}
+				});
+			}
+		});
+
+	};
+
+	/**
+	 * Register base entities for dataflo.ws processing.
+	 */
+
+module.exports.register = function(instanceType, instanceName, instanceClass) {
+
+		if (!registry[instanceType]) {
+
+			console.warn(
+				'Unexpected instance type. Predefined types [' +
+				instanceTypes.join(', ') +
+				']'
+			);
+
+			return;
+		}
+
+		registry[instanceType][instanceName] = instanceClass;
+
+	};
+
+	/**
+	 * Get base entities for dataflo.ws processing from reqister or FS.
+	 */
+
+module.exports.common = common;
+

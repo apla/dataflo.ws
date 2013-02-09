@@ -7,7 +7,6 @@ var DEFAULT_REQUIRE = 'main';
 var path = require('path');
 var dataflows = require(MODULE_NAME);
 var common = require(path.join(MODULE_NAME, 'common'));
-var initiatorTypes = process.argv.slice(3);
 
 var $global = common.$global;
 var project = $global.project = common.getProject(); // used by initiators
@@ -34,19 +33,17 @@ project.on('ready', function () {
 		}
 	});
 
-	// initiate all daemons if no arguments passed
-	if (0 == initiatorTypes.length) {
-		initiatorTypes = Object.keys(conf.initiator);
+	// now we can launch script; script require postponed until project get prepared
+	var scriptName = process.argv[2];
+
+	var scriptClass = require (path.join (MODULE_NAME, 'script', scriptName));
+	if (!scriptClass) {
+		// TODO: list all available scripts with descriptions
+		console.error ('sorry, there is no such script "' + scriptName + '"');
+		process.exit();
 	}
 
-	initiatorTypes.forEach(function (initiatorType) {
-		var initiatorConf = conf.initiator[initiatorType];
-		var initiatorClass = dataflows.getEntityClass(
-			'initiator', initiatorType
-		);
+	scriptClass.launch (conf);
 
-		if ('function' == typeof initiatorClass) {
-			new initiatorClass(initiatorConf);
-		}
-	});
+
 });
