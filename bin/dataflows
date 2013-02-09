@@ -45,10 +45,10 @@ project.on('ready', function () {
 
 	var scriptMethod = 'launch';
 	
-	if (scriptClass.parseArgv && typeof scriptClass.parseArgv == 'function') {
-		var parsedArgv = scriptClass.parseArgv ();
-		if (parsedArgv.method)
-			scriptMethod = parsedArgv.method;
+	if (scriptClass.launchContext && typeof scriptClass.launchContext == 'function') {
+		var launchContext = scriptClass.launchContext ();
+		if (launchContext.method)
+			scriptMethod = launchContext.method;
 	}
 
 	if (scriptClass[scriptMethod] && typeof scriptClass[scriptMethod] == 'function') {
