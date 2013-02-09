@@ -1,8 +1,14 @@
 var dataflows = require ('dataflo.ws');
 
 module.exports = {
+	parseArgv: function () {
+		return {
+			configKey: process.argv[3],
+			method:    process.argv[4]
+		}
+	},
 	launch: function (conf) {
-		var daemonName = process.argv[3];
+		var daemonName = this.parseArgv ().configKey;
 		if (!conf.daemon || !conf.daemon[daemonName]) {
 			// TODO: add description for daemon config generation
 			console.error ('no daemon named "'+daemonName+'" available in configuration');

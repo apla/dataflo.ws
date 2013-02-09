@@ -43,7 +43,19 @@ project.on('ready', function () {
 		process.exit();
 	}
 
-	scriptClass.launch (conf);
+	var scriptMethod = 'launch';
+	
+	if (scriptClass.parseArgv && typeof scriptClass.parseArgv == 'function') {
+		var parsedArgv = scriptClass.parseArgv ();
+		if (parsedArgv.method)
+			scriptMethod = parsedArgv.method;
+	}
 
+	if (scriptClass[scriptMethod] && typeof scriptClass[scriptMethod] == 'function') {
+		scriptClass[scriptMethod](conf);
+	} else {
+		console.error ('missing method "' + scriptMethod + '" for a script "' + scriptName + '"');
+		process.exit();
+	}
 
 });
