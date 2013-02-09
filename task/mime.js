@@ -1,4 +1,4 @@
-var magic = new require('mmmagic').Magic,
+var mmm = require('mmmagic'),
 	mime = require('mime'),
 	path = require('path'),
 	util = require('util'),
@@ -9,6 +9,7 @@ var DEFAULT_TYPE = 'application/octet-stream';
 var $global = common.$global;
 
 var MimeTask = function (cfg) {
+	this.magic = new mmm.Magic(mmm.MAGIC_MIME_TYPE);
 	this.init(cfg);
 };
 
@@ -39,11 +40,11 @@ util.extend(MimeTask.prototype, {
 
 	detectFile: function () {
 		var filePath = path.resolve($global.project.root.path, this.filePath);
-		magic.detectFile(filePath, this._onRestult.bind(this));
+		this.magic.detectFile(filePath, this._onRestult.bind(this));
 	},
 
 	detectBuffer: function () {
-		magic.detect(this.buffer, this._onRestult.bind(this));
+		this.magic.detect(this.buffer, this._onRestult.bind(this));
 	}
 });
 
