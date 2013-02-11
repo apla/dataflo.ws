@@ -6,7 +6,8 @@ var MODULE_NAME = 'dataflo.ws',
 
 	common = require(path.join(MODULE_NAME, 'common')),
 	instanceTypes = [ 'initiator', 'task' ],
-	registry = {};
+	registry = {}
+	project = common.getProject();
 
 // - - -
 
@@ -38,28 +39,22 @@ function registryLookup (instanceType, instanceName) {
 			}
 			// console.log ('get from symlink');
 			try {
-
-				instanceClass = require(
-					path.join(instanceType, fixedName)
-				);
-
+				instanceClass = require (path.join (project.root.path, 'node_modules', instanceType, fixedName));
 			} catch (e) {
 			
 				try {
+					instanceClass = require(path.join(MODULE_NAME, instanceType, fixedName));
+				} catch (ee) {
 
-					instanceClass = require(
-						path.join(MODULE_NAME, instanceType, fixedName
-					));
-
-				} catch (e) {
-
-
+					console.error ('cannot find ' + instanceType + ' named ' + fixedName);
 					throw e;
+					throw ee;
 				}
 
 			}
 		}
 
+		registry[instanceType][instanceName] = instanceClass;
 		return instanceClass;
 
 	};
