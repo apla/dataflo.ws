@@ -9,6 +9,7 @@ define (function (require, exports, module) {
 var EventEmitter = require ('events').EventEmitter,
 	util         = require ('util'),
 	path         = require ('path'),
+	dataflows	 = require ('./index'),
 	common       = require ('./common'),
 	taskClass    = require ('./task/base');
 
@@ -263,7 +264,10 @@ var workflow = module.exports = function (config, reqParam) {
 				$global.project.root.path,
 				taskClassName
 			);
-			try {
+			
+			xTaskClass = dataflows.task(taskClassName);
+			
+			/*try {
 				xTaskClass = require (taskPath);
 			} catch (e) {
 				try {
@@ -277,15 +281,15 @@ var workflow = module.exports = function (config, reqParam) {
 					throw ('requirement "' + taskClassName + '" failed:');
 					self.ready = false;
 				}
-			}
+			}*/
 
 			try {
-			task = new xTaskClass ({
-				className: taskClassName,
-				method:    actualTaskParams.method || actualTaskParams.$method,
-				require:   checkRequirements,
-				important: actualTaskParams.important || actualTaskParams.$important
-			});
+				task = new xTaskClass ({
+					className: taskClassName,
+					method:    actualTaskParams.method || actualTaskParams.$method,
+					require:   checkRequirements,
+					important: actualTaskParams.important || actualTaskParams.$important
+				});
 			} catch (e) {
 				console.log ('instance of "'+taskClassName+'" creation failed:');
 				console.log (e.stack);

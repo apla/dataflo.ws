@@ -20,23 +20,41 @@ function registryLookup (instanceType, instanceName) {
 			try {
 
 				instanceClass = require(
-					path.join(MODULE_NAME, instanceType, instanceName
-				));
+					path.join(instanceType, instanceName)
+				);
 
 			} catch (e) {
+			
+				try {
 
-				// FIXME later: legacy initiator names
-				var fixedName = instanceName.replace(/d$/, '');
+					instanceClass = require(
+						path.join(MODULE_NAME, instanceType, instanceName
+					));
 
-				if (fixedName !== instanceName) {
+				} catch (e) {
 
-					console.warn(
-						'[DEPRECATED] Remove trailing "d" from "%s" in your initiator config',
-						instanceName
-					);
+					var fixedName = instanceName.replace(/d$/, '');
+
+					if (fixedName !== instanceName) {
+
+						console.warn(
+							'[DEPRECATED] Remove trailing "d" from "%s" in your initiator config',
+							instanceName
+						);
+					}
+					
+					fixedName = instanceName.replace(/^task\//, '');
+
+					if (fixedName !== instanceName) {
+
+						console.warn(
+							'[DEPRECATED] Remove trailing "task/" from "%s" in your task config',
+							instanceName
+						);
+					}
+
+					throw e;
 				}
-
-				throw e;
 
 			}
 		}

@@ -158,7 +158,7 @@ httpdi.prototype.createPresenter = function (wf, request, response, state) {
 			file:      presenter,
 			//vars:      "{$vars}",
 			response:  "{$response}",
-			$class: "task/presenter"
+			$class: "presenter"
 		});
 	} else if (Object.is('Array', presenter)) {
 		// TODO: [{...}, {...}]
@@ -169,7 +169,7 @@ httpdi.prototype.createPresenter = function (wf, request, response, state) {
 			task.vars      = task.vars || {};
 			if (!task.functionName || !task.$function) {
 				task.className = task.$class || task.className ||
-					"task/presenter";
+					"presenter";
 			}
 			tasks.push (task);
 		});
@@ -179,7 +179,7 @@ httpdi.prototype.createPresenter = function (wf, request, response, state) {
 		presenter.vars      = presenter.vars || {};
 		if (!presenter.functionName || !presenter.$function) {
 			presenter.className = presenter.$class || presenter.className ||
-				"task/presenter";
+				"presenter";
 		}
 		tasks.push (presenter);
 	}
