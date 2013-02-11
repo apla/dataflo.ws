@@ -158,7 +158,8 @@ httpdi.prototype.createPresenter = function (wf, request, response, state) {
 			file:      presenter,
 			//vars:      "{$vars}",
 			response:  "{$response}",
-			$class: "presenter"
+			$class: "presenter",
+			$important: true
 		});
 	} else if (Object.is('Array', presenter)) {
 		// TODO: [{...}, {...}]
@@ -170,6 +171,7 @@ httpdi.prototype.createPresenter = function (wf, request, response, state) {
 			if (!task.functionName || !task.$function) {
 				task.className = task.$class || task.className ||
 					"presenter";
+				task.$important = true;
 			}
 			tasks.push (task);
 		});
@@ -180,6 +182,7 @@ httpdi.prototype.createPresenter = function (wf, request, response, state) {
 		if (!presenter.functionName || !presenter.$function) {
 			presenter.className = presenter.$class || presenter.className ||
 				"presenter";
+			presenter.$important = true;
 		}
 		tasks.push (presenter);
 	}
@@ -194,9 +197,14 @@ httpdi.prototype.createPresenter = function (wf, request, response, state) {
 		request: request,
 		response: response
 	});
-
+	
 	presenterWf.on ('completed', function () {
 		//self.log ('presenter done');
+	});
+	
+	presenterWf.on ('failed', function () {
+		presenterWf.log ('Presenter failed: ' + request.method + ' to ' + request.url.pathname);
+		self.createWorkflowByCode(500, request, response) || response.end();
 	});
 
 	return presenterWf;
@@ -223,11 +231,14 @@ httpdi.prototype.createWorkflow = function (cfg, req, res) {
 	});
 
 	wf.on('failed', function (wf) {
-		self.createWorkflowByCode(req, res) || (function () {
-			var presenter = self.createPresenter(wf, req, res, 'failed');
-			if (presenter)
-				presenter.run ();
-		}());
+		
+		var presenter = self.createPresenter(wf, req, res, 'failed');
+		if (presenter) {
+			presenter.run ();
+		} else {
+			self.createWorkflowByCode(500, req, res);
+		}
+			
 	});
 
 	self.emit('detected', req, res, wf);
@@ -241,7 +252,8 @@ httpdi.prototype.createWorkflow = function (cfg, req, res) {
 	return wf;
 }
 
-httpdi.prototype.createWorkflowByCode = function (req, res) {
+httpdi.prototype.createWorkflowByCode = function (code, req, res) {
+	res.statusCode = code;
 	// find a workflow w/ presenter by HTTP response code
 	if (!this.workflows._codeWorkflows) {
 		this.workflows._codeWorkflows = {};
@@ -431,11 +443,9 @@ httpdi.prototype.listen = function () {
 				}
 
 				if (!wf) {
-					res.statusCode = 404;
-
 					console.log ('httpdi not detected: ' + req.method + ' to ' + req.url.pathname);
 					self.emit ("unknown", req, res);
-					self.createWorkflowByCode(req, res) || res.end();
+					self.createWorkflowByCode(404, req, res) || res.end();
 				}
 				// - - - - - end of router creation
 			});
@@ -450,12 +460,9 @@ httpdi.prototype.listen = function () {
 			}
 
 			if (!wf) {
-				res.statusCode = 404;
-				res.end();
-
 				console.log ('httpdi not detected: ' + req.method + ' to ' + req.url.pathname);
 				self.emit ("unknown", req, res);
-				self.createWorkflowByCode(req, res) || res.end();
+				self.createWorkflowByCode(404, req, res) || res.end();
 			}
 			// - - - - - end of router creation
 		}
