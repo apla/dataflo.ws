@@ -15,12 +15,32 @@ function registryLookup (instanceType, instanceName) {
 		var instanceClass = registry[instanceType] && registry[instanceType][instanceName];
 
 		if (!instanceClass) {
+			
+			var fixedName = instanceName;
+			if (instanceType == 'initiator') {
 
+				var fixedName = instanceName.replace(/d$/, '');
+				if (fixedName !== instanceName) {
+					console.warn(
+						'[DEPRECATED] Remove trailing "d" from "%s" in your initiator config',
+						instanceName
+					);
+				}
+			} else if (instanceType == 'task') {
+				
+				fixedName = instanceName.replace(/^(dataflo.ws\/)?task\//, '');
+				if (fixedName !== instanceName) {
+					console.warn(
+						'[DEPRECATED] Remove preceding "task/" from "%s" in your task config',
+						instanceName
+					);
+				}
+			}
 			// console.log ('get from symlink');
 			try {
 
 				instanceClass = require(
-					path.join(instanceType, instanceName)
+					path.join(instanceType, fixedName)
 				);
 
 			} catch (e) {
@@ -28,30 +48,11 @@ function registryLookup (instanceType, instanceName) {
 				try {
 
 					instanceClass = require(
-						path.join(MODULE_NAME, instanceType, instanceName
+						path.join(MODULE_NAME, instanceType, fixedName
 					));
 
 				} catch (e) {
 
-					var fixedName = instanceName.replace(/d$/, '');
-
-					if (fixedName !== instanceName) {
-
-						console.warn(
-							'[DEPRECATED] Remove trailing "d" from "%s" in your initiator config',
-							instanceName
-						);
-					}
-					
-					fixedName = instanceName.replace(/^task\//, '');
-
-					if (fixedName !== instanceName) {
-
-						console.warn(
-							'[DEPRECATED] Remove trailing "task/" from "%s" in your task config',
-							instanceName
-						);
-					}
 
 					throw e;
 				}
