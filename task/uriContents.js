@@ -79,9 +79,10 @@ util.extend (cacheTask.prototype, {
 
 			this.emit ('log', 'another process already downloading ' + this.url.href + ' to ' + this.cacheFilePath);
 			// we simply wait for another task
-			anotherTask.on ('complete', function () {
+			anotherTask.on ('complete', function (data) {
 				// TODO: add headers/contents
-				self.completed (self.cacheFileName);
+				// TODO: check for file state. it is actually closed?
+				self.completed (data);
 			});
 			anotherTask.on ('error', function (e) {
 				self.emitError(e);
