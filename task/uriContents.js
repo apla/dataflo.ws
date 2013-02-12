@@ -45,17 +45,20 @@ util.extend (cacheTask.prototype, {
 util.extend (cacheTask.prototype, {
 	initModel: function () {
 		var self = this;
+
 		try {
-			self.model = new urlModel (self.url);
-			self.url = self.model.url;
+			if (self.url.constructor === String) {
+				self.url = urlUtil.parse(self.url, true);
+			}
 			if (self.post) {
 				self.url.body = self.post;
 			}
-
 			if (self.headers) {
 				self.url.headers = self.headers;
 			}
 
+			self.model = new urlModel(self.url);
+			self.url = self.model.url;
 			self.model.url.protocol.length;
 		} catch (e) {
 			self.emitError(e);
@@ -105,7 +108,6 @@ util.extend (cacheTask.prototype, {
 	 * (in milliseconds)
 	 */
 	toBuffer: function () {
-
 		var self = this;
 		
 		self.download = {};
@@ -141,6 +143,7 @@ util.extend (cacheTask.prototype, {
 		self.activityCheck ('model.fetch start');
 		self.model.fetch ({to: self.download});
 	},
+
 	finishWith: function (result, headers) {
 		var self = this;
 		if (!headers) {
@@ -164,8 +167,7 @@ util.extend (cacheTask.prototype, {
 	 * @cfg {Number} [timeout=10000] Timeout for downloading of each file
 	 * (in milliseconds)
 	 */
-	toFile: function () {
-
+	run: function () {
 		var self = this;
 
 		self.activityCheck ('task run');
