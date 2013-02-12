@@ -33,29 +33,33 @@ project.on('ready', function () {
 		}
 	});
 
-	// now we can launch script; script require postponed until project get prepared
+	// now we can launch script;
+	// script require postponed until project get prepared
 	var scriptName = process.argv[2];
 
 	var scriptClass = require (path.join (MODULE_NAME, 'script', scriptName));
 	if (!scriptClass) {
 		// TODO: list all available scripts with descriptions
-		console.error ('sorry, there is no such script "' + scriptName + '"');
+		console.error('sorry, there is no such script "%s"', scriptName);
 		process.exit();
 	}
 
 	var scriptMethod = 'launch';
-	
-	if (scriptClass.launchContext && typeof scriptClass.launchContext == 'function') {
-		var launchContext = scriptClass.launchContext ();
-		if (launchContext.method)
+
+	if (typeof scriptClass.launchContext == 'function') {
+		var launchContext = scriptClass.launchContext();
+		if (launchContext.method) {
 			scriptMethod = launchContext.method;
+		}
 	}
 
-	if (scriptClass[scriptMethod] && typeof scriptClass[scriptMethod] == 'function') {
+	if (typeof scriptClass[scriptMethod] == 'function') {
 		scriptClass[scriptMethod](conf);
 	} else {
-		console.error ('missing method "' + scriptMethod + '" for a script "' + scriptName + '"');
+		console.error(
+			'missing method "%s" for script "%s"',
+			scriptMethod, scriptName
+		);
 		process.exit();
 	}
-
 });
