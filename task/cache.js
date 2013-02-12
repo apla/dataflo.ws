@@ -43,6 +43,114 @@ util.extend (cacheTask.prototype, {
 });
 
 util.extend (cacheTask.prototype, {
+	initModel: function () {
+		try {
+			self.model = new urlModel (self.url);
+			self.url = self.model.url;
+			if (self.post) {
+				self.url.body = self.post;
+			}
+
+			if (self.headers) {
+				self.url.headers = self.headers;
+			}
+
+			self.model.url.protocol.length;
+		} catch (e) {
+			self.emitError(e);
+			return;
+		}
+		self.model.on ('data', function (chunks) {
+			self.activityCheck ('model.fetch data');
+		});
+
+		self.model.on ('error', function (e) {
+			// console.log("%%%%%%%%%%cache failed");
+			self.emitError(e);
+		});
+	
+	},
+	isSameUrlLoading : function () {
+		// TODO: another task can download url contents to buffer/file and vice versa
+		// other task is caching requested url
+		var anotherTask = project.caching[self.cacheFilePath];
+
+		if (anotherTask && anotherTask != self) {
+
+			this.emit ('log', 'another process already downloading ' + this.url.href + ' to ' + this.cacheFilePath);
+			// we simply wait for another task
+			anotherTask.on ('complete', function () {
+				// TODO: add headers/contents
+				self.completed (self.cacheFileName);
+			});
+			anotherTask.on ('error', function (e) {
+				self.emitError(e);
+			});
+			return true;
+		} else {
+			project.caching[self.cacheFilePath] = self;
+		}
+		return false;
+	},
+	/**
+	 * @method toBuffer
+	 * Downloads a given URL into a memory buffer.
+	 *
+	 * @cfg {String} url (required) A URL to download from.
+	 * @cfg {Number} [retries=0] The number of times to retry to run the task.
+	 * @cfg {Number} [timeout=10000] Timeout for downloading of each file
+	 * (in milliseconds)
+	 */
+	toBuffer: function () {
+
+		var self = this;
+		
+		self.download = {};
+
+		self.activityCheck ('task run');
+
+		// create model and listen
+		// model is a class for working with particular network protocol
+		// WHY? why model can be defined?
+		if (!self.model) {
+
+			// console.log("self.model.url -> ", self.url.fetch.uri);
+			self.initModel ();
+			self.model.on ('end', function () {
+				/*var srcName = self.model.dataSource.res.headers['content-disposition'].match(/filename=\"([^"]+)/)[1];
+				self.res = {};
+				self.res.srcName = srcName ? srcName : "";
+				console.log("self.res -> ", self.res);*/
+				self.clearOperationTimeout();
+				delete project.caching[self.cacheFilePath];
+				// self.res.cacheFilePath = self.cacheFilePath
+				// self.completed (self.res);
+				self.finishWith ({data: self.download.data});
+			});
+
+		}
+
+		if (self.isSameUrlLoading ())
+			return;
+
+		self.emit ('log', 'start caching from ' + self.url.href + ' to ' + self.cacheFilePath);
+
+		self.activityCheck ('model.fetch start');
+		self.model.fetch ({to: self.download});
+	},
+	finishWith: function (response, headers) {
+		if (!headers) {
+			headers = (self.model &&
+			self.model.dataSource &&
+			self.model.dataSource.res &&
+			self.model.dataSource.res.headers) ?
+			self.model.dataSource.res.headers : {};
+		}
+
+		result.headers = headers;
+
+		self.completed (result);
+	},
 	/**
 	 * @method run
 	 * Downloads a given URL into a uniquely named file.
@@ -60,26 +168,11 @@ util.extend (cacheTask.prototype, {
 
 		// create model and listen
 		// model is a class for working with particular network protocol
+		// WHY? why model can be defined?
 		if (!self.model) {
 
 			// console.log("self.model.url -> ", self.url.fetch.uri);
-			try {
-				self.model = new urlModel (self.url);
-				self.url = self.model.url;
-				self.model.url.protocol.length;
-			} catch (e) {
-				self.emitError(e);
-				return;
-			}
-			self.model.on ('data', function (chunks) {
-				self.activityCheck ('model.fetch data');
-			});
-
-			self.model.on ('error', function (e) {
-				// console.log("%%%%%%%%%%cache failed");
-				self.emitError(e);
-			});
-
+			self.initModel ();
 			self.model.on ('end', function () {
 				/*var srcName = self.model.dataSource.res.headers['content-disposition'].match(/filename=\"([^"]+)/)[1];
 				self.res = {};
@@ -91,7 +184,7 @@ util.extend (cacheTask.prototype, {
 					delete project.caching[self.cacheFilePath];
 					// self.res.cacheFilePath = self.cacheFilePath
 					// self.completed (self.res);
-					self.completed (self.cacheFileName);
+					self.finishWith ({fileName: self.cacheFileName});
 				});
 			});
 
@@ -99,23 +192,8 @@ util.extend (cacheTask.prototype, {
 
 		this.generateCacheFileName ();
 
-		// other task is caching requested url
-		var anotherTask = project.caching[self.cacheFilePath];
-
-		if (anotherTask && anotherTask != self) {
-
-			this.emit ('log', 'another process already downloading ' + this.url.href + ' to ' + this.cacheFilePath);
-			// we simply wait for another task
-			anotherTask.on ('complete', function () {
-				self.completed (self.cacheFileName);
-			});
-			anotherTask.on ('error', function (e) {
-				self.emitError(e);
-			});
+		if (self.isSameUrlLoading ())
 			return;
-		} else {
-			project.caching[self.cacheFilePath] = self;
-		}
 
 		self.cacheFile.stat (function (err, stats) {
 
