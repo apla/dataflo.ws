@@ -18,7 +18,6 @@ function registryLookup (instanceType, instanceName) {
 	if (!instanceClass) {
 		var fixedName = instanceName;
 		if (instanceType == 'initiator') {
-
 			fixedName = instanceName.replace(/d$/, '');
 			if (fixedName !== instanceName) {
 				console.warn(
@@ -42,39 +41,27 @@ function registryLookup (instanceType, instanceName) {
 			);
 		} catch (e) {
 			try {
-<<<<<<< HEAD
-				instanceClass = require(
-					path.join(MODULE_NAME, instanceType, fixedName)
-				);
+				instanceClass = require(path.join(
+					project.root.path, 'node_modules', instanceType, fixedName
+				));
 			} catch (e) {
-				throw e;
-=======
-				instanceClass = require (path.join (project.root.path, 'node_modules', instanceType, fixedName));
-			} catch (e) {
-			
 				try {
-					instanceClass = require(path.join(MODULE_NAME, instanceType, fixedName));
+					instanceClass = require(path.join(
+						MODULE_NAME, instanceType, fixedName
+					));
 				} catch (ee) {
-
-					console.error ('cannot find ' + instanceType + ' named ' + fixedName);
+					console.error(
+						'cannot find %s named %s', instanceType, fixedName
+					);
 					throw e;
 					throw ee;
 				}
-
->>>>>>> 7bbc904b8cf6b9e6c61610c946855774d1a19552
 			}
 		}
 	}
-
-<<<<<<< HEAD
+	registry[instanceType][instanceName] = instanceClass;
 	return instanceClass;
 };
-=======
-		registry[instanceType][instanceName] = instanceClass;
-		return instanceClass;
-
-	};
->>>>>>> 7bbc904b8cf6b9e6c61610c946855774d1a19552
 
 instanceTypes.forEach(function(instanceType) {
 	registry[instanceType] = {};
