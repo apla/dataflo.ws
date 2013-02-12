@@ -141,10 +141,9 @@ util.extend (cacheTask.prototype, {
 		self.activityCheck ('model.fetch start');
 		self.model.fetch ({to: self.download});
 	},
-	finishWith: function (response, headers) {
-		var self = this;
-		var result = {};
 
+	finishWith: function (result, headers) {
+		var self = this;
 		if (!headers) {
 			headers = (self.model &&
 			self.model.dataSource &&
