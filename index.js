@@ -7,6 +7,7 @@ var INITIATOR_PATH = 'initiator';
 var instanceTypes = [ 'initiator', 'task' ];
 var common = require(path.join(MODULE_NAME, 'common'));
 var registry = {};
+var project = common.getProject();
 
 // - - -
 
@@ -41,17 +42,39 @@ function registryLookup (instanceType, instanceName) {
 			);
 		} catch (e) {
 			try {
+<<<<<<< HEAD
 				instanceClass = require(
 					path.join(MODULE_NAME, instanceType, fixedName)
 				);
 			} catch (e) {
 				throw e;
+=======
+				instanceClass = require (path.join (project.root.path, 'node_modules', instanceType, fixedName));
+			} catch (e) {
+			
+				try {
+					instanceClass = require(path.join(MODULE_NAME, instanceType, fixedName));
+				} catch (ee) {
+
+					console.error ('cannot find ' + instanceType + ' named ' + fixedName);
+					throw e;
+					throw ee;
+				}
+
+>>>>>>> 7bbc904b8cf6b9e6c61610c946855774d1a19552
 			}
 		}
 	}
 
+<<<<<<< HEAD
 	return instanceClass;
 };
+=======
+		registry[instanceType][instanceName] = instanceClass;
+		return instanceClass;
+
+	};
+>>>>>>> 7bbc904b8cf6b9e6c61610c946855774d1a19552
 
 instanceTypes.forEach(function(instanceType) {
 	registry[instanceType] = {};
@@ -104,4 +127,3 @@ module.exports.register = function (instanceType, instanceName, instanceClass) {
 };
 
 module.exports.common = common;
-
