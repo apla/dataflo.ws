@@ -158,10 +158,12 @@ util.extend (mongoRequestTask.prototype, {
 
 		connOptions = connectorConfig.options;
 
-		if (!connOptions['native_parser'])
+		if (!connOptions.hasOwnProperty('native_parser'))
 			connOptions['native_parser'] = true;
 
-		if (!connOptions['journal'] || !connOptions['w'] || !connOptions['fsync'])
+		if (!connOptions.hasOwnProperty('journal') ||
+			!connOptions.hasOwnProperty('w') ||
+			!connOptions.hasOwnProperty('fsync'))
 			connOptions['journal'] = true;
 
 		// create connector
