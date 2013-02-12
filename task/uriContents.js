@@ -44,6 +44,7 @@ util.extend (cacheTask.prototype, {
 
 util.extend (cacheTask.prototype, {
 	initModel: function () {
+		var self = this;
 		try {
 			self.model = new urlModel (self.url);
 			self.url = self.model.url;
@@ -71,6 +72,7 @@ util.extend (cacheTask.prototype, {
 	
 	},
 	isSameUrlLoading : function () {
+		var self = this;
 		// TODO: another task can download url contents to buffer/file and vice versa
 		// other task is caching requested url
 		var anotherTask = project.caching[self.cacheFilePath];
@@ -139,7 +141,8 @@ util.extend (cacheTask.prototype, {
 		self.activityCheck ('model.fetch start');
 		self.model.fetch ({to: self.download});
 	},
-	finishWith: function (response, headers) {
+	finishWith: function (result, headers) {
+		var self = this;
 		if (!headers) {
 			headers = (self.model &&
 			self.model.dataSource &&
@@ -161,7 +164,7 @@ util.extend (cacheTask.prototype, {
 	 * @cfg {Number} [timeout=10000] Timeout for downloading of each file
 	 * (in milliseconds)
 	 */
-	run: function () {
+	toFile: function () {
 
 		var self = this;
 
