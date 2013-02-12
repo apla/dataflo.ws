@@ -7,7 +7,6 @@ var INITIATOR_PATH = 'initiator';
 var instanceTypes = [ 'initiator', 'task' ];
 var common = require(path.join(MODULE_NAME, 'common'));
 var registry = {};
-var project = common.getProject();
 
 // - - -
 
@@ -40,6 +39,7 @@ function registryLookup (instanceType, instanceName) {
 				path.join(instanceType, fixedName)
 			);
 		} catch (e) {
+			var project = common.getProject();
 			try {
 				instanceClass = require(path.join(
 					project.root.path, 'node_modules', instanceType, fixedName
