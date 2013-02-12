@@ -1,15 +1,16 @@
 var define;
-if (typeof define === "undefined")
+if (typeof define === "undefined") {
 	define = function (classInstance) {
 		classInstance (require, exports, module);
-	}
+	};
+}
 
 define (function (require, exports, module) {
 
 var EventEmitter = require ('events').EventEmitter,
 	util         = require ('util'),
 	path         = require ('path'),
-	dataflows	 = require ('./index'),
+	dataflows    = require ('./index'),
 	common       = require ('./common'),
 	taskClass    = require ('./task/base');
 
@@ -265,9 +266,9 @@ var workflow = module.exports = function (config, reqParam) {
 				'node_modules',
 				taskClassName
 			);
-			
+
 			xTaskClass = dataflows.task(taskClassName);
-			
+
 			/*try {
 				xTaskClass = require (taskPath);
 			} catch (e) {
