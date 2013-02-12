@@ -48,13 +48,15 @@ var httpModel = module.exports = function (modelBase) {
 		if (this.params.auth) {
 			this.headers['Authorization'] = 'Basic ' + new Buffer(self.params.auth).toString('base64');
 		}
+
 		if (this.params.body) {
 			this.params.method = 'POST';
 			this.postBody = this.params.body;
-			if (typeof this.params.headers['content-length'] == 'undefined')
-				this.params.headers['content-length'] = this.postBody.length;
-			if (typeof this.params.headers['content-type'] == 'undefined')
-				this.params.headers['content-type'] = 'application/x-www-form-urlencoded';
+			if (!this.params.headers || typeof this.params.headers['content-length'] == 'undefined') {
+				this.headers['content-length'] = this.postBody.length;
+			}
+			if (!this.params.headers || typeof this.params.headers['content-type'] == 'undefined')
+				this.headers['content-type'] = 'application/x-www-form-urlencoded';
 
 			delete this.params.body;
 		}
