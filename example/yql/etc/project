@@ -44,9 +44,29 @@
 							]
 						},
 
+						{
+							"$function": "Array",
+							"$args": [ 1, 2, 3 ],
+							"$set": "data.testArr"
+						},
+						{
+							"$every": "{$data.testArr}",
+							"$collect": "result",
+							"$tasks": [{
+								"$function": "Math.pow",
+								"$args": [ "#item", 2 ],
+								"$set": "result"
+							}],
+							"$set": "data.resultArr"
+						},
+						{
+							"$function": "console.print",
+							"$args": [ "{$data.resultArr}" ]
+						},
+
 
 						{
-							"$class":"task/post",
+							"$class":"post",
 							"request":"{$request}",
 							"$set":"data.post"
 						},
@@ -99,11 +119,10 @@
 							]
 						},
 						{
-							"$class":"task/download",
+							"$class":"remoteResource",
+							"method":"toBuffer",
 							"url":
 "http://query.yahooapis.com/v1/public/yql?format=json&q={$data.yql}",
-							"timeout":10000,
-							"retries":10,
 							"$set":"data.results"
 						}, {
 						   "$function":"formatData",

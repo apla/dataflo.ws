@@ -250,6 +250,10 @@ var workflow = module.exports = function (config, reqParam) {
 
 //		console.log (taskParams);
 
+		if (actualTaskParams.$every) {
+			actualTaskParams.$class = 'every';
+		}
+
 		var taskClassName = actualTaskParams.className || actualTaskParams.$class;
 		var taskFnName = actualTaskParams.functionName || actualTaskParams.$function;
 
