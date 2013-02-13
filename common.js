@@ -1,13 +1,23 @@
 var util = require ('util');
 
-// Safe and universal type check
+/**
+ * Get the type of any object.
+ * Usage:
+ *     Object.typeOf([ 1, 2, 3 ]); // 'Array'
+ *     Object.typeOf(null);        // 'Null'
+ */
 Object.typeOf = function (obj) {
-	// [object Boolean] -> Boolean
 	return Object.prototype.toString.call(obj).slice(8, -1);
 };
 
-Object.is = function (type, obj) { // lemme unseen this
-	return Object.typeOf(obj).toLowerCase() == type.toLowerCase();
+/**
+ * Safe and universal type check.
+ * Usage:
+ *     Object.is('Number', 4);            // true
+ *     Object.is('Undefined', undefined); // true
+ */
+Object.is = function (type, obj) {
+	return type == Object.typeOf(obj);
 };
 
 console.print = function () {
