@@ -43,7 +43,6 @@ var httpModel = module.exports = function (modelBase) {
 	util.extend (this.params, modelBase.url);
 
 	if (this.params) {
-
 		this.headers = {}
 
 		if (this.params.auth) {
@@ -53,6 +52,12 @@ var httpModel = module.exports = function (modelBase) {
 		if (this.params.body) {
 			this.params.method = 'POST';
 			this.postBody = this.params.body;
+			if (!this.params.headers || typeof this.params.headers['content-length'] == 'undefined') {
+				this.headers['content-length'] = this.postBody.length;
+			}
+			if (!this.params.headers || typeof this.params.headers['content-type'] == 'undefined')
+				this.headers['content-type'] = 'application/x-www-form-urlencoded';
+
 			delete this.params.body;
 		}
 		if (this.params.headers) {
@@ -90,7 +95,6 @@ util.extend (httpModel.prototype, {
 	},
 
 	run: function () {
-
 		var self = this;
 
 		var urlParams = self.getUrlParams();
@@ -141,7 +145,10 @@ util.extend (httpModel.prototype, {
 			}
 		}
 
-		if (self.postBody) req.write(self.postBody);
+		if (self.postBody) {
+			req.write(self.postBody);
+		}
+
 
 		req.end();
 	},
