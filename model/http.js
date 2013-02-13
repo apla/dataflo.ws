@@ -52,12 +52,10 @@ var httpModel = module.exports = function (modelBase) {
 		if (this.params.body) {
 			this.params.method = 'POST';
 			this.postBody = this.params.body;
-			if (!this.params.headers || typeof this.params.headers['content-length'] == 'undefined') {
-				this.headers['content-length'] = this.postBody.length;
-			}
-			if (!this.params.headers || typeof this.params.headers['content-type'] == 'undefined')
-				this.headers['content-type'] = 'application/x-www-form-urlencoded';
 
+			if (!this.params.headers || !this.params.headers['content-length'] || !this.params.headers['content-type']) {
+				console.error ('content type/length undefined');
+			}
 			delete this.params.body;
 		}
 		if (this.params.headers) {

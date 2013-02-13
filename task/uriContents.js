@@ -4,7 +4,8 @@ var EventEmitter = require ('events').EventEmitter,
 	urlUtil      = require ('url'),
 	path         = require ('path'),
 	task         = require ('./base'),
-	urlModel     = require ('../model/from-url');
+	urlModel     = require ('../model/from-url'),
+	querystring  = require ("querystring");
 
 var cachePath = project.config.cachePath;
 
@@ -50,11 +51,32 @@ util.extend (cacheTask.prototype, {
 			if (self.url.constructor === String) {
 				self.url = urlUtil.parse(self.url, true);
 			}
+			self.url.headers = self.headers || {};
 			if (self.post) {
-				self.url.body = self.post;
-			}
-			if (self.headers) {
-				self.url.headers = self.headers;
+				if (self.post.constructor === String || self.post.constructor === Buffer) {
+					// so we got somethin in string
+					// content type and length must be defined
+					if (!self.url.headers['content-type']) {
+						self.emitError ('you must define content type when submitting plain strin as post data parameter');
+						return;
+					}
+					self.url.headers['content-length'] = self.post.length;
+					self.url.body = self.post;
+				} else if (self.post instanceof Object && Object.getPrototypeOf (self.post) == Object.prototype) {
+					self.url.body = querystring.stringify (self.post);
+					self.url.headers['content-length'] = self.url.body.length;
+					self.url.headers['content-type']   = 'application/x-www-form-urlencoded';
+				} else if (self.post.constructor === Array) {
+					// TODO: multipart
+					self.emitError ('multipart not yet implemented');
+					return;
+
+				} else {
+					self.emitError ('something wrong with post data. you must supply string, object or array');
+					return;
+				}
+				// if (self.post is plain Object)
+				// if (self.post is a string)
 			}
 
 			self.model = new urlModel(self.url);
