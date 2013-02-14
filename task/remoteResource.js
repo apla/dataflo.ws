@@ -3,6 +3,7 @@ var crypto       = require ('crypto'),
 	urlUtil      = require ('url'),
 	querystring  = require ('querystring'),
 	task         = require ('./base'),
+	path         = require('path'),
 	urlModel     = require ('../model/from-url');
 
 var cachePath = project.config.cachePath;
