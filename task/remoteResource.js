@@ -55,7 +55,7 @@ util.extend (cacheTask.prototype, {
 					// so we got somethin in string
 					// content type and length must be defined
 					if (!self.url.headers['content-type']) {
-						self.emitError ('you must define content type when submitting plain strin as post data parameter');
+						self.emitError ('you must define content type when submitting plain string as post data parameter');
 						return;
 					}
 					self.url.headers['content-length'] = self.post.length;
