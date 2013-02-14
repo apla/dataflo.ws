@@ -1,8 +1,19 @@
-var HTTPClient		= require ('http'),
-	util			= require ('util'),
+var util			= require ('util'),
 	fs				= require ('fs'),
 	urlUtils		= require ('url'),
 	httpManager     = require ('./http/model-manager');
+
+var HTTPClient;
+try {
+	HTTPClient = require('follow-redirects').http;
+} catch (e) {
+	console.warn(
+		'Falling back to standard HTTP client.',
+		'If you wnat to follow redirects,',
+		'install "follow-redirects" module.'
+	);
+	HTTPClient = require('http');
+}
 
 var pipeProgress = function (config) {
 	this.bytesTotal = 0;
@@ -163,6 +174,10 @@ util.extend (httpModel.prototype, {
 
 		var params = this.params;
 		var q = params.query;
+
+		if (!('maxRedirects' in params)) {
+			params.maxRedirects = HTTPClient.maxRedirects; // defaults to 5
+		}
 
 		if (q && 'object' === typeof q) {
 			var queryStr = urlUtils.format({ query: q }),
