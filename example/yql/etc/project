@@ -3,7 +3,7 @@
 	"requires": [ "misc" ],
 
 	"daemon": {
-		"example": {
+		"yql": {
 			"initiator": [ "http", "repl" ]
 		}
 	},
@@ -24,48 +24,6 @@
 					"path":"yql",
 					"tasks":[
 						{
-							"$function": "Number",
-							"$args": [ "0" ],
-							"$set": "data.zero",
-							"$empty": "data.isZero"
-						},
-						{
-							"$function": "console.print",
-							"$args": [
-				"This won't be displayed, because %d is a non-value",
-								"{$data.zero}"
-							]
-						},
-						{
-							"$function": "console.print",
-							"$args": [
-				"This is displayed, because Number returned a non-value",
-								"{$data.isZero}"
-							]
-						},
-
-						{
-							"$function": "Array",
-							"$args": [ 1, 2, 3 ],
-							"$set": "data.testArr"
-						},
-						{
-							"$every": "{$data.testArr}",
-							"$collect": "result",
-							"$tasks": [{
-								"$function": "Math.pow",
-								"$args": [ "#item", 2 ],
-								"$set": "result"
-							}],
-							"$set": "data.resultArr"
-						},
-						{
-							"$function": "console.print",
-							"$args": [ "{$data.resultArr}" ]
-						},
-
-
-						{
 							"$class":"post",
 							"request":"{$request}",
 							"$set":"data.post"
@@ -82,60 +40,39 @@
 							"$set":"data.trimmedText"
 						},
 						{
-							"$function":"misc.js#pimp",
+							"$function":"stripTags",
 							"$args":["{$data.trimmedText}"],
-							"$set":"data.pimpedText"
-						},
-						{
-							"$function":"unPimp",
-							"$args":["{$data.pimpedText}"],
-							"$set":"data.unPimpedText"
-						},
-						{
-							"$function":"toUpperCase",
-							"$origin":"{$data.unPimpedText}",
-							"$args":[],
-							"$set":"data.upperCasedText"
-						},
-						{
-							"$function":"global.console.log",
-							"$args":[
-								"UPPER CASE",
-								"{$data.upperCasedText}"
-							]
+							"$set":"data.sanitizedText"
 						},
 						{
 							"$function":"encodeURIComponent",
 							"$args":[
-"select * from contentanalysis.analyze where text=\"{$data.upperCasedText}\""
+"select * from contentanalysis.analyze where text=\"{$data.sanitizedText}\""
 							],
 							"$set":"data.yql"
 						},
 						{
-							"$function":"console.log",
-							"$args":[
-								"ENCODED ",
-								"{$data.yql}"
-							]
-						},
-						{
-							"$class":"remoteResource",
-							"method":"toBuffer",
+							"$class":"download",
+							"timeout":10000,
+							"retries":5,
 							"url":
 "http://query.yahooapis.com/v1/public/yql?format=json&q={$data.yql}",
 							"$set":"data.results"
 						}, {
-						   "$function":"formatData",
-						   "$args":["{$data.trimmedText}", "{$data.results}"],
-						   "$set":"data.mappedResults"
+							"$function":"formatData",
+							"$args":["{$data.results}"],
+							"$set":"data.items"
 						}, {
 							"$function":"console.print",
-							"$args":["{$data.mappedResults}"]
+							"$args":["{$data.items}"]
 						}
 					],
 					"presenter":{
 						"file":"templates/results.ejs",
-						"vars":"{$data.mappedResults}"
+						"vars":{
+							"items":"{$data.items}",
+							"text":"{$data.sanitizedText}"
+						}
 					}
 				}]
 			}]
