@@ -1,20 +1,42 @@
-var path = require('path');
-var fs = require('fs');
+var define;
+if (typeof define === "undefined") {
+	define = function (classInstance) {
+		classInstance (require, exports, module);
+	};
+}
+
+var registry = {};
+define (function (require, exports, module) {
 
 var MODULE_NAME = 'dataflo.ws';
 var INITIATOR_PATH = 'initiator';
 
+var path, fs,
+	common = require ('./common');
+
+if ($isServerSide) {
+	path = require ('path');
+	fs   = require ('fs');
+}
+
+
 var instanceTypes = [ 'initiator', 'task' ];
-var common = require(path.join(MODULE_NAME, 'common'));
-var registry = {};
 
 // - - -
 
 function registryLookup (instanceType, instanceName) {
 	var instanceClass = registry[instanceType] &&
 		registry[instanceType][instanceName];
-
+	
 	if (!instanceClass) {
+		if ($isClientSide) {
+			console.error (
+				'you need to run dataflows.register ("'
+				+instanceType+'", "'+instanceName
+				+'", instance) before using this task');
+		}
+
+
 		var fixedName = instanceName;
 		if (instanceType == 'initiator') {
 			fixedName = instanceName.replace(/d$/, '');
@@ -96,8 +118,7 @@ module.exports.install = function (moduleName) {
 module.exports.register = function (instanceType, instanceName, instanceClass) {
 	if (!registry[instanceType]) {
 		console.warn(
-			'Unexpected instance type. Predefined types [ %s ]',
-			instanceTypes.join(', ')
+			'Unexpected instance type. Predefined types is: ['+instanceTypes.join(', ')+']'
 		);
 
 		return;
@@ -107,3 +128,5 @@ module.exports.register = function (instanceType, instanceName, instanceClass) {
 };
 
 module.exports.common = common;
+
+});
