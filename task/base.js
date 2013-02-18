@@ -104,6 +104,7 @@ util.extend (task.prototype, taskStateMethods, {
 		this.cbScope      = config.cbScope;
 		this.className    = config.className;
 		this.functionName = config.functionName;
+		this.originalConfig = config.originalConfig;
 
 		this.method       = config.method;
 		if (this.className && !this.method)

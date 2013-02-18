@@ -210,6 +210,7 @@ var workflow = module.exports = function (config, reqParam) {
 	this.tasks = config.tasks.map (function (taskParams) {
 		var task;
 
+		var originalTaskConfig = JSON.parse(JSON.stringify(taskParams));
 		var actualTaskParams;
 		var taskTemplateName = taskParams.$template;
 		if (self.templates && self.templates[taskTemplateName]) {
@@ -290,6 +291,7 @@ var workflow = module.exports = function (config, reqParam) {
 
 			try {
 				task = new xTaskClass ({
+					originalConfig: originalTaskConfig,
 					className: taskClassName,
 					method:    actualTaskParams.method || actualTaskParams.$method,
 					require:   checkRequirements,
@@ -386,6 +388,7 @@ var workflow = module.exports = function (config, reqParam) {
 			});
 
 			task = new xTaskClass ({
+				originalConfig: originalTaskConfig,
 				functionName: taskFnName,
 				logTitle:     actualTaskParams.logTitle || actualTaskParams.$logTitle,
 				require:      checkRequirements,

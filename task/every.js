@@ -60,8 +60,7 @@ util.extend(EveryTask.prototype, {
 	run: function () {
 		var self = this;
 
-		// copy
-		var tasksJSON = JSON.stringify(this.$tasks);
+		var tasksJSON = JSON.stringify(this.originalConfig.$tasks);
 
 		this.$every.forEach(function (item, index, array) {
 			var tasks = JSON.parse(tasksJSON);
