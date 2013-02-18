@@ -30,7 +30,7 @@
 						},
 						{
 							"$function":"print",
-							"$args":"{$data.post.fields}",
+							"$args":["Form params:", "{$data.post.fields}"],
 							"$origin":"{$global.console}"
 						},
 						{
@@ -45,18 +45,16 @@
 							"$set":"data.sanitizedText"
 						},
 						{
-							"$function":"encodeURIComponent",
-							"$args":[
-"select * from contentanalysis.analyze where text=\"{$data.sanitizedText}\""
-							],
-							"$set":"data.yql"
-						},
-						{
-							"$class":"download",
+							"$class":"remoteResource",
+							"method":"toBuffer",
 							"timeout":10000,
 							"retries":5,
-							"url":
-"http://query.yahooapis.com/v1/public/yql?format=json&q={$data.yql}",
+							"url":"http://query.yahooapis.com/v1/public/yql",
+							"query":{
+								"format":"json",
+								"q":
+"select * from contentanalysis.analyze where text=\"{$data.sanitizedText}\""
+							},
 							"$set":"data.results"
 						}, {
 							"$function":"formatData",

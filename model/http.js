@@ -35,80 +35,172 @@ pipeProgress.prototype.watch = function () {
 	}
 }
 
+var shallowMerge = function (dest, src, filter) {
+	Object.keys(src).forEach(function (key) {
+		if ((!filter || -1 != filter.indexOf(key)) && null == dest[key]) {
+			dest[key] = src[key];
+		}
+	});
+	return dest;
+};
+
 /**
  * @class httpModel
  *
  * Wrapper of HTTPClient for serverside requesting.
  *
  */
-
-var httpModel = module.exports = function (modelBase) {
-
+var httpModel = module.exports = function (modelBase, optionalUrlParams) {
 	this.modelBase = modelBase;
 
-	this.params = {
-		method: 'GET',
-		port: 80
-	};
+	this.params = {};
+	this.extendParams(this.params, optionalUrlParams, modelBase.url);
 
-	util.extend (this.params, modelBase.url);
+	this.headers = {};
 
-	if (this.params) {
-		this.headers = {}
+	if (this.params.auth) {
+		this.headers['Authorization'] = 'Basic ' +
+			new Buffer(self.params.auth).toString('base64');
+	}
 
-		if (this.params.auth) {
-			this.headers['Authorization'] = 'Basic ' + new Buffer(self.params.auth).toString('base64');
+	if (this.params.body) {
+		this.params.method = 'POST';
+		this.postBody = this.params.body;
+
+		if (
+			!this.params.headers ||
+			!this.params.headers['content-length'] ||
+			!this.params.headers['content-type']
+		) {
+			console.error ('content type/length undefined');
 		}
-
-		if (this.params.body) {
-			this.params.method = 'POST';
-			this.postBody = this.params.body;
-
-			if (!this.params.headers || !this.params.headers['content-length'] || !this.params.headers['content-type']) {
-				console.error ('content type/length undefined');
-			}
-			delete this.params.body;
-		}
-		if (this.params.headers) {
-			try {
-				util.extend(this.headers, this.params.headers);
-				delete this.params.headers;
-			} catch (e) {
-				console.log ('headers is not correct');
-			}
+		delete this.params.body;
+	}
+	if (this.params.headers) {
+		try {
+			util.extend(this.headers, this.params.headers);
+			delete this.params.headers;
+		} catch (e) {
+			console.log ('headers is not correct');
 		}
 	}
-}
+};
 
 util.extend (httpModel.prototype, {
+	DefaultParams: {
+		protocol: 'http:',
+		port: 80,
+		method: 'GET'
+	},
+
+	/**
+	 * Commentary from http://nodejs.org/api/url.html
+	 */
+	UrlParamNames: [
+		'href',
+		// The full URL that was originally parsed.
+		// Both the protocol and host are lowercased.
+
+		'protocol',
+		// The request protocol, lowercased.
+		// Example: 'http:'
+
+		'host',
+		// The full lowercased host portion of the URL,
+		// including port information.
+		// Example: 'host.com:8080'
+
+		'auth',
+		// The authentication information portion of a URL.
+		// Example: 'user:pass'
+
+		'hostname',
+		// Just the lowercased hostname portion of the host.
+		// Example: 'host.com'
+
+		'port',
+		// The port number portion of the host.
+		// Example: '8080'
+
+		'pathname',
+		// The path section of the URL, that comes after the host
+		// and before the query, including the initial slash if present.
+		// Example: '/p/a/t/h'
+
+		'search',
+		// The 'query string' portion of the URL, including
+		// the leading question mark.
+		// Example: '?query=string'
+
+		'path',
+		// Concatenation of pathname and search.
+		// Example: '/p/a/t/h?query=string'
+
+		'query',
+		// Either the 'params' portion of the query string,
+		// or a querystring-parsed object.
+		// Example: 'query=string' or {'query':'string'}
+
+		'hash'
+		// The 'fragment' portion of the URL including the pound-sign.
+		// Example: '#hash'
+	],
+
+	extendParams: function (params, configUrlObj, parsedUrlObj) {
+		if (configUrlObj) {
+			shallowMerge(params, configUrlObj, this.UrlParamNames);
+		}
+
+		if (parsedUrlObj) {
+			shallowMerge(params, parsedUrlObj);
+		}
+
+		// add default params if missing
+		shallowMerge(params, this.DefaultParams);
+
+		// Reformat the merged URL object's compound parts.
+		// Don't reorder the lines below.
+		params.search = urlUtils.format({
+			query: params.query
+		});
+		params.path = urlUtils.format({
+			pathname: params.pathname,
+			search: params.search
+		});
+		params.host = urlUtils.format({
+			hostname: params.hostname,
+			port: params.port
+		});
+		params.href = urlUtils.format(params);
+
+		return params;
+	},
 
 	fetch: function (target) {
+		this.target = target;
 
-		var self = this;
-		self.target = target;
+		this.isStream = target.to instanceof fs.WriteStream;
 
-		var urlParams = self.getUrlParams();
+		if (!this.isStream) target.to.data = new Buffer('');
 
-		self.isStream = target.to instanceof fs.WriteStream;
-
-		if (!self.isStream) target.to.data = new Buffer('');
-
-		self.progress = new pipeProgress ({
+		this.progress = new pipeProgress ({
 			writer: target.to
 		});
 
-		// add self for watching into httpModelManager
-		project.httpModelManager.add(self, {url: urlParams, headers: self.headers, postBody: self.postBody});
+		// add this for watching into httpModelManager
+		project.httpModelManager.add(this, {
+			url: this.params,
+			headers: this.headers,
+			postBody: this.postBody
+		});
 
-		return self.progress;
+		return this.progress;
 	},
 
 	run: function () {
 		var self = this;
 
-		var urlParams = self.getUrlParams();
-
-		var req = self.req = HTTPClient.request(urlParams, function (res) {
+		var req = self.req = HTTPClient.request(this.params, function (res) {
 
 			self.res = res;
 
@@ -165,28 +257,5 @@ util.extend (httpModel.prototype, {
 	stop: function () {
 		if (this.req) this.req.abort();
 		if (this.res) this.res.destroy();
-	},
-
-	/**
-	 * http.request requires the query part to be appended to the pathname.
-	 */
-	getUrlParams: function () {
-
-		var params = this.params;
-		var q = params.query;
-
-		if (!('maxRedirects' in params)) {
-			params.maxRedirects = HTTPClient.maxRedirects; // defaults to 5
-		}
-
-		if (q && 'object' === typeof q) {
-			var queryStr = urlUtils.format({ query: q }),
-				newParams = Object.create(params);
-			newParams.path += queryStr;
-			return newParams
-		}
-
-		return params;
 	}
-
 });

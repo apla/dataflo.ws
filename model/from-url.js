@@ -5,7 +5,7 @@ var events  = require ('events'),
 	util    = require ('util');
 
 
-var model = module.exports = function (url) {
+var model = module.exports = function (url, optionalParams) {
 
 	var self = this;
 
@@ -24,7 +24,7 @@ var model = module.exports = function (url) {
 
 	// console.log (this.modelName);
 	var requiredModel = require ('./'+this.modelName);
-	this.dataSource = new  requiredModel (this);
+	this.dataSource = new  requiredModel (this, optionalParams);
 
 	// fetch method
 

@@ -1,13 +1,26 @@
 var util = require ('util');
 
+Object.PLATFORM_NATIVE_TYPES = {
+	// Buffer seems to be the only custom type in the Node core
+	'Buffer': true
+};
+
+Object.lookUpCustomType = function (obj) {
+	var name = obj && obj.constructor && obj.constructor.name;
+	if (name && name in Object.PLATFORM_NATIVE_TYPES) {
+		return name;
+	}
+};
 /**
  * Get the type of any object.
  * Usage:
- *     Object.typeOf([ 1, 2, 3 ]); // 'Array'
- *     Object.typeOf(null);        // 'Null'
+ *     Object.typeOf([ 1, 2, 3 ]);    // 'Array'
+ *     Object.typeOf(null);           // 'Null'
+ *     Object.typeOf(new Buffer('')); // 'Buffer'
  */
 Object.typeOf = function (obj) {
-	return Object.prototype.toString.call(obj).slice(8, -1);
+	return Object.lookUpCustomType(obj) ||
+		Object.prototype.toString.call(obj).slice(8, -1);
 };
 
 /**
