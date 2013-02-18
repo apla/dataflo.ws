@@ -9,7 +9,6 @@ define (function (require, exports, module) {
 
 var EventEmitter = require ('events').EventEmitter,
 	util         = require ('util'),
-	path         = require ('path'),
 	dataflows    = require ('./index'),
 	common       = require ('./common'),
 	taskClass    = require ('./task/base');
@@ -265,11 +264,11 @@ var workflow = module.exports = function (config, reqParam) {
 
 			// TODO: need check all task classes,
 			// because some compile errors may be there
-			var taskPath = path.resolve(
+			/*var taskPath = path.resolve(
 				$global.project.root.path,
 				'node_modules',
 				taskClassName
-			);
+			);*/
 
 			xTaskClass = dataflows.task(taskClassName);
 
