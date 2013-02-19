@@ -1,10 +1,14 @@
 // json
-{
+ {
 	"requires": [ "misc" ],
 
 	"daemon": {
 		"yql": {
 			"initiator": [ "http", "repl" ]
+		},
+
+		"fs": {
+			"initiator": [ "fs-watch" ]
 		}
 	},
 
@@ -123,6 +127,21 @@
 
 		"repl": {
 			"port": 4005
+		},
+
+		"fs-watch": {
+			"workflows": [{
+				"dir": "cache",
+				"tasks": [{
+					"$function": "console.print",
+					"$args": [ "watching cache", "{$data.fsEvent}" ]
+				}]
+			}, {
+				"tasks": [{
+					"$function": "console.print",
+					"$args": [ "watching root", "{$data.fsEvent}" ]
+				}]
+			}]
 		}
 	}
 }
