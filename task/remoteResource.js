@@ -214,7 +214,7 @@ util.extend (cacheTask.prototype, {
 					delete project.caching[self.cacheFilePath];
 					// self.res.cacheFilePath = self.cacheFilePath
 					// self.completed (self.res);
-					self.finishWith ({fileName: self.cacheFileName});
+					self.finishWith ({fileName: self.cacheFileName, filePath: self.cacheFilePath});
 				});
 			});
 
@@ -233,7 +233,7 @@ util.extend (cacheTask.prototype, {
 
 				self.emit ('log', 'file already downloaded from ' + self.url.href + ' to ' + self.cacheFilePath);
 				delete project.caching[self.cacheFilePath];
-				self.completed (self.cacheFileName);
+				self.finishWith({fileName: self.cacheFileName, filePath: self.cacheFilePath});
 
 				return;
 			}
