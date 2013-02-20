@@ -16,7 +16,13 @@
 	<h2>Text</h2>
 	<div class="hero-unit"><p><%=text%></p></div>
 
-<% if (items) { %>
+<% if (-1 == items) { %>
+    <div class="page-header">
+		<h1>No results</h1>
+	</div>
+
+	<div class="alert"><h4>Alas...</h4> Try a longer text.</div>
+<% } else { %>
 	<h2>Tagging</h2>
 
 	<table class="table table-striped">
@@ -30,35 +36,18 @@
 		<tbody>
 		<% items.forEach(function (item) { %>
 			<tr>
-				<td><%=item.text.content%></td>
+				<td>
+					<% if (item.wiki_url) { %>
+					<a href="<%=item.wiki_url%>"><%=item.text.content%></a>
+					<% } else { %>
+					<%=item.text.content%>
+					<% } %>
+				</td>
 				<td><%=item.score%></td>
 			</tr>
 		<% }); %>
 		</tbody>
 	</table>
-
-	<% if (wiki_url) { %>
-		<h2>Wikipedia</h2>
-		<a href="<%=wiki_url%>"><%=wiki_url%></a>
-	<% } %>
-
-	<% if (related_entities) { %>
-		<h2>Related links</h3>
-
-		<ul>
-		<% Object.keys(related_entities).forEach(function (key) { %>
-			<% related_entities[key].forEach(function (entity) { %>
-				<li><a href="<%=entity%>"><%=entity%></a></li>
-			<% }); %>
-		<% }); %>
-		</ul>
-	<% } %>
-<% } else { %>
-    <div class="page-header">
-		<h1>No results</h1>
-	</div>
-
-	<div class="alert"><h4>Alas...</h4> Try a longer text.</div>
 <% } %>
 
 	<a class="btn btn-large" href="/">&larr; Back to the form</a>

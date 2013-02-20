@@ -1,20 +1,42 @@
-var path = require('path');
-var fs = require('fs');
+var define;
+if (typeof define === "undefined") {
+	define = function (classInstance) {
+		classInstance (require, exports, module);
+	};
+}
+
+var registry = {};
+define (function (require, exports, module) {
 
 var MODULE_NAME = 'dataflo.ws';
 var INITIATOR_PATH = 'initiator';
 
+var path, fs,
+	common = require ('./common');
+
+if ($isServerSide) {
+	path = require ('path');
+	fs   = require ('fs');
+}
+
+
 var instanceTypes = [ 'initiator', 'task' ];
-var common = require(path.join(MODULE_NAME, 'common'));
-var registry = {};
 
 // - - -
 
 function registryLookup (instanceType, instanceName) {
 	var instanceClass = registry[instanceType] &&
 		registry[instanceType][instanceName];
-
+	
 	if (!instanceClass) {
+		if ($isClientSide) {
+			console.error (
+				'you need to run dataflows.register ("'
+				+instanceType+'", "'+instanceName
+				+'", instance) before using this task');
+		}
+
+
 		var fixedName = instanceName;
 		if (instanceType == 'initiator') {
 			fixedName = instanceName.replace(/d$/, '');
@@ -25,7 +47,7 @@ function registryLookup (instanceType, instanceName) {
 				);
 			}
 		} else if (instanceType == 'task') {
-			fixedName = instanceName.replace(/^(dataflo.ws\/)?task\//, '');
+			fixedName = instanceName.replace(/^(dataflo\.ws\/)?task\//, '');
 			if (fixedName !== instanceName) {
 				console.warn(
 		'[DEPRECATED] Remove preceding "task/" from "%s" in your task config',
@@ -33,34 +55,27 @@ function registryLookup (instanceType, instanceName) {
 				);
 			}
 		}
-		// console.log ('get from symlink');
+
+		var project = common.getProject();
 		try {
-			instanceClass = require(
-				path.join(instanceType, fixedName)
-			);
+			instanceClass = require(path.join(
+				project.root.path, 'node_modules', instanceType, fixedName
+			));
 		} catch (e) {
-			var project = common.getProject();
 			try {
 				instanceClass = require(path.join(
-					project.root.path, 'node_modules', instanceType, fixedName
+					MODULE_NAME, instanceType, fixedName
 				));
-			} catch (e) {
-				try {
-					instanceClass = require(path.join(
-						MODULE_NAME, instanceType, fixedName
-					));
-				} catch (ee) {
-					console.error(
-						'cannot find %s named %s', instanceType, fixedName
-					);
-					throw e;
-					throw ee;
-				}
+			} catch (ee) {
+				console.error(
+					'cannot find %s named %s', instanceType, fixedName
+				);
+				throw e;
 			}
 		}
 	}
-	registry[instanceType][instanceName] = instanceClass;
-	return instanceClass;
+
+	return registry[instanceType][instanceName] = instanceClass;
 };
 
 instanceTypes.forEach(function(instanceType) {
@@ -103,8 +118,7 @@ module.exports.install = function (moduleName) {
 module.exports.register = function (instanceType, instanceName, instanceClass) {
 	if (!registry[instanceType]) {
 		console.warn(
-			'Unexpected instance type. Predefined types [ %s ]',
-			instanceTypes.join(', ')
+			'Unexpected instance type. Predefined types is: ['+instanceTypes.join(', ')+']'
 		);
 
 		return;
@@ -114,3 +128,5 @@ module.exports.register = function (instanceType, instanceName, instanceClass) {
 };
 
 module.exports.common = common;
+
+});

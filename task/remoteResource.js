@@ -1,9 +1,9 @@
-var EventEmitter = require ('events').EventEmitter,
-	crypto       = require ('crypto'),
+var crypto       = require ('crypto'),
 	util         = require ('util'),
 	urlUtil      = require ('url'),
-	path         = require ('path'),
+	querystring  = require ('querystring'),
 	task         = require ('./base'),
+	path         = require('path'),
 	urlModel     = require ('../model/from-url');
 
 var cachePath = project.config.cachePath;
@@ -44,22 +44,51 @@ util.extend (cacheTask.prototype, {
 
 util.extend (cacheTask.prototype, {
 	initModel: function () {
-		try {
-			self.model = new urlModel (self.url);
-			self.url = self.model.url;
-			if (self.post) {
-				self.url.body = self.post;
-			}
+		var self = this;
 
-			if (self.headers) {
-				self.url.headers = self.headers;
+		if (Object.is('String', self.url)) {
+			try {
+				self.url = urlUtil.parse(self.url, true);
+			} catch (e) {
+				self.emitError(e);
+				return;
 			}
-
-			self.model.url.protocol.length;
-		} catch (e) {
-			self.emitError(e);
-			return;
 		}
+
+		self.url.headers = self.headers || {};
+
+		if (self.post) {
+			var postType = Object.typeOf(self.post);
+
+			if ('String' == postType || 'Buffer' == postType) {
+				// so we got somethin in string
+				// content type and length must be defined
+				if (!self.url.headers['content-type']) {
+					self.emitError ('you must define content type when submitting plain string as post data parameter');
+					return;
+				}
+				self.url.headers['content-length'] = self.post.length;
+				self.url.body = self.post;
+			} else if ('Object' == postType) {
+				self.url.body = querystring.stringify (self.post);
+				self.url.headers['content-length'] = self.url.body.length;
+				self.url.headers['content-type']   = 'application/x-www-form-urlencoded';
+			} else if ('Array' == postType) {
+				// TODO: multipart
+				self.emitError ('multipart not yet implemented');
+				return;
+
+			} else {
+				self.emitError ('something wrong with post data. you must supply string, object or array');
+				return;
+			}
+			// if (self.post is plain Object)
+			// if (self.post is a string)
+		}
+
+		self.model = new urlModel(self.url, self);
+		self.url = self.model.url;
+
 		self.model.on ('data', function (chunks) {
 			self.activityCheck ('model.fetch data');
 		});
@@ -68,9 +97,9 @@ util.extend (cacheTask.prototype, {
 			// console.log("%%%%%%%%%%cache failed");
 			self.emitError(e);
 		});
-	
 	},
 	isSameUrlLoading : function () {
+		var self = this;
 		// TODO: another task can download url contents to buffer/file and vice versa
 		// other task is caching requested url
 		var anotherTask = project.caching[self.cacheFilePath];
@@ -103,7 +132,6 @@ util.extend (cacheTask.prototype, {
 	 * (in milliseconds)
 	 */
 	toBuffer: function () {
-
 		var self = this;
 		
 		self.download = {};
@@ -139,7 +167,9 @@ util.extend (cacheTask.prototype, {
 		self.activityCheck ('model.fetch start');
 		self.model.fetch ({to: self.download});
 	},
-	finishWith: function (response, headers) {
+
+	finishWith: function (result, headers) {
+		var self = this;
 		if (!headers) {
 			headers = (self.model &&
 			self.model.dataSource &&
@@ -162,7 +192,6 @@ util.extend (cacheTask.prototype, {
 	 * (in milliseconds)
 	 */
 	run: function () {
-
 		var self = this;
 
 		self.activityCheck ('task run');
@@ -185,7 +214,7 @@ util.extend (cacheTask.prototype, {
 					delete project.caching[self.cacheFilePath];
 					// self.res.cacheFilePath = self.cacheFilePath
 					// self.completed (self.res);
-					self.finishWith ({fileName: self.cacheFileName});
+					self.finishWith ({fileName: self.cacheFileName, filePath: self.cacheFilePath});
 				});
 			});
 
@@ -204,7 +233,7 @@ util.extend (cacheTask.prototype, {
 
 				self.emit ('log', 'file already downloaded from ' + self.url.href + ' to ' + self.cacheFilePath);
 				delete project.caching[self.cacheFilePath];
-				self.completed (self.cacheFileName);
+				self.finishWith({fileName: self.cacheFileName, filePath: self.cacheFilePath});
 
 				return;
 			}

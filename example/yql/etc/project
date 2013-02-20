@@ -1,10 +1,14 @@
 // json
-{
+ {
 	"requires": [ "misc" ],
 
 	"daemon": {
-		"example": {
+		"yql": {
 			"initiator": [ "http", "repl" ]
+		},
+
+		"fs": {
+			"initiator": [ "fs-watch" ]
 		}
 	},
 
@@ -19,40 +23,63 @@
 				"code":"404",
 				"presenter":"templates/404.html"
 			}, {
+				"path": "test",
+				"tasks":[
+					{
+						"$function":"Array",
+						"$args":["data", "must", "flow"],
+						"$set":"data.testArr"
+					},
+					{
+						"$every":"{$data.testArr}",
+						"$collect":"result",
+						"$tasks":[{
+							"$function":"console.print",
+							"$args":[
+								"Running $every: index %s, item %s",
+								"#index", "#item"
+							]
+						}, {
+							"$function":"toUpperCase",
+							"$origin":"#item",
+							"$set":"result"
+						}],
+						"$set":"data.upcaseArr"
+					},
+					{
+						"$function":"console.print",
+						"$args":[
+							"$every result: %s",
+							"{$data.upcaseArr}"
+						]
+					},
+					{
+						"$function":"Array.prototype.join",
+						"$args":[" "],
+						"$scope":"{$data.upcaseArr}",
+						"$set":"data.resultMessage"
+					}
+				],
+				"presenter":{
+					"type":"json",
+					"vars":{
+						"result": "{$data.resultMessage}"
+					}
+				}
+			},
+			{
 				"path": "entity/search",
 				"workflows": [{
 					"path":"yql",
 					"tasks":[
 						{
-							"$function": "Number",
-							"$args": [ "0" ],
-							"$set": "data.zero",
-							"$empty": "data.isZero"
-						},
-						{
-							"$function": "console.print",
-							"$args": [
-				"This won't be displayed, because %d is a non-value",
-								"{$data.zero}"
-							]
-						},
-						{
-							"$function": "console.print",
-							"$args": [
-				"This is displayed, because Number returned a non-value",
-								"{$data.isZero}"
-							]
-						},
-
-
-						{
-							"$class":"task/post",
+							"$class":"post",
 							"request":"{$request}",
 							"$set":"data.post"
 						},
 						{
 							"$function":"print",
-							"$args":"{$data.post.fields}",
+							"$args":["Form params:", "{$data.post.fields}"],
 							"$origin":"{$global.console}"
 						},
 						{
@@ -62,61 +89,37 @@
 							"$set":"data.trimmedText"
 						},
 						{
-							"$function":"misc.js#pimp",
+							"$function":"stripTags",
 							"$args":["{$data.trimmedText}"],
-							"$set":"data.pimpedText"
+							"$set":"data.sanitizedText"
 						},
 						{
-							"$function":"unPimp",
-							"$args":["{$data.pimpedText}"],
-							"$set":"data.unPimpedText"
-						},
-						{
-							"$function":"toUpperCase",
-							"$origin":"{$data.unPimpedText}",
-							"$args":[],
-							"$set":"data.upperCasedText"
-						},
-						{
-							"$function":"global.console.log",
-							"$args":[
-								"UPPER CASE",
-								"{$data.upperCasedText}"
-							]
-						},
-						{
-							"$function":"encodeURIComponent",
-							"$args":[
-"select * from contentanalysis.analyze where text=\"{$data.upperCasedText}\""
-							],
-							"$set":"data.yql"
-						},
-						{
-							"$function":"console.log",
-							"$args":[
-								"ENCODED ",
-								"{$data.yql}"
-							]
-						},
-						{
-							"$class":"task/download",
-							"url":
-"http://query.yahooapis.com/v1/public/yql?format=json&q={$data.yql}",
+							"$class":"remoteResource",
+							"method":"toBuffer",
 							"timeout":10000,
-							"retries":10,
+							"retries":5,
+							"url":"http://query.yahooapis.com/v1/public/yql",
+							"query":{
+								"format":"json",
+								"q":
+"select * from contentanalysis.analyze where text=\"{$data.sanitizedText}\""
+							},
 							"$set":"data.results"
 						}, {
-						   "$function":"formatData",
-						   "$args":["{$data.trimmedText}", "{$data.results}"],
-						   "$set":"data.mappedResults"
+							"$function":"formatData",
+							"$args":["{$data.results}"],
+							"$set":"data.items"
 						}, {
 							"$function":"console.print",
-							"$args":["{$data.mappedResults}"]
+							"$args":["{$data.items}"]
 						}
 					],
 					"presenter":{
 						"file":"templates/results.ejs",
-						"vars":"{$data.mappedResults}"
+						"vars":{
+							"items":"{$data.items}",
+							"text":"{$data.sanitizedText}"
+						}
 					}
 				}]
 			}]
@@ -124,6 +127,21 @@
 
 		"repl": {
 			"port": 4005
+		},
+
+		"fs-watch": {
+			"workflows": [{
+				"dir": "cache",
+				"tasks": [{
+					"$function": "console.print",
+					"$args": [ "watching cache", "{$data.fsEvent}" ]
+				}]
+			}, {
+				"tasks": [{
+					"$function": "console.print",
+					"$args": [ "watching root", "{$data.fsEvent}" ]
+				}]
+			}]
 		}
 	}
 }

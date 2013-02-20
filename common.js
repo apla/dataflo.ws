@@ -1,13 +1,36 @@
 var util = require ('util');
 
-// Safe and universal type check
-Object.typeOf = function (obj) {
-	// [object Boolean] -> Boolean
-	return Object.prototype.toString.call(obj).slice(8, -1);
+Object.PLATFORM_NATIVE_TYPES = {
+	// Buffer seems to be the only custom type in the Node core
+	'Buffer': true
 };
 
-Object.is = function (type, obj) { // lemme unseen this
-	return Object.typeOf(obj).toLowerCase() == type.toLowerCase();
+Object.lookUpCustomType = function (obj) {
+	var name = obj && obj.constructor && obj.constructor.name;
+	if (name && name in Object.PLATFORM_NATIVE_TYPES) {
+		return name;
+	}
+};
+/**
+ * Get the type of any object.
+ * Usage:
+ *     Object.typeOf([ 1, 2, 3 ]);    // 'Array'
+ *     Object.typeOf(null);           // 'Null'
+ *     Object.typeOf(new Buffer('')); // 'Buffer'
+ */
+Object.typeOf = function (obj) {
+	return Object.lookUpCustomType(obj) ||
+		Object.prototype.toString.call(obj).slice(8, -1);
+};
+
+/**
+ * Safe and universal type check.
+ * Usage:
+ *     Object.is('Number', 4);            // true
+ *     Object.is('Undefined', undefined); // true
+ */
+Object.is = function (type, obj) {
+	return type == Object.typeOf(obj);
 };
 
 console.print = function () {

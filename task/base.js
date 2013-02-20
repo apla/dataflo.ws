@@ -52,29 +52,6 @@ for (var stateNum = 0; stateNum < taskStateList.length; stateNum++) {
  * within the *RIA.Workflow* concept. `task` objects are instantiated
  * by `workflow` internally.
  *
-	{
-		workflows: [{
-			url: "/entity/suggest",
-
-			tasks: [{
-				functionName: "parseFilter",
-				url:          "{$request.url}",
-				produce:      "data.suggest"
-			}, {
-				className:    "mongoRequestTask",
-				connector:    "mongo",
-				collection:   "messages",
-				filter:       "{$data.suggest.tag}",
-				produce:      "data.records"
-			}, {
-				className:    "renderTask",
-				type:         "json",
-				data:         "{$data.records}",
-				output:       "{$response}"
-			}]
-		}]
-	}
- *
  * @cfg {String} className (required) The name of a module-exported class
  * to be instantiated as an asynchronous task.
  *
@@ -127,6 +104,7 @@ util.extend (task.prototype, taskStateMethods, {
 		this.cbScope      = config.cbScope;
 		this.className    = config.className;
 		this.functionName = config.functionName;
+		this.originalConfig = config.originalConfig;
 
 		this.method       = config.method;
 		if (this.className && !this.method)
