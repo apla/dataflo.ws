@@ -1,6 +1,6 @@
-var EventEmitter   = require ('events').EventEmitter,
-	Workflow       = require ('workflow');
-var util = require('util');
+var EventEmitter = require ('events').EventEmitter,
+	util         = require ('util'),
+	workflow     = require ('../workflow');
 
 var timeri = module.exports = function (config) {
 	var self = this;
@@ -28,7 +28,7 @@ util.extend (timeri.prototype, {
 
 			var closure = function () {
 
-				var workflow = new Workflow (
+				var workflow = new workflow (
 					util.extend (true, {}, workflowParams),
 					self.wfRequire
 				);
