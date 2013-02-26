@@ -1,3 +1,8 @@
+dataflo.ws
+==========
+
+![dataflo.ws logo](http://i.imgur.com/DxczKN2.png)
+
 workflow processing for node.js
 ===============================
 
