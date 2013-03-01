@@ -626,7 +626,11 @@ if ($isServerSide) {
 				try {
 					mod = require(inPackagePath);
 				} catch (e) {
-					mod = null;
+					try {
+						mod = require(name);
+					} catch (e) {
+						mod = null;
+					}
 				}
 			}
 			return mod;
