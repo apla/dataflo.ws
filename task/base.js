@@ -134,6 +134,11 @@ util.extend (task.prototype, taskStateMethods, {
 
 		self.important = config.important || void 0;
 
+		// `DEFAULT_CONFIG' is a formal config specification + default values
+		if (self.DEFAULT_CONFIG) {
+			util.shallowMerge(self, self.DEFAULT_CONFIG);
+		}
+
 		var state = this.checkState ();
 //		console.log (this.url, 'state is', stateList[state], ' (' + state + ')', (state == 0 ? (this.require instanceof Array ? this.require.join (', ') : this.require) : ''));
 

@@ -35,15 +35,6 @@ pipeProgress.prototype.watch = function () {
 	}
 }
 
-var shallowMerge = function (dest, src, filter) {
-	Object.keys(src).forEach(function (key) {
-		if ((!filter || -1 != filter.indexOf(key)) && null == dest[key]) {
-			dest[key] = src[key];
-		}
-	});
-	return dest;
-};
-
 /**
  * @class httpModel
  *
@@ -148,15 +139,15 @@ util.extend (httpModel.prototype, {
 
 	extendParams: function (params, configUrlObj, parsedUrlObj) {
 		if (configUrlObj) {
-			shallowMerge(params, configUrlObj, this.UrlParamNames);
+			util.shallowMerge(params, configUrlObj, this.UrlParamNames);
 		}
 
 		if (parsedUrlObj) {
-			shallowMerge(params, parsedUrlObj);
+			util.shallowMerge(params, parsedUrlObj);
 		}
 
 		// add default params if missing
-		shallowMerge(params, this.DefaultParams);
+		util.shallowMerge(params, this.DefaultParams);
 
 		// Reformat the merged URL object's compound parts.
 		// Don't reorder the lines below.

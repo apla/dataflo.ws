@@ -139,6 +139,17 @@ util.extend = function extend () {
 }
 }
 
+if (!util.shallowMerge) {
+	util.shallowMerge = function (dest, src, filter) {
+		Object.keys(src).forEach(function (key) {
+			if ((!filter || -1 != filter.indexOf(key)) && null == dest[key]) {
+				dest[key] = src[key];
+			}
+		});
+		return dest;
+	};
+}
+
 if (!util.clone) {
 	util.clone = function(object) {
 
