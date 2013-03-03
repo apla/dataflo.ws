@@ -142,8 +142,12 @@ util.extend (presenterTask.prototype, {
 				cache[self.file] = presenters[self.type][compileMethod](
 					tplStr, self.compileParams || {}
 				);
-
-				self.renderProcess(cache[self.file]);
+				
+				if (self.renderMethod) {
+					self.renderProcess(cache[self.file][self.renderMethod].bind(cache[self.file]))
+				} else {
+					self.renderProcess(cache[self.file]);
+				}
 
 			});
 		});
@@ -225,7 +229,10 @@ util.extend (presenterTask.prototype, {
 				self.setContentType('text/html; charset=utf-8');
 				self.renderFile();
 				break;
-
+			
+			case 'jade':
+			case 'mustache':
+			case 'hogan.js':
 			case 'ejs':
 				self.setContentType('text/html; charset=utf-8');
 				self.renderCompile();
