@@ -3,8 +3,6 @@ var common   = require('../common');
 var workflow = require('../workflow');
 var task     = require('./base');
 
-var $global = common.$global;
-
 var EveryTask = function (cfg) {
 	this.init(cfg);
 	this.count = 0;
@@ -29,7 +27,10 @@ util.extend(EveryTask.prototype, {
 	},
 
 	_onCompleted: function (wf) {
-		this.results.push(wf[this.$collect]);
+		var result = wf[this.$collect];
+		if (!workflow.isEmpty(result)) {
+			this.results.push(result);
+		}
 		this.onWorkflowResult();
 	},
 
@@ -37,43 +38,52 @@ util.extend(EveryTask.prototype, {
 		this.onWorkflowResult();
 	},
 
-	interpolate: function (tree, mapping, exclude) {
-		var recur = (function (branch, key) {
-			tree[key] = this.interpolate(branch, mapping, exclude);
-		}).bind(this);
+	unquote: function unquote(tree, origKey) {
+		var pattern = /{#(.+?)}/g;
+		var replacement = '{$$$1}'; // get rich or die trying
 
-		if (Object.is('String', tree)) {
-			if (tree in mapping) tree = mapping[tree];
-		} else if (Object.is('Array', tree)) {
-			tree.forEach(recur);
-		} else if (Object.is('Object', tree)) {
-			Object.keys(tree).forEach(function (key) {
-				if (!exclude || !(key in exclude)) {
-					recur(tree[key], key);
-				}
-			});
-		}
+		var recur = function (tree, collect, key) {
+			var branch = tree[key];
+			var type = Object.typeOf(branch);
 
-		return tree;
+			if ('String' == type) {
+				collect[key] = branch.replace(pattern, replacement);
+			} else if ('Array' == type) {
+				collect[key] = [];
+				branch.forEach(function (_, k) {
+					recur(branch, collect[key], k);
+				});
+			} else if ('Object' == type) {
+				collect[key] = {};
+				Object.keys(branch).map(function (k) {
+					if (origKey != k) {
+						recur(branch, collect[key], k);
+					}
+				});
+			}
+		};
+
+		var collect = {};
+		recur(tree, collect, origKey);
+		return collect[origKey];
 	},
 
 	run: function () {
 		var self = this;
 
-		var tasksJSON = JSON.stringify(this.originalConfig.$tasks);
+		var tasks = this.unquote(self.originalConfig, '$tasks');
+		console.log(tasks);
 
 		this.$every.forEach(function (item, index, array) {
-			var tasks = JSON.parse(tasksJSON);
-			self.interpolate(tasks, {
-				'#item': item,
-				'#index': index,
-				'#array': array
+			var wf = new workflow({
+				tasks: tasks
 			}, {
-				// don't recur into
-				'$tasks': false
+				every: {
+					item: item,
+					index: index + 1, // hello Lua
+					array: array
+				}
 			});
-
-			var wf = new workflow({ tasks: tasks });
 
 			wf.on('completed', self._onCompleted.bind(self));
 			wf.on('failed', self._onFailed.bind(self));

@@ -36,12 +36,12 @@
 						"$tasks":[{
 							"$function":"console.print",
 							"$args":[
-								"Running $every: index %s, item %s",
-								"#index", "#item"
+								"Running $every: index: {#every.index},",
+								"item: {#every.item}"
 							]
 						}, {
 							"$function":"toUpperCase",
-							"$origin":"#item",
+							"$origin":"{#every.item}",
 							"$set":"result"
 						}],
 						"$set":"data.upcaseArr"

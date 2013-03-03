@@ -680,4 +680,6 @@ util.extend (workflow.prototype, {
 	}
 });
 
+workflow.isEmpty = isEmpty;
+
 });
