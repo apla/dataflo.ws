@@ -139,6 +139,17 @@ util.extend = function extend () {
 }
 }
 
+if (!util.shallowMerge) {
+	util.shallowMerge = function (dest, src, filter) {
+		Object.keys(src).forEach(function (key) {
+			if ((!filter || -1 != filter.indexOf(key)) && null == dest[key]) {
+				dest[key] = src[key];
+			}
+		});
+		return dest;
+	};
+}
+
 if (!util.clone) {
 	util.clone = function(object) {
 
@@ -626,7 +637,11 @@ if ($isServerSide) {
 				try {
 					mod = require(inPackagePath);
 				} catch (e) {
-					mod = null;
+					try {
+						mod = require(name);
+					} catch (e) {
+						mod = null;
+					}
 				}
 			}
 			return mod;
