@@ -14,6 +14,13 @@ util.inherits(EveryTask, task);
 util.extend(EveryTask.prototype, {
 	constructor: EveryTask,
 
+	DEFAULT_CONFIG: {
+		$tasks: [],
+		$every: [],
+		$collect: 'every.result',
+		$set: ''
+	},
+
 	onWorkflowResult: function () {
 		this.count += 1;
 
@@ -55,7 +62,7 @@ util.extend(EveryTask.prototype, {
 				});
 			} else if ('Object' == type) {
 				collect[key] = {};
-				Object.keys(branch).map(function (k) {
+				Object.keys(branch).forEach(function (k) {
 					if (origKey != k) {
 						recur(branch, collect[key], k);
 					}
@@ -72,17 +79,28 @@ util.extend(EveryTask.prototype, {
 		var self = this;
 
 		var tasks = this.unquote(self.originalConfig, '$tasks');
-		console.log(tasks);
+
+		// keys that will be exposed in `every' object
+		var keys = Object.keys(self).filter(function (key) {
+			return !(key in self.DEFAULT_CONFIG);
+		});
 
 		this.$every.forEach(function (item, index, array) {
+			var every = {
+				item: item,
+				index: index + 1, // hello Lua
+				array: array
+			};
+
+			// expose keys from the config
+			keys.forEach(function (key) {
+				every[key] = self[key];
+			});
+
 			var wf = new workflow({
 				tasks: tasks
 			}, {
-				every: {
-					item: item,
-					index: index + 1, // hello Lua
-					array: array
-				}
+				every: every
 			});
 
 			wf.on('completed', self._onCompleted.bind(self));

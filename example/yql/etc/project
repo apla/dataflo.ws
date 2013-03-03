@@ -33,11 +33,13 @@
 					{
 						"$every":"{$data.testArr}",
 						"$collect":"result",
+						"url": "{$request.url.href}",
 						"$tasks":[{
 							"$function":"console.print",
 							"$args":[
 								"Running $every: index: {#every.index},",
-								"item: {#every.item}"
+								"item: {#every.item},",
+								"url: {#every.url}"
 							]
 						}, {
 							"$function":"toUpperCase",
