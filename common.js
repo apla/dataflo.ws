@@ -167,8 +167,9 @@ try {
 	window.$stash        = {};
 	window.$global       = window;
 	try {
-		if (PhoneGap || Cordova || cordova) window.$isPhoneGap = true;
+		if (window.PhoneGap || window.Cordova || window.cordova) window.$isPhoneGap = true;
 	} catch (e) {
+		console.log (e);
 		window.$isPhoneGap = false;
 	}
 }
