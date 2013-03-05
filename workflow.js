@@ -210,6 +210,7 @@ var workflow = module.exports = function (config, reqParam) {
 	this.tasks = config.tasks.map (function (taskParams) {
 		var task;
 
+		var originalTaskConfig = JSON.parse(JSON.stringify(taskParams));
 		var actualTaskParams;
 		var taskTemplateName = taskParams.$template;
 		if (self.templates && self.templates[taskTemplateName]) {
@@ -290,6 +291,7 @@ var workflow = module.exports = function (config, reqParam) {
 
 			try {
 				task = new xTaskClass ({
+					originalConfig: originalTaskConfig,
 					className: taskClassName,
 					method:    actualTaskParams.method || actualTaskParams.$method,
 					require:   checkRequirements,
@@ -386,6 +388,7 @@ var workflow = module.exports = function (config, reqParam) {
 			});
 
 			task = new xTaskClass ({
+				originalConfig: originalTaskConfig,
 				functionName: taskFnName,
 				logTitle:     actualTaskParams.logTitle || actualTaskParams.$logTitle,
 				require:      checkRequirements,
@@ -589,8 +592,21 @@ util.extend (workflow.prototype, {
 		this.log (task.logTitle,  "("+task.state+")",  msg);
 	},
 	logTaskError: function (task, msg, options) {
-		// TODO: fix by using console.error
-		this.log(task.logTitle, "("+task.state+") \x1B[0;31m" + msg, options || '', "\x1B[0m");
+		var lastFrame = '';
+		if (options && options.stack) {
+			var frames = options.stack.split('\n');
+			var len = frames.length;
+			if (frames.length > 1) {
+				lastFrame = frames[1].trim();
+			}
+		}
+
+		this.log(
+			task.logTitle,
+			'(' + task.state + ') ',
+			'\x1B[0;31m' + msg, options || '', '\x1B[0m',
+			lastFrame
+		);
 	},
 	logError: function (task, msg, options) {
 		// TODO: fix by using console.error
@@ -612,14 +628,14 @@ util.extend (workflow.prototype, {
 
 		task.on ('error', function (e) {
 			self.error = e;
-			self.logTaskError (task, 'error: ', e);// + '\n' + arguments[0].stack);
+			self.logTaskError (task, 'error: ', e);
 		});
 
 		// states
 		task.on ('skip', function () {
 //			if (task.important) {
 //				self.failed = true;
-//				return self.logTaskError (task, 'error ' + arguments[0]);// + '\n' + arguments[0].stack);
+//				return self.logTaskError (task, 'error ' + arguments[0]);
 //			}
 			self.logTask (task, 'task skipped');
 
@@ -663,5 +679,7 @@ util.extend (workflow.prototype, {
 
 	}
 });
+
+workflow.isEmpty = isEmpty;
 
 });

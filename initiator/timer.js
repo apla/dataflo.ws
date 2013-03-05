@@ -1,6 +1,6 @@
-var EventEmitter   = require ('events').EventEmitter,
-	Workflow       = require ('workflow');
-var util = require('util');
+var EventEmitter = require ('events').EventEmitter,
+	util         = require ('util'),
+	workflow     = require ('../workflow');
 
 var timeri = module.exports = function (config) {
 	var self = this;
@@ -11,44 +11,41 @@ var timeri = module.exports = function (config) {
 	// 3. using interval, in milliseconds (every: 1000)
 
 	this.workflows = config.workflows;
-	this.wfRequire = config.wfRequire || {time: new Date()};
+	this.wfRequire = config.wfRequire || {time: new Date(), data: {}};
 
 	this.ready ();
 }
 
 util.inherits (timeri, EventEmitter);
 
-util.extend (timeri.prototype, {
+timeri.prototype.ready = function () {
 
-	ready: function () {
+	var self = this;
 
-		var self = this;
+	self.workflows.map(function (workflowParams) {
 
-		self.workflows.map(function (workflowParams) {
+		var closure = function () {
 
-			var closure = function () {
+			var wf = new workflow (
+				util.extend (true, {}, workflowParams),
+				self.wfRequire
+			);
 
-				var workflow = new Workflow (
-					util.extend (true, {}, workflowParams),
-					self.wfRequire
-				);
+			wf.run ();
 
-				workflow.run ();
+		};
 
-			};
+		if (workflowParams.interval) {
 
-			if (workflowParams.interval) {
+			setInterval (closure, workflowParams.interval);
+			if (workflowParams.startRun) setTimeout(closure, 0);
 
-				setInterval (closure, workflowParams.interval);
-				if (workflowParams.startRun) setTimeout(closure, 0);
+		} else if (workflowParams.timeout) {
 
-			} else if (workflowParams.timeout) {
+			setTimeout (closure, workflowParams.timeout);
 
-				setTimeout (closure, workflowParams.timeout);
+		}
+	});
 
-			}
-		});
-
-		self.emit ('ready', this);
-	}
-});
+	self.emit ('ready', this);
+}

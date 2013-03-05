@@ -1,5 +1,7 @@
-workflow processing for node.js
-===============================
+*dataflo.ws*: workflow processing for node.js
+=============================================
+
+![dataflo.ws logo](http://i.imgur.com/DxczKN2.png)
 
 example
 -------------------------------

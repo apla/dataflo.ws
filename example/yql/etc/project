@@ -1,10 +1,14 @@
 // json
-{
+ {
 	"requires": [ "misc" ],
 
 	"daemon": {
 		"yql": {
 			"initiator": [ "http", "repl" ]
+		},
+
+		"fs": {
+			"initiator": [ "fs-watch" ]
 		}
 	},
 
@@ -19,6 +23,53 @@
 				"code":"404",
 				"presenter":"templates/404.html"
 			}, {
+				"path": "test",
+				"tasks":[
+					{
+						"$function":"Array",
+						"$args":["data", "must", "flow"],
+						"$set":"data.testArr"
+					},
+					{
+						"$every":"{$data.testArr}",
+						"$collect":"result",
+						"url": "{$request.url.href}",
+						"$tasks":[{
+							"$function":"console.print",
+							"$args":[
+								"Running $every: index: {#every.index},",
+								"item: {#every.item},",
+								"url: {#every.url}"
+							]
+						}, {
+							"$function":"toUpperCase",
+							"$origin":"{#every.item}",
+							"$set":"result"
+						}],
+						"$set":"data.upcaseArr"
+					},
+					{
+						"$function":"console.print",
+						"$args":[
+							"$every result: %s",
+							"{$data.upcaseArr}"
+						]
+					},
+					{
+						"$function":"Array.prototype.join",
+						"$args":[" "],
+						"$scope":"{$data.upcaseArr}",
+						"$set":"data.resultMessage"
+					}
+				],
+				"presenter":{
+					"type":"json",
+					"vars":{
+						"result": "{$data.resultMessage}"
+					}
+				}
+			},
+			{
 				"path": "entity/search",
 				"workflows": [{
 					"path":"yql",
@@ -30,7 +81,7 @@
 						},
 						{
 							"$function":"print",
-							"$args":"{$data.post.fields}",
+							"$args":["Form params:", "{$data.post.fields}"],
 							"$origin":"{$global.console}"
 						},
 						{
@@ -45,18 +96,16 @@
 							"$set":"data.sanitizedText"
 						},
 						{
-							"$function":"encodeURIComponent",
-							"$args":[
-"select * from contentanalysis.analyze where text=\"{$data.sanitizedText}\""
-							],
-							"$set":"data.yql"
-						},
-						{
-							"$class":"download",
+							"$class":"remoteResource",
+							"method":"toBuffer",
 							"timeout":10000,
 							"retries":5,
-							"url":
-"http://query.yahooapis.com/v1/public/yql?format=json&q={$data.yql}",
+							"url":"http://query.yahooapis.com/v1/public/yql",
+							"query":{
+								"format":"json",
+								"q":
+"select * from contentanalysis.analyze where text=\"{$data.sanitizedText}\""
+							},
 							"$set":"data.results"
 						}, {
 							"$function":"formatData",
@@ -80,6 +129,21 @@
 
 		"repl": {
 			"port": 4005
+		},
+
+		"fs-watch": {
+			"workflows": [{
+				"dir": "cache",
+				"tasks": [{
+					"$function": "console.print",
+					"$args": [ "watching cache", "{$data.fsEvent}" ]
+				}]
+			}, {
+				"tasks": [{
+					"$function": "console.print",
+					"$args": [ "watching root", "{$data.fsEvent}" ]
+				}]
+			}]
 		}
 	}
 }
