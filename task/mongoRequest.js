@@ -998,7 +998,13 @@ util.extend (mongoRequestTask.prototype, {
 				if (err) {
 					self.failed(err);
 				} else {
-					self.completed(coll);
+					var data = coll.documents[0];
+					self.completed({
+						success: !!data.ok,
+						err: data.errmsg,
+						total: data.counts && data.counts.output,
+						data: data.results
+					});
 				}
 			});
 		});
