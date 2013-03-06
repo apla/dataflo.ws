@@ -972,8 +972,6 @@ util.extend (mongoRequestTask.prototype, {
  * @param {Objects} [options] options for the map reduce job.
  * @param {Function} callback returns the result of the map reduce job, (error, results, [stats])
  * @return {null}
- * @api public
- * function mapReduce (map, reduce, options, callback)
  */
 
 	mapReduce: function () {
@@ -994,7 +992,7 @@ util.extend (mongoRequestTask.prototype, {
 				reduce: self.reduce.toString(),
 
 				out: { inline: 1 },
-				query: self.pager.filter
+				query: self.pager && self.pager.filter || {}
 			},
 			function (err, coll) {
 				if (err) {
