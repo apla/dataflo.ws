@@ -255,7 +255,7 @@ util.extend (mongoRequestTask.prototype, {
 		// we need to return {data: []}
 
 		// open collection
-		self._openCollection (function (err, collection) {
+		self._openColOrFail(function (collection) {
 			var filter = self.filter,
 				options = self.options || {},
 				sort = self.sort || (self.pager && self.pager.sort) || {};
@@ -977,36 +977,21 @@ util.extend (mongoRequestTask.prototype, {
 	mapReduce: function () {
 		var self = this;
 
-		var db = this._getConnector();
+		var options = {
+			out: { inline: 1 }
+		};
 
-		db.open(function (err, db) {
-			if (err) {
-				self.failed(err);
-				return;
-			}
+		var filter = (this.pager && this.pager.filter) ?
+			this.pager.filter : this.filter;
+		if (filter) {
+			options.query = filter;
+		}
 
-			db.executeDbCommand({
-				mapreduce: self.collection,
-
-				map: self.map.toString(),
-				reduce: self.reduce.toString(),
-
-				out: { inline: 1 },
-				query: self.pager && self.pager.filter || {}
-			},
-			function (err, coll) {
-				if (err) {
-					self.failed(err);
-				} else {
-					var data = coll.documents[0];
-					self.completed({
-						success: !!data.ok,
-						err: data.errmsg,
-						total: data.counts && data.counts.output,
-						data: data.results
-					});
-				}
-			});
+		this._openColOrFail(function (collection) {
+			collection.mapReduce(
+				self.map, self.reduce, options,
+				self._onResult.bind(self)
+			);
 		});
 	},
 
@@ -1024,9 +1009,14 @@ util.extend (mongoRequestTask.prototype, {
 		if (err) {
 			this.failed();
 		} else {
-			this.completed(data);
+			this.completed({
+				success: true,
+				err: data && data.errmsg,
+				data: data,
+				total: data ? data.length : 0
+			});
 
-			if (!data || 0 === data.length) {
+			if (!data || 0 == data.length) {
 				this.empty();
 			}
 		}
@@ -1039,14 +1029,7 @@ util.extend (mongoRequestTask.prototype, {
 	},
 
 	GET: function () {
-		this._openColOrFail(function (collection) {
-			collection.find(
-				this.query   || {},
-				this.fields  || {},
-				this.options || {},
-				this._onResult.bind(this)
-			);
-		});
+		this.run();
 	},
 
 	POST: function () {

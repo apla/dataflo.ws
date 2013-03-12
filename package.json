@@ -1,7 +1,7 @@
 {
   "name": "dataflo.ws",
   "description": "Zero-code JSON config-based workflow engine for Node, PhoneGap and browser.",
-  "version": "0.0.29",
+  "version": "0.0.30",
   "keywords": [
     "flow-based-programming",
     "workflow",
@@ -19,7 +19,7 @@
   "devDependencies": {
     "utest": "*"
   },
-  "homepage": "http://apla.github.com/workflow.js/",
+  "homepage": "https://github.com/apla/dataflo.ws",
   "author": "https://github.com/apla/",
   "main": "index.js",
   "directories": {
