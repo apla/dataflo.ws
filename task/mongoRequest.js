@@ -219,6 +219,10 @@ util.extend (mongoRequestTask.prototype, {
 		});
 	},
 
+	objectId: function () {
+		this.completed(this._objectId(this.id));
+	},
+
 	// private method to create ObjectID
 
 	_objectId: function (hexString) {
