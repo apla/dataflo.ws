@@ -985,10 +985,15 @@ util.extend (mongoRequestTask.prototype, {
 			out: { inline: 1 }
 		};
 
-		var filter = (this.pager && this.pager.filter) ?
-			this.pager.filter : this.filter;
+		var filter = (self.pager && self.pager.filter) ?
+			self.pager.filter : self.filter;
+		
 		if (filter) {
 			options.query = filter;
+		}
+		
+		if (self.scope) {
+			options.scope = self.scope;
 		}
 
 		this._openColOrFail(function (collection) {
