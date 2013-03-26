@@ -974,29 +974,16 @@ util.extend (mongoRequestTask.prototype, {
  * @param {Function|String} map the mapping function.
  * @param {Function|String} reduce the reduce function.
  * @param {Objects} [options] options for the map reduce job.
- * @param {Function} callback returns the result of the map reduce job, (error, results, [stats])
- * @return {null}
+ * @return {Objects} returns the result of the map reduce job, (error, results, [stats])
  */
 
 	mapReduce: function () {
 		var self = this;
 
-		var options = {
-			out: { inline: 1 }
-		};
+		var options = self.options || {};
+		options.out = { inline: 1 }; // override any external out defenition
 
-		var filter = (self.pager && self.pager.filter) ?
-			self.pager.filter : self.filter;
-		
-		if (filter) {
-			options.query = filter;
-		}
-		
-		if (self.scope) {
-			options.scope = self.scope;
-		}
-
-		this._openColOrFail(function (collection) {
+		self._openColOrFail(function (collection) {
 			collection.mapReduce(
 				self.map, self.reduce, options,
 				self._onResult.bind(self)
