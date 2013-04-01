@@ -16,7 +16,7 @@ util.extend (basic.prototype, {
 	run: function() {
 
 		var self = this;
-		self.failed('use method [render|checkExistAndRender|checkNoExistAndRender]');
+		self.failed('use method [render|checkExistAndRender|checkNoExistAndRender|logout]');
 
 	},
 
@@ -79,5 +79,13 @@ util.extend (basic.prototype, {
 			self.failed({status: 401, err: "User already exist", errCode: 3});
 
 		}
+	},
+	
+	logout: function() {
+		var self = this,
+			defaultRedirectUrl = self.redirectUrl,
+			query = self.req.query;
+		
+		self.completed(query.redirectUrl || defaultRedirectUrl || '/');
 	}
 });
