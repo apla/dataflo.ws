@@ -83,7 +83,7 @@ util.extend (basic.prototype, {
 	
 	logout: function() {
 		var self = this,
-			defaultRedirectUrl = self.redirectUrl,
+			defaultRedirectUrl = self.defaultRedirectUrl,
 			query = self.req.query;
 		
 		self.completed(query.redirectUrl || defaultRedirectUrl || '/');
