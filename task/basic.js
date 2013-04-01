@@ -84,8 +84,8 @@ util.extend (basic.prototype, {
 	logout: function() {
 		var self = this,
 			defaultRedirectUrl = self.defaultRedirectUrl,
-			query = self.req.query;
+			redirectUrl = self.req.query && self.req.query.redirectUrl;
 		
-		self.completed(query.redirectUrl || defaultRedirectUrl || '/');
+		self.completed(redirectUrl || defaultRedirectUrl || '/');
 	}
 });
