@@ -710,20 +710,21 @@ util.extend (mongoRequestTask.prototype, {
 		if (self.verbose) {
 			self.emit('log', 'remove called ', self.data);
 		}
+		
+		if (!Object.is('Array', self.data)) {
+			self.data = [self.data];
+		}
 
 		var ids = self.data.filter(function (item) {
 			return null != item._id;
 		}).map(function (item) {
-			return item._id;
+			return self._objectId(item._id);
 		});
 
 		self._openCollection(function (err, collection) {
-			if (!Object.is('Array', self.data)) {
-				self.data = [self.data];
-			}
-
+			
 			if (self.verbose) {
-				console.log('data for update', self.data);
+				console.log('data for remove', self.data);
 			}
 
 			collection.remove({
