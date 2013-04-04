@@ -4,6 +4,7 @@ var util			= require ('util'),
 	httpManager     = require ('./http/model-manager');
 
 var HTTPClient;
+
 try {
 	HTTPClient = require('follow-redirects').http;
 } catch (e) {
@@ -14,6 +15,21 @@ try {
 	);
 	HTTPClient = require('http');
 }
+
+var HTTPSClient;
+
+try {
+	HTTPSClient = require('follow-redirects').https;
+} catch (e) {
+	console.warn(
+		'Falling back to standard HTTPS client.',
+		'If you wnat to follow redirects,',
+		'install "follow-redirects" module.'
+	);
+	HTTPSClient = require('https');
+}
+
+// - - - - - - -
 
 var pipeProgress = function (config) {
 	this.bytesTotal = 0;
@@ -38,7 +54,7 @@ pipeProgress.prototype.watch = function () {
 /**
  * @class httpModel
  *
- * Wrapper of HTTPClient for serverside requesting.
+ * Wrapper of HTTP(S)Client for serverside requesting.
  *
  */
 var httpModel = module.exports = function (modelBase, optionalUrlParams) {
@@ -190,8 +206,10 @@ util.extend (httpModel.prototype, {
 
 	run: function () {
 		var self = this;
+		
+		var Client = (this.params.protocol == 'https:') ? HTTPSClient : HTTPClient;
 
-		var req = self.req = HTTPClient.request(this.params, function (res) {
+		var req = self.req = Client.request(this.params, function (res) {
 
 			self.res = res;
 
