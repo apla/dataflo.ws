@@ -180,6 +180,8 @@ util.extend (httpModel.prototype, {
 		});
 		params.href = urlUtils.format(params);
 
+		params.port = (this.params.protocol == 'https:') ? 443 : 80;
+
 		return params;
 	},
 
