@@ -740,6 +740,28 @@ util.extend (mongoRequestTask.prototype, {
 		});
 	},
 
+	removeAll: function () {
+		var self = this;
+
+		self.options = self.options || { safe: true };
+
+		if (self.verbose) {
+			self.emit('log', 'removeAll');
+		}
+		
+		self._openCollection(function (err, collection) {
+			collection.remove({
+			}, self.options, function (err, records) {
+				self.completed ({
+					err: err,
+					success: err == null,
+					total: records.length,
+					data: records
+				});
+			});
+		});
+	},
+
 	emitError: function (e) {
 		if (e) {
 			this.state = 5;
