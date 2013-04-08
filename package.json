@@ -13,7 +13,7 @@
     "url": "git://github.com/apla/dataflo.ws.git"
   },
   "dependencies": {
-    "formidable": "*",
+    "multiparty": "*",
     "mime": "*"
   },
   "devDependencies": {

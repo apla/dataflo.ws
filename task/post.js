@@ -1,6 +1,6 @@
 var util        = require ('util'),
 	qs			= require ('querystring'),
-	formidable  = require ('formidable'),
+	multiparty  = require ('multiparty'),
 	task        = require ('./base');
 
 
@@ -30,7 +30,7 @@ util.extend (postTask.prototype, {
 			contentType.match(/urlencoded/i) ||
 			(contentType.match(/multipart/i) && contentType.match(/boundary=(?:"([^"]+)"|([^;]+))/i))
 		) {
-			var form = new formidable.IncomingForm();
+			var form = new multiparty.Form();
 			// TODO: add support for parameters
 
 			form.on ('fileBegin', function (name, file) {
