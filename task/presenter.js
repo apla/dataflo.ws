@@ -47,7 +47,7 @@ util.extend (presenterTask.prototype, {
 		} catch (e) {}
 
 		if (httpStatic) {
-			var rootPath = project.root.path;console.print(rootPath);
+			var rootPath = project.root.path;
 			httpStatic = path.resolve(rootPath, httpStatic);
 
 			var dirName = filePath;
