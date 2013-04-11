@@ -47,8 +47,9 @@ util.extend (presenterTask.prototype, {
 		} catch (e) {}
 
 		if (httpStatic) {
-			httpStatic = path.resolve(httpStatic, rootPath);
-			var rootPath = project.root.path;
+			var rootPath = project.root.path;console.print(rootPath);
+			httpStatic = path.resolve(rootPath, httpStatic);
+
 			var dirName = filePath;
 
 			while (dirName != rootPath) {
@@ -76,8 +77,7 @@ util.extend (presenterTask.prototype, {
 			// warn if file is in static HTTP directory
 			if (self.isInStaticDir(theTemplate)) {
 				throw new Error(
-					'Publicly accessible template file at %s!',
-					theTemplate
+					'Publicly accessible template file at '+theTemplate+'!'
 				);
 			}
 
