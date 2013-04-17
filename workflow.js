@@ -527,7 +527,7 @@ util.extend (workflow.prototype, {
 				if (task.state != taskStateNames.scarce && task.state != taskStateNames.skipped)
 					return;
 				if (task.important) {
-					task.failed ("important task didn't started");
+					task.failed ("important task didn't start");
 					self.taskStates[taskStateNames.scarce]--;
 					self.taskStates[task.state]++;
 					self.failed = true;
