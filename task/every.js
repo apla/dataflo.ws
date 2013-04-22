@@ -67,6 +67,8 @@ util.extend(EveryTask.prototype, {
 						recur(branch, collect[key], k);
 					}
 				});
+			} else {
+				collect[key] = branch;
 			}
 		};
 
