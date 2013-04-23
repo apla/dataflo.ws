@@ -79,7 +79,7 @@ util.extend (twitter.prototype, {
 			twitterConfig.callbackUrl,
 			"HMAC-SHA1");
 
-		oa.getOAuthAccessToken(query.oauth_token, tokens.twitter_oauth_token_secret,
+		oa.getOAuthAccessToken(query.oauth_token, tokens.twitter_oauth_token_secret, query.oauth_verifier,
 			function(error, oauth_token, oauth_token_secret, additionalParameters ) {
 				if (error) {
 					self.failed(error);
