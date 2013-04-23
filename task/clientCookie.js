@@ -1,15 +1,15 @@
 var task         = require ('./base'),
 	util         = require ('util');
 
-var cleintCookie = module.exports = function (config) {
+var clientCookie = module.exports = function (config) {
 
 	this.init (config);
 
 };
 
-util.inherits (cleintCookie, task);
+util.inherits (clientCookie, task);
 
-util.extend (cleintCookie.prototype, {
+util.extend (clientCookie.prototype, {
 
 	run: function() {
 
@@ -58,6 +58,8 @@ util.extend (cleintCookie.prototype, {
 		});
 		
 		if (cookie.expires) cookie.expires = ~~(new Date(cookie.expires).getTime()/1000);
+		
+		if (!cookie.domain) cookie.domain = self.defaultDomain;
 
 		return cookie;
 	},
