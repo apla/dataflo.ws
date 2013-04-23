@@ -30,11 +30,11 @@ util.extend (cookieParser.prototype, {
 		self.failed('use method [parse|render|session]');
 
 	},
-
+	
 	parse: function () {
 
 		var self = this;
-
+		
 		var cookies = self.headers.cookie ? self.headers.cookie : null;
 		var cookiesObj = {length:0};
 
@@ -67,7 +67,7 @@ util.extend (cookieParser.prototype, {
 
 		self.completed (cookies);
 	},
-
+	
 	serializeCookie: function(cookie) {
 
 		var pairs = [cookie.name + '=' + encodeURIComponent(cookie.value)];
@@ -96,7 +96,7 @@ util.extend (cookieParser.prototype, {
 
 		return pairs.join('; ');
 	},
-
+	
 	session: function () {
 
 		var self = this;

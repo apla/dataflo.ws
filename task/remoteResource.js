@@ -56,34 +56,47 @@ util.extend (cacheTask.prototype, {
 		}
 
 		self.url.headers = self.headers || {};
-
-		if (self.post) {
-			var postType = Object.typeOf(self.post);
-
-			if ('String' == postType || 'Buffer' == postType) {
-				// so we got somethin in string
-				// content type and length must be defined
-				if (!self.url.headers['content-type']) {
-					self.emitError ('you must define content type when submitting plain string as post data parameter');
-					return;
-				}
-				self.url.headers['content-length'] = self.post.length;
-				self.url.body = self.post;
-			} else if ('Object' == postType) {
+		
+		var contentType = self.url.headers['content-type'],
+			postType = Object.typeOf(self.post);
+		
+		// default object encoding form-urlencoded
+		if (!contentType && postType == 'Object') {
+			contentType = self.url.headers['content-type']   = 'application/x-www-form-urlencoded';
+		} else if (!contentType) {
+			contentType = 'undefined';
+		}
+		
+		switch (contentType) {
+			
+			case 'application/x-www-form-urlencoded':
 				self.url.body = querystring.stringify (self.post);
 				self.url.headers['content-length'] = self.url.body.length;
-				self.url.headers['content-type']   = 'application/x-www-form-urlencoded';
-			} else if ('Array' == postType) {
-				// TODO: multipart
+				break;
+			case 'application/json':
+				self.url.body = JSON.stringify (self.jsonData);
+				self.url.headers['content-length'] = self.url.body.length;
+				break;
+			case 'multipart/mixed':
+			case 'multipart/alternate':
 				self.emitError ('multipart not yet implemented');
 				return;
-
-			} else {
-				self.emitError ('something wrong with post data. you must supply string, object or array');
+				break;
+			case 'undefined':
+				self.emitError ('you must define content type when submitting plain string as post data parameter');
 				return;
-			}
-			// if (self.post is plain Object)
-			// if (self.post is a string)
+				break;
+			case default:
+				if (!self.url.headers['content-length']) {
+					if (postType == 'String' || postType == 'Buffer') {
+						self.url.headers['content-length'] = self.post.length;
+					} else {
+						self.emitError ('you must define content-length when submitting plain string as post data parameter');
+						return;
+					}
+				}
+				break;
+		
 		}
 
 		self.model = new urlModel(self.url, self);
