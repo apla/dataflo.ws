@@ -74,7 +74,7 @@ util.extend (cacheTask.prototype, {
 				self.url.headers['content-length'] = self.url.body.length;
 				break;
 			case 'application/json':
-				self.url.body = JSON.stringify (self.jsonData);
+				self.url.body = JSON.stringify (self.post);
 				self.url.headers['content-length'] = self.url.body.length;
 				break;
 			case 'multipart/mixed':
