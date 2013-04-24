@@ -287,6 +287,7 @@ function loadIncludes(config, cb, level) {
 	}
 
 	function onError(err) {
+		console.log('[WARNING] Level:', level, 'is not correct.\nError:', err);
 		cb(err, config);
 	}
 

@@ -133,11 +133,11 @@ synopsis
 		"workflows": [{
 			"url": "/save",
 			"tasks": [{
-				"className": "post",
+				"$class": "post",
 				"request": "{$request}",
-				"produce": "data.body"
+				$set: "data.body"
 			}, {
-				"className": "render",
+				"$class": "render",
 				"type": "json",
 				"data": "{$data.body}",
 				"output": "{$response}"
@@ -145,12 +145,12 @@ synopsis
 		}, {
 			"url": "/entity/tickets/list.json",
 			"tasks": [{
-				"className":  "mongoRequest",
+				"$class":  "mongoRequest",
 				"connector":  "mongo",
 				"collection": "messages",
-				"produce":    "data.filter"
+				$set:    "data.filter"
 			}, {
-				"className": "render",
+				"$class": "render",
 				"type": "json",
 				"data": "{$data.filter}",
 				"output": "{$response}"
