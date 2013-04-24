@@ -86,7 +86,7 @@ util.extend (cacheTask.prototype, {
 				self.emitError ('you must define content type when submitting plain string as post data parameter');
 				return;
 				break;
-			case default:
+			default:
 				if (!self.url.headers['content-length']) {
 					if (postType == 'String' || postType == 'Buffer') {
 						self.url.headers['content-length'] = self.post.length;
@@ -96,7 +96,6 @@ util.extend (cacheTask.prototype, {
 					}
 				}
 				break;
-		
 		}
 
 		self.model = new urlModel(self.url, self);
