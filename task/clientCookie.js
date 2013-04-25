@@ -26,13 +26,30 @@ util.extend (clientCookie.prototype, {
 		
 		var cookies = self.headers['set-cookie'] ? self.headers['set-cookie'] : [];
 		
-		var cookiesArr = cookies.map (function(item) {
+		if (self.hashMap) {
+		
+			var cookiesObj = {};
+			
+			cookies.forEach (function(item) {
+				
+				item = self.deserializeCookie(item);
+				cookiesObj[item.name] = item;
 
-			return self.deserializeCookie(item);
+			});
 
-		});
+			self.completed (cookiesObj);
+		
+		} else {
+		
+			var cookiesArr = cookies.map (function(item) {
 
-		self.completed (cookiesArr);
+				return self.deserializeCookie(item);
+
+			});
+
+			self.completed (cookiesArr);
+			
+		}
 		
 	},
 	
