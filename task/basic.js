@@ -26,11 +26,7 @@ util.extend (basic.prototype, {
 			user = self.user,
 			sessionUID = self.sessionUID;
 
-		var index = user.sessionUIDs.indexOf(sessionUID);
-
-		if (index == -1) {
-			user.sessionUIDs.push(sessionUID);
-		}
+		user.sessionUIDs = sessionUID;
 
 		self.completed(user);
 	},
