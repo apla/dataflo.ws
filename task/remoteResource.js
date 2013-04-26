@@ -163,7 +163,6 @@ util.extend (cacheTask.prototype, {
 				self.res.srcName = srcName ? srcName : "";
 				console.log("self.res -> ", self.res);*/
 				self.clearOperationTimeout();
-				delete project.caching[self.cacheFilePath];
 				// self.res.cacheFilePath = self.cacheFilePath
 				// self.completed (self.res);
 				self.finishWith ({data: self.download.data});
@@ -171,10 +170,7 @@ util.extend (cacheTask.prototype, {
 
 		}
 
-		if (self.isSameUrlLoading ())
-			return;
-
-		self.emit ('log', 'start caching from ' + self.url.href + ' to ' + self.cacheFilePath);
+		self.emit ('log', 'start caching from ' + self.url.href + ' to memory buffer');
 
 		self.activityCheck ('model.fetch start');
 		self.model.fetch ({to: self.download});
