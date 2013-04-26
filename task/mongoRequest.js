@@ -703,7 +703,8 @@ util.extend (mongoRequestTask.prototype, {
 
 
 	remove: function () {
-		var self = this;
+		var self = this,
+			ids;
 
 		self.options = self.options || { safe: true };
 
@@ -714,12 +715,26 @@ util.extend (mongoRequestTask.prototype, {
 		if (!Object.is('Array', self.data)) {
 			self.data = [self.data];
 		}
-
-		var ids = self.data.filter(function (item) {
+		
+		ids = self.data.filter(function (item) {
 			return null != item._id;
-		}).map(function (item) {
-			return self._objectId(item._id);
 		});
+		
+		if (self.data.length != ids.length && ids.length == 0) {
+			
+			ids = self.data.filter(function (id) {
+				return null != id;
+			}). map(function (id) {
+				return self._objectId(id);
+			});
+			
+		} else {
+			
+			ids = ids.map(function (item) {
+				return self._objectId(item._id);
+			});
+			
+		}
 
 		self._openCollection(function (err, collection) {
 			
