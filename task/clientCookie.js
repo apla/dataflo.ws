@@ -57,7 +57,8 @@ util.extend (clientCookie.prototype, {
 	
 	deserializeCookie: function(coockieStr) {
 
-		var pairs = coockieStr.split('; '),
+		var self = this,
+			pairs = coockieStr.split('; '),
 			cookie = {};
 		
 		var nameValue = pairs.shift().split('=');
