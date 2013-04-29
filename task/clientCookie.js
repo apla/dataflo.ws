@@ -25,6 +25,8 @@ util.extend (clientCookie.prototype, {
 		var self = this,
 			headers = self.headers || (self.response && self.response.headers) || null,
 			cookies = self.cookies || (headers && headers['set-cookie']) || '';
+			
+		if (cookies.constructor != Array)  cookies = [cookies];
 		
 		if (self.hashMap) {
 		
