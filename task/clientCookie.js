@@ -24,32 +24,32 @@ util.extend (clientCookie.prototype, {
 		
 		var self = this,
 			headers = self.headers || (self.response && self.response.headers) || null,
-			cookies = self.cookies || (headers && headers['set-cookie']) || '';
+			cookie = self.cookie || (headers && headers['set-cookie']) || '';
 			
-		if (cookies.constructor != Array)  cookies = [cookies];
+		if (cookie.constructor != Array)  cookie = [cookie];
 		
 		if (self.hashMap) {
 		
-			var cookiesObj = {};
+			var cookieObj = {};
 			
-			cookies.forEach (function(item) {
+			cookie.forEach (function(item) {
 				
 				item = self.deserializeCookie(item);
-				cookiesObj[item.name] = item;
+				cookieObj[item.name] = item;
 
 			});
 
-			self.completed (cookiesObj);
+			self.completed (cookieObj);
 		
 		} else {
 		
-			var cookiesArr = cookies.map (function(item) {
+			var cookieArr = cookie.map (function(item) {
 
 				return self.deserializeCookie(item);
 
 			});
 
-			self.completed (cookiesArr);
+			self.completed (cookieArr);
 			
 		}
 		
@@ -88,15 +88,15 @@ util.extend (clientCookie.prototype, {
 
 		var self = this;
 
-		var cookies = [];
+		var cookie = [];
 
-		self.cookies.map(function(cookie) {
+		self.cookie.map(function(item) {
 
-			cookies.push(cookie.name + '=' + encodeURIComponent(cookie.value));
+			cookie.push(item.name + '=' + encodeURIComponent(item.value));
 
 		});
 
-		self.completed (cookies);
+		self.completed (cookie);
 	}
 
 });
