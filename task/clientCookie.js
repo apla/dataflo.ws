@@ -22,9 +22,9 @@ util.extend (clientCookie.prototype, {
 	
 	parse: function() {
 		
-		var self = this;
-		
-		var cookies = self.headers['set-cookie'] ? self.headers['set-cookie'] : [];
+		var self = this,
+			headers = self.headers || (self.response && self.response.headers) || null,
+			cookies = self.cookies || (headers && headers['set-cookie']) || '';
 		
 		if (self.hashMap) {
 		
