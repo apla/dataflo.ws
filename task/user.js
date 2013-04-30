@@ -56,7 +56,6 @@ util.extend (userRender.prototype, {
 			user = {role: 'anonymous'};
 		}
 
-		self.request.user = user;
 		self.completed(user);
 	},
 
