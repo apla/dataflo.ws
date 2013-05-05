@@ -54,7 +54,11 @@ util.extend(EveryTask.prototype, {
 			var type = Object.typeOf(branch);
 
 			if ('String' == type) {
-				collect[key] = branch.replace(pattern, replacement);
+				if (origKey == key) {
+					collect[key] = branch;
+				} else {
+					collect[key] = branch.replace(pattern, replacement);
+				}
 			} else if ('Array' == type) {
 				collect[key] = [];
 				branch.forEach(function (_, k) {
@@ -63,9 +67,7 @@ util.extend(EveryTask.prototype, {
 			} else if ('Object' == type) {
 				collect[key] = {};
 				Object.keys(branch).forEach(function (k) {
-					if (origKey != k) {
-						recur(branch, collect[key], k);
-					}
+					recur(branch, collect[key], k);
 				});
 			} else {
 				collect[key] = branch;
