@@ -10,7 +10,7 @@ you can see a working example by running
 
 	npm install -g dataflo.ws
 	cd $NODE_PATH/dataflo.ws/example/yql/ # example project directory
-	dataflows daemon example
+	dataflows daemon yql
 
 abstract
 -------------------------------
