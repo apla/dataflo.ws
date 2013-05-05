@@ -17,7 +17,7 @@ util.extend(EveryTask.prototype, {
 	DEFAULT_CONFIG: {
 		$tasks: [],
 		$every: [],
-		$collect: 'every.result',
+		$collect: '',
 		$set: ''
 	},
 
@@ -25,18 +25,24 @@ util.extend(EveryTask.prototype, {
 		this.count += 1;
 
 		if (this.count >= this.$every.length) {
-			if (this.results.length) {
-				this.completed(this.results);
+			if (this.$collect) {
+				if (this.results.length) {
+					this.completed(this.results);
+				} else {
+					this.failed('No results');
+				}
 			} else {
-				this.failed('No results');
+				this.completed({ ok: true });
 			}
 		}
 	},
 
 	_onCompleted: function (wf) {
-		var result = wf[this.$collect];
-		if (!workflow.isEmpty(result)) {
-			this.results.push(result);
+		if (this.$collect) {
+			var result = wf[this.$collect];
+			if (!workflow.isEmpty(result)) {
+				this.results.push(result);
+			}
 		}
 		this.onWorkflowResult();
 	},
