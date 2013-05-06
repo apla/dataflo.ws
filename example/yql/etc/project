@@ -35,19 +35,19 @@
 					},
 					{
 						"$every":"{$data.testArr}",
-						"$collect":"result1",
+						"$collect":"data.result1",
 						"$tasks":[{
 							"$every":"{#every.item}",
 							"$collect":"result2",
 							"$tasks":[{
 								"$function":"toUpperCase",
 								"$origin":"{#every.item}",
-								"$set":"result2"
+								"$set":"data.result2"
 							}, {
 								"$function":"console.print",
 								"$args":[
 									"Running $every: index: {#every.index},",
-									"item: {#result2}"
+									"item: {#data.result2}"
 								]
 							}],
 							"$set":"result1"
