@@ -56,19 +56,19 @@ util.extend (cacheTask.prototype, {
 		}
 
 		self.url.headers = self.headers || {};
-		
-		var contentType = self.url.headers['content-type'],
-			postType = Object.typeOf(self.post);
-		
-		// default object encoding form-urlencoded
-		if (!contentType && postType == 'Object') {
-			contentType = self.url.headers['content-type']   = 'application/x-www-form-urlencoded';
-		} else if (!contentType) {
-			contentType = 'undefined';
-		}
-		
-		switch (contentType) {
-			
+
+		if (self.post) {
+			var contentType = self.url.headers['content-type'],
+				postType = Object.typeOf(self.post);
+
+			// default object encoding form-urlencoded
+			if (!contentType && postType == 'Object') {
+				contentType = self.url.headers['content-type']   = 'application/x-www-form-urlencoded';
+			} else if (!contentType) {
+				contentType = 'undefined';
+			}
+
+			switch (contentType) {
 			case 'application/x-www-form-urlencoded':
 				self.url.body = querystring.stringify (self.post);
 				self.url.headers['content-length'] = self.url.body.length;
@@ -96,6 +96,7 @@ util.extend (cacheTask.prototype, {
 					}
 				}
 				break;
+			}
 		}
 
 		self.model = new urlModel(self.url, self);
