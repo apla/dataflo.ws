@@ -31,40 +31,40 @@
 							[ "data", "must", "flow" ],
 							[ "in", "nested", "loops" ]
 						],
-						"$set":"data.testArr"
+						"$set":"testArr"
 					},
 					{
-						"$every":"{$data.testArr}",
-						"$collect":"data.result1",
+						"$every":"{$testArr}",
+						"$collect":"result1",
 						"$tasks":[{
 							"$every":"{#every.item}",
-							"$collect":"data.result2",
+							"$collect":"result2",
 							"$tasks":[{
 								"$function":"toUpperCase",
 								"$origin":"{#every.item}",
-								"$set":"data.result2"
+								"$set":"result2"
 							}, {
 								"$function":"console.print",
 								"$args":[
 									"Running $every: index: {#every.index},",
-									"item: {#data.result2}"
+									"item: {#result2}"
 								]
 							}],
-							"$set":"data.result1"
+							"$set":"result1"
 						}],
-						"$set":"data.mappedArr"
+						"$set":"mappedArr"
 					},
 					{
 						"$function":"Array.prototype.join",
 						"$args":[" "],
-						"$scope":"{$data.mappedArr}",
-						"$set":"data.resultMessage"
+						"$scope":"{$mappedArr}",
+						"$set":"resultMessage"
 					}
 				],
 				"presenter":{
 					"type":"json",
 					"vars":{
-						"result":"{$data.resultMessage}"
+						"result":"{$resultMessage}"
 					}
 				}
 			},
@@ -76,23 +76,23 @@
 						{
 							"$class":"post",
 							"request":"{$request}",
-							"$set":"data.post"
+							"$set":"post"
 						},
 						{
 							"$function":"print",
-							"$args":["Form params:", "{$data.post.fields}"],
+							"$args":["Form params:", "{$post.fields}"],
 							"$origin":"{$global.console}"
 						},
 						{
 							"$function":"String.prototype.trim",
-							"$scope":"{$data.post.fields.q}",
+							"$scope":"{$post.fields.q}",
 							"$args":[],
-							"$set":"data.trimmedText"
+							"$set":"trimmedText"
 						},
 						{
 							"$function":"stripTags",
-							"$args":["{$data.trimmedText}"],
-							"$set":"data.sanitizedText"
+							"$args":["{$trimmedText}"],
+							"$set":"sanitizedText"
 						},
 						{
 							"$class":"remoteResource",
@@ -103,23 +103,23 @@
 							"query":{
 								"format":"json",
 								"q":
-"select * from contentanalysis.analyze where text=\"{$data.sanitizedText}\""
+"select * from contentanalysis.analyze where text=\"{$sanitizedText}\""
 							},
-							"$set":"data.results"
+							"$set":"results"
 						}, {
 							"$function":"formatData",
-							"$args":["{$data.results}"],
-							"$set":"data.items"
+							"$args":["{$results}"],
+							"$set":"items"
 						}, {
 							"$function":"console.print",
-							"$args":["{$data.items}"]
+							"$args":["{$items}"]
 						}
 					],
 					"presenter":{
 						"file":"templates/results.ejs",
 						"vars":{
-							"items":"{$data.items}",
-							"text":"{$data.sanitizedText}"
+							"items":"{$items}",
+							"text":"{$sanitizedText}"
 						}
 					}
 				}]
@@ -135,12 +135,12 @@
 				"dir": "cache",
 				"tasks": [{
 					"$function": "console.print",
-					"$args": [ "watching cache", "{$data.fsEvent}" ]
+					"$args": [ "watching cache", "{$fsEvent}" ]
 				}]
 			}, {
 				"tasks": [{
 					"$function": "console.print",
-					"$args": [ "watching root", "{$data.fsEvent}" ]
+					"$args": [ "watching root", "{$fsEvent}" ]
 				}]
 			}]
 		}

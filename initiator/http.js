@@ -187,6 +187,8 @@ httpdi.prototype.createPresenter = function (wf, request, response, state) {
 		tasks.push (presenter);
 	}
 
+	wf.data.request = request;
+
 	var presenterWf = new workflow ({
 		id:    wf.id,
 		tasks: tasks,

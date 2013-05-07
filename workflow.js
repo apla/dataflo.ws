@@ -226,8 +226,7 @@ var workflow = module.exports = function (config, reqParam) {
 
 		var checkRequirements = function () {
 
-			var dict    = util.extend(true, {}, reqParam);
-			dict.data   = self.data;
+			var dict    = util.extend(true, self.data, reqParam);
 			dict.global = $global;
 			dict.appMain = $mainModule.exports;
 
@@ -657,9 +656,9 @@ util.extend (workflow.prototype, {
 
 			if (result) {
 				if (t.produce || t.$set) {
-					common.pathToVal (self, t.produce || t.$set, result);
+					common.pathToVal (self.data, t.produce || t.$set, result);
 				} else if (t.$mergeWith) {
-					common.pathToVal (self, t.$mergeWith, result, common.mergeObjects);
+					common.pathToVal (self.data, t.$mergeWith, result, common.mergeObjects);
 				}
 			}
 
@@ -673,7 +672,7 @@ util.extend (workflow.prototype, {
 
 		task.on('empty', function (t) {
 			if (t.$empty) {
-				common.pathToVal(self, t.$empty, true);
+				common.pathToVal(self.data, t.$empty, true);
 			}
 		});
 
