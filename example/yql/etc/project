@@ -24,48 +24,7 @@
 				"presenter":"templates/404.html"
 			}, {
 				"path":"test",
-				"tasks":[
-					{
-						"$function":"Array",
-						"$args":[
-							[ "data", "must", "flow" ],
-							[ "in", "nested", "loops" ]
-						],
-						"$set":"testArr"
-					},
-					{
-						"$every":"{$testArr}",
-						"$collect":"result1",
-						"$tasks":[{
-							"$every":"{#every.item}",
-							"$collect":"result2",
-							"$tasks":[{
-								"$function":"toUpperCase",
-								"$origin":"{#every.item}",
-								"$set":"result2"
-							},
-							{
-								"$function":"console.print",
-								"$args":"{$request.url.path}"
-							},
-							{
-								"$function":"console.print",
-								"$args":[
-									"Running $every: index: {#every.index},",
-									"item: {#result2}"
-								]
-							}],
-							"$set":"result1"
-						}],
-						"$set":"mappedArr"
-					},
-					{
-						"$function":"Array.prototype.join",
-						"$args":[" "],
-						"$scope":"{$mappedArr}",
-						"$set":"resultMessage"
-					}
-				],
+				"tasks":"<entity/test>",
 				"presenter":{
 					"type":"json",
 					"vars":{
@@ -135,19 +94,6 @@
 			"port": 4005
 		},
 
-		"fs-watch": {
-			"workflows": [{
-				"dir": "cache",
-				"tasks": [{
-					"$function": "console.print",
-					"$args": [ "watching cache", "{$fsEvent}" ]
-				}]
-			}, {
-				"tasks": [{
-					"$function": "console.print",
-					"$args": [ "watching root", "{$fsEvent}" ]
-				}]
-			}]
-		}
+		"fs-watch": "<fs-watch>"
 	}
 }
