@@ -60,7 +60,7 @@ util.extend(EveryTask.prototype, {
 		this.onWorkflowResult();
 	},
 
-	unquote: function unquote(tree, origKey) {
+	unquote: function unquote(source, dest, origKey) {
 		var pattern = /{#(.+?)}/g;
 		var replacement = '{$$$1}'; // get rich or die trying
 
@@ -71,33 +71,30 @@ util.extend(EveryTask.prototype, {
 			if ('String' == type) {
 				collect[key] = branch.replace(pattern, replacement);
 			} else if ('Array' == type) {
-				collect[key] = [];
 				branch.forEach(function (_, k) {
 					recur(branch, collect[key], k);
 				});
 			} else if ('Object' == type) {
-				collect[key] = {};
 				Object.keys(branch).forEach(function (k) {
-					if (origKey == k) {
-						collect[key][k] = branch[k];
-					} else {
+					if (origKey != k) {
 						recur(branch, collect[key], k);
 					}
 				});
-			} else {
-				collect[key] = branch;
 			}
 		};
 
-		var collect = {};
-		recur(tree, collect, origKey);
-		return collect[origKey];
+		recur(source, dest, origKey);
 	},
 
 	run: function () {
 		var self = this;
 
-		var tasks = this.unquote(self.originalConfig, '$tasks');
+        /**
+         * Walk the original config tree and replace {#...} with {$...},
+         * modifying the interpolated config tree (i.e. `this').
+         * Don't touch {#...} refs in nested $every tasks.
+         */
+		this.unquote(this.originalConfig, this, '$tasks');
 
 		// keys that will be exposed in `every' object
 		var keys = Object.keys(self).filter(function (key) {
@@ -117,7 +114,7 @@ util.extend(EveryTask.prototype, {
 			});
 
 			var wf = new workflow({
-				tasks: tasks
+				tasks: self.$tasks
 			}, {
 				every: every
 			});
