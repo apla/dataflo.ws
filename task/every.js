@@ -21,6 +21,15 @@ util.extend(EveryTask.prototype, {
 		$set: ''
 	},
 
+	getProperty: function (obj, path) {
+		var val = obj;
+		var hasProp = path.split('.').every(function (prop) {
+			val = val[prop];
+			return null != val;
+		});
+		return hasProp ? val : undefined;
+	},
+
 	onWorkflowResult: function () {
 		this.count += 1;
 
@@ -39,8 +48,9 @@ util.extend(EveryTask.prototype, {
 
 	_onCompleted: function (wf) {
 		if (this.$collect) {
-			var result = wf[this.$collect];
-			if (!workflow.isEmpty(result)) {
+			var result = this.getProperty(wf, this.$collect);
+			console.print(wf.data, this.$collect, result);
+			if (undefined !== result && !workflow.isEmpty(result)) {
 				this.results.push(result);
 			}
 		}

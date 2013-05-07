@@ -23,7 +23,7 @@
 				"code":"404",
 				"presenter":"templates/404.html"
 			}, {
-				"path": "test",
+				"path":"test",
 				"tasks":[
 					{
 						"$function":"Array",
@@ -38,7 +38,7 @@
 						"$collect":"data.result1",
 						"$tasks":[{
 							"$every":"{#every.item}",
-							"$collect":"result2",
+							"$collect":"data.result2",
 							"$tasks":[{
 								"$function":"toUpperCase",
 								"$origin":"{#every.item}",
@@ -50,7 +50,7 @@
 									"item: {#data.result2}"
 								]
 							}],
-							"$set":"result1"
+							"$set":"data.result1"
 						}],
 						"$set":"data.mappedArr"
 					},
@@ -64,7 +64,7 @@
 				"presenter":{
 					"type":"json",
 					"vars":{
-						"result": "{$data.resultMessage}"
+						"result":"{$data.resultMessage}"
 					}
 				}
 			},
