@@ -187,18 +187,17 @@ httpdi.prototype.createPresenter = function (wf, request, response, state) {
 		tasks.push (presenter);
 	}
 
-	wf.data.request = request;
+	var reqParams = util.extend(true, {
+		error: wf.error,
+		request: request,
+		response: response
+	}, wf.data);
 
 	var presenterWf = new workflow ({
 		id:    wf.id,
 		tasks: tasks,
 		stage: 'presentation'
-	}, {
-		data:  wf.data,
-		error: wf.error,
-		request: request,
-		response: response
-	});
+	}, reqParams);
 	
 	presenterWf.on ('completed', function () {
 		//self.log ('presenter done');
