@@ -48,8 +48,7 @@ util.extend(EveryTask.prototype, {
 
 	_onCompleted: function (wf) {
 		if (this.$collect) {
-			var result = this.getProperty(wf, this.$collect);
-			console.print(wf.data, this.$collect, result);
+			var result = this.getProperty(wf.data, this.$collect);
 			if (undefined !== result && !workflow.isEmpty(result)) {
 				this.results.push(result);
 			}
