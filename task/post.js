@@ -25,11 +25,9 @@ util.extend (postTask.prototype, {
 			return self.skipped ();
 
 		var contentType = self.request.headers['content-type'];
+		var multipartRe = /multipart|boundary=(?:"([^"]+)"|([^;]+))/i;
 
-		if (
-			contentType.match(/urlencoded/i) ||
-			(contentType.match(/multipart/i) && contentType.match(/boundary=(?:"([^"]+)"|([^;]+))/i))
-		) {
+		if (multipartRe.test(contentType)) {
 			var form = new multiparty.Form();
 			// TODO: add support for parameters
 
@@ -54,7 +52,7 @@ util.extend (postTask.prototype, {
 				self.emit ('log', 'form end');
 			});
 
-			form.parse(this.request, function(err, fields, files) {
+			form.parse(self.request, function(err, fields, files) {
 				self.completed ({err: err, fields: fields, files: files});
 			});
 		} else {
@@ -93,17 +91,17 @@ util.extend (postTask.prototype, {
 					try {
 						fields = qs.parse (self.data);
 					} catch (e) {
-						err == e;
+						err = e;
 					}
 				}
 
-				var body = (err) ? self.data : {fields: fields};
+				body = (err) ? self.data : {fields: fields};
 
 				self.completed (body);
 			});
 
 		}
-		
-		this.request.resume();
+
+		return self.request.resume();
 	}
 });
