@@ -17,6 +17,27 @@ var $global = common.$global;
 
 var taskStateNames = taskClass.prototype.stateNames;
 
+$global.Value = {};
+[ 'Number', 'String', 'Boolean', 'Array', 'Object' ].forEach(function (type) {
+	var protoConstructor = $global[type];
+	var constr = function constructor() {
+		Object.defineProperty(this, 'value', {
+			configurable: false,
+			enumerable: false,
+			writable: false,
+			value: protoConstructor.apply(this, arguments)
+		});
+	};
+	constr.prototype = Object.create(protoConstructor.prototype);
+	constr.prototype.valueOf = function () {
+		return this.value;
+	};
+	constr.prototype.toString = function () {
+		return this.valueOf().toString.apply(this.value, arguments);
+	};
+	$global.Value[type] = constr;
+});
+
 function isEmpty(obj) {
 	var type = Object.typeOf(obj);
 	return (
@@ -24,8 +45,7 @@ function isEmpty(obj) {
 		('Boolean'   == type && false === obj)             ||
 		('Number'    == type && (0 === obj || isNaN(obj))) ||
 		('String'    == type && 0 == obj.length)           ||
-		('Array'     == type && 0 == obj.length)           ||
-		('Object'    == type && 0 == Object.keys(obj).length)
+		('Array'     == type && 0 == obj.length)
 	);
 }
 

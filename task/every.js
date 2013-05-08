@@ -104,7 +104,7 @@ util.extend(EveryTask.prototype, {
 		this.$every.forEach(function (item, index, array) {
 			var every = {
 				item: item,
-				index: index + 1, // hello Lua
+				index: new Value.Number(index),
 				array: array
 			};
 
