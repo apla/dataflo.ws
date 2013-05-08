@@ -76,13 +76,14 @@ function checkTaskParams (params, dict, prefix) {
 					var tmp = val.interpolate (dict);
 					if (tmp === void 0)
 						modifiedParams.push(val);
-					else
+					else {
 						modifiedParams.push(tmp);
+						if (isEmpty (tmp))
+							throw "EMPTY VALUE";
+					}
 
 //					console.log (val, ' interpolated to the "', modifiedParams[key], '" and ', isEmpty (modifiedParams[key]) ? ' is empty' : 'is not empty');
 
-					if (isEmpty (modifiedParams[modifiedParams.length-1]))
-						throw "EMPTY VALUE";
 				} catch (e) {
 					failedParams.push (prefix+'['+index+']');
 				}
@@ -108,12 +109,9 @@ function checkTaskParams (params, dict, prefix) {
 				try {
 					var tmp = modifiedParams[key] = val.interpolate (dict);
 
-
 					if (tmp === void 0) {
 						modifiedParams[key] = val;
-					}
-
-					if (isEmpty(modifiedParams[key])) {
+					} else if (isEmpty(tmp)) {
 						throw "EMPTY VALUE";
 					}
 
