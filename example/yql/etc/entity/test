@@ -26,7 +26,8 @@
 				"$function":"console.print",
 				"$args":[
 					"Running $every: index: {#every.index},",
-					"item: {#result2}"
+					"item: {#result2}",
+					"array: {$testArr}"
 				]
 			}],
 			"$set":"result1"

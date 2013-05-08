@@ -48,31 +48,6 @@ var dict = {
 	arr: ['a', 'b'],
 };
 
-test('findInterpolation', {
-	'simple': function() {
-		var result = common.findInterpolation (data);
-		console.log (result);
-		assert.deepEqual (result, {
-			boolExp: [ 'data.bool' ],
-			'checkFalse.falseExp': [ 'data.no' ],
-			'checkFalse.zeroExp': [ 'data.zero' ],
-			'checkFalse.emptyExp': [ 'data.empty' ],
-			'checkFalse.emptyArr': [ 'data.emptyArr' ],
-			'checkFalse.emptyObj': [ 'data.emptyObj' ],
-			'exception.stringExp2': [ 'badString' ],
-			'exception.nothing': [ 'erlkjgnwlekrjgn' ],
-			stringExp: [ 'data.string' ],
-			stringExp3: [ 'okString' ],
-			numberExp: [ 'data.number' ],
-			inlineExp: [ 'data.string', 'data.number' ],
-			arrayExp: [ 'arr' ],
-			objectExp: [ 'data' ],
-			'arrayExtExp.0': [ 'data' ],
-			'arrayExtExp.1': [ 'data.number' ]
-		});
-	}
-});
-
 test('check task requirements', {
 	'expandFailNoThrow': function() {
 		var result = checkTaskParams (data, dict);

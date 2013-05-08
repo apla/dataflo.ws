@@ -68,7 +68,7 @@ function taskRequirements (requirements, dict) {
 	return result;
 }
 
-function checkTaskParams (params, dict, prefix) {
+function checkTaskParams (params, dict, prefix, marks) {
 	// parse task params
 	// TODO: modify this function because recursive changes of parameters works dirty (indexOf for value)
 
@@ -93,7 +93,7 @@ function checkTaskParams (params, dict, prefix) {
 			if (Object.is('String', val)) { // string
 
 				try {
-					var tmp = val.interpolate (dict);
+					var tmp = val.interpolate (dict, marks);
 					if (tmp === void 0)
 						modifiedParams.push(val);
 					else
@@ -110,7 +110,9 @@ function checkTaskParams (params, dict, prefix) {
 			} else if (Object.typeOf(val) in AllowedValueTypes) {
 				modifiedParams.push(val);
 			} else {
-				var result = checkTaskParams(val, dict, prefix+'['+index+']');
+				var result = checkTaskParams(
+					val, dict, prefix+'['+index+']', marks
+				);
 
 				modifiedParams.push(result.modified);
 				failedParams = failedParams.concat (result.failed);
@@ -126,7 +128,8 @@ function checkTaskParams (params, dict, prefix) {
 
 			if (Object.is('String', val)) {
 				try {
-					var tmp = modifiedParams[key] = val.interpolate (dict);
+					var tmp = modifiedParams[key] =
+							val.interpolate(dict, marks);
 
 
 					if (tmp === void 0) {
@@ -147,7 +150,7 @@ function checkTaskParams (params, dict, prefix) {
 			} else if (Object.typeOf(val) in AllowedValueTypes) {
 				modifiedParams[key] = val;
 			} else { // val is hash || array
-				var result = checkTaskParams(val, dict, prefix+key);
+				var result = checkTaskParams(val, dict, prefix+key, marks);
 
 				modifiedParams[key] = result.modified;
 				failedParams = failedParams.concat (result.failed);
@@ -254,7 +257,7 @@ var workflow = module.exports = function (config, reqParam) {
 				dict.project = project;
 			}
 
-			var result = checkTaskParams (actualTaskParams, dict);
+			var result = checkTaskParams (actualTaskParams, dict, self.marks);
 
 			if (result.failed && result.failed.length > 0) {
 				this.unsatisfiedRequirements = result.failed;
