@@ -17,10 +17,12 @@ var $global = common.$global;
 
 var taskStateNames = taskClass.prototype.stateNames;
 
+$global = this;
 $global.Value = {};
 [ 'Number', 'String', 'Boolean', 'Array', 'Object' ].forEach(function (type) {
 	var protoConstructor = $global[type];
 	var constr = function constructor() {
+		this.constructor = constructor;
 		Object.defineProperty(this, 'value', {
 			configurable: false,
 			enumerable: false,
@@ -37,15 +39,23 @@ $global.Value = {};
 	};
 	$global.Value[type] = constr;
 });
+$global.Value.hasType = function hasType(obj) {
+	var origType = Object.typeOf(obj.valueOf());
+	var constr = $global.Value[origType];
+	return constr && constr == obj.constructor;
+};
 
 function isEmpty(obj) {
 	var type = Object.typeOf(obj);
 	return (
-		('Undefined' == type || 'Null' == type)            ||
+		('Undefined' == type)                              ||
+		('Null'      == type)                              ||
 		('Boolean'   == type && false === obj)             ||
 		('Number'    == type && (0 === obj || isNaN(obj))) ||
 		('String'    == type && 0 == obj.length)           ||
-		('Array'     == type && 0 == obj.length)
+		('Array'     == type && 0 == obj.length)           ||
+		('Object'    == type && !$global.Value.hasType(obj) &&
+			0 == Object.keys(obj).length)
 	);
 }
 
