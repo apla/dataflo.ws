@@ -18,17 +18,18 @@
 				"$origin":"{#every.item}",
 				"$set":"result2"
 			},
-					  {
-						  "$function":"console.print",
-						  "$args":"{$request.url.path}"
-					  },
-					  {
-						  "$function":"console.print",
-						  "$args":[
-							  "Running $every: index: {#every.index},",
-							  "item: {#result2}"
-						  ]
-					  }],
+			{
+				"$function":"console.print",
+				"$args":"{$request.url.path}"
+			},
+			{
+				"$function":"console.print",
+				"$args":[
+					"Running $every: index: {#every.index},",
+					"item: {#result2}",
+					"array: {$testArr}"
+				]
+			}],
 			"$set":"result1"
 		}],
 		"$set":"mappedArr"

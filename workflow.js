@@ -17,6 +17,27 @@ var $global = common.$global;
 
 var taskStateNames = taskClass.prototype.stateNames;
 
+$global.Value = {};
+[ 'Number', 'String', 'Boolean', 'Array', 'Object' ].forEach(function (type) {
+	var protoConstructor = $global[type];
+	var constr = function constructor() {
+		Object.defineProperty(this, 'value', {
+			configurable: false,
+			enumerable: false,
+			writable: false,
+			value: protoConstructor.apply(this, arguments)
+		});
+	};
+	constr.prototype = Object.create(protoConstructor.prototype);
+	constr.prototype.valueOf = function () {
+		return this.value;
+	};
+	constr.prototype.toString = function () {
+		return this.valueOf().toString.apply(this.value, arguments);
+	};
+	$global.Value[type] = constr;
+});
+
 function isEmpty(obj) {
 	var type = Object.typeOf(obj);
 	return (
@@ -24,8 +45,7 @@ function isEmpty(obj) {
 		('Boolean'   == type && false === obj)             ||
 		('Number'    == type && (0 === obj || isNaN(obj))) ||
 		('String'    == type && 0 == obj.length)           ||
-		('Array'     == type && 0 == obj.length)           ||
-		('Object'    == type && 0 == Object.keys(obj).length)
+		('Array'     == type && 0 == obj.length)
 	);
 }
 
@@ -48,7 +68,7 @@ function taskRequirements (requirements, dict) {
 	return result;
 }
 
-function checkTaskParams (params, dict, prefix) {
+function checkTaskParams (params, dict, prefix, marks) {
 	// parse task params
 	// TODO: modify this function because recursive changes of parameters works dirty (indexOf for value)
 
@@ -73,7 +93,7 @@ function checkTaskParams (params, dict, prefix) {
 			if (Object.is('String', val)) { // string
 
 				try {
-					var tmp = val.interpolate (dict);
+					var tmp = val.interpolate (dict, marks);
 					if (tmp === void 0)
 						modifiedParams.push(val);
 					else {
@@ -91,7 +111,9 @@ function checkTaskParams (params, dict, prefix) {
 			} else if (Object.typeOf(val) in AllowedValueTypes) {
 				modifiedParams.push(val);
 			} else {
-				var result = checkTaskParams(val, dict, prefix+'['+index+']');
+				var result = checkTaskParams(
+					val, dict, prefix+'['+index+']', marks
+				);
 
 				modifiedParams.push(result.modified);
 				failedParams = failedParams.concat (result.failed);
@@ -107,7 +129,8 @@ function checkTaskParams (params, dict, prefix) {
 
 			if (Object.is('String', val)) {
 				try {
-					var tmp = modifiedParams[key] = val.interpolate (dict);
+					var tmp = modifiedParams[key] =
+							val.interpolate(dict, marks);
 
 					if (tmp === void 0) {
 						modifiedParams[key] = val;
@@ -125,7 +148,7 @@ function checkTaskParams (params, dict, prefix) {
 			} else if (Object.typeOf(val) in AllowedValueTypes) {
 				modifiedParams[key] = val;
 			} else { // val is hash || array
-				var result = checkTaskParams(val, dict, prefix+key);
+				var result = checkTaskParams(val, dict, prefix+key, marks);
 
 				modifiedParams[key] = result.modified;
 				failedParams = failedParams.concat (result.failed);
@@ -232,7 +255,7 @@ var workflow = module.exports = function (config, reqParam) {
 				dict.project = project;
 			}
 
-			var result = checkTaskParams (actualTaskParams, dict);
+			var result = checkTaskParams (actualTaskParams, dict, self.marks);
 
 			if (result.failed && result.failed.length > 0) {
 				this.unsatisfiedRequirements = result.failed;
