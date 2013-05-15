@@ -379,6 +379,8 @@ util.extend (mongoRequestTask.prototype, {
 				} else {
 					docsId.push(clone._id);
 				}
+				
+				return clone;
 
 			});
 
