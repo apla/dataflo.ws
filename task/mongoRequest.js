@@ -367,16 +367,17 @@ util.extend (mongoRequestTask.prototype, {
 			}
 
 			var docsId = [];
-			self.data.map(function(item) {
-
+			self.data = self.data.map(function(item) {
+				
+				var clone = util.extend(true, {}, item);
 
 				if (self.timestamp) {
-					item.created = item.updated = ~~(new Date().getTime()/1000);
+					clone.created = clone.updated = ~~(new Date().getTime()/1000);
 				}
-				if (item._id == null || item._id == '') {
-					delete item._id;
+				if (clone._id == null || clone._id == '') {
+					delete clone._id;
 				} else {
-					docsId.push(item._id);
+					docsId.push(clone._id);
 				}
 
 			});
@@ -666,8 +667,7 @@ util.extend (mongoRequestTask.prototype, {
 
 				if (item._id || self.criteria || options.upsert) {
 
-					var set = {};
-					util.extend(true, set, item);
+					var set = util.extend(true, {}, item);
 					delete set._id;
 
 					var criteriaObj = self.criteria || {};
