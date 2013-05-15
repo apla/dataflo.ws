@@ -17,7 +17,6 @@ var $global = common.$global;
 
 var taskStateNames = taskClass.prototype.stateNames;
 
-$global = this;
 $global.Value = {};
 [ 'Number', 'String', 'Boolean', 'Array', 'Object' ].forEach(function (type) {
 	var protoConstructor = $global[type];
@@ -44,6 +43,7 @@ $global.Value.hasType = function hasType(obj) {
 	var constr = $global.Value[origType];
 	return constr && constr == obj.constructor;
 };
+
 
 function isEmpty(obj) {
 	var type = Object.typeOf(obj);
