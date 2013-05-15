@@ -1,7 +1,7 @@
-var util     = require('util');
-var common   = require('../common');
+var util	 = require('util');
+var common	 = require('../common');
 var workflow = require('../workflow');
-var task     = require('./base');
+var task	 = require('./base');
 
 var EveryTask = function (cfg) {
 	this.init(cfg);
@@ -69,7 +69,10 @@ util.extend(EveryTask.prototype, {
 			var type = Object.typeOf(branch);
 
 			if ('String' == type) {
-				collect[key] = branch.replace(pattern, replacement);
+				var interpol = branch.replace(pattern, replacement);
+				if (interpol != branch) {
+					collect[key] = interpol;
+				}
 			} else if ('Array' == type) {
 				branch.forEach(function (_, k) {
 					recur(branch, collect[key], k);
@@ -89,32 +92,25 @@ util.extend(EveryTask.prototype, {
 	run: function () {
 		var self = this;
 
-        /**
-         * Walk the original config tree and replace {#...} with {$...},
-         * modifying the interpolated config tree (i.e. `this').
-         * Don't touch {#...} refs in nested $every tasks.
-         */
+		/**
+		 * Walk the original config tree and replace {#...} with {$...},
+		 * modifying the interpolated config tree (i.e. `this').
+		 * Don't touch {#...} refs in nested $every tasks.
+		 */
 		this.unquote(this.originalConfig, this, '$tasks');
-
-		// keys that will be exposed in `every' object
-		var keys = Object.keys(self).filter(function (key) {
-			return !(key in self.DEFAULT_CONFIG);
-		});
 
 		this.$every.forEach(function (item, index, array) {
 			var every = {
 				item: item,
-				index: index + 1, // hello Lua
+				index: new Value.Number(index),
 				array: array
 			};
 
-			// expose keys from the config
-			keys.forEach(function (key) {
-				every[key] = self[key];
-			});
-
 			var wf = new workflow({
-				tasks: self.$tasks
+				tasks: self.$tasks,
+				marks: {
+					start: '{#', end: '}', path: '.'
+				}
 			}, {
 				every: every
 			});
