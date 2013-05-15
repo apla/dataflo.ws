@@ -645,6 +645,7 @@ util.extend (mongoRequestTask.prototype, {
 					if (0 == idList.length) {
 						self.empty();
 					}
+				}
 			}
 		
 		};
