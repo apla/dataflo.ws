@@ -242,7 +242,7 @@ util.extend (mongoRequestTask.prototype, {
 			id = hexString.toString();
 		}
 
-		console.log('ObjectID',id);
+		if (this.verbose) console.log('ObjectID',id);
 
 		return id;
 	},
@@ -356,10 +356,9 @@ util.extend (mongoRequestTask.prototype, {
 
 		if (!self.data) self.data = {};
 
-		console.log('INSERT');
-
-		if (self.verbose)
+		if (self.verbose) {
 			self.emit ('log', 'insert called ' + self.data);
+		}
 
 		self._openCollection (function (err, collection) {
 
