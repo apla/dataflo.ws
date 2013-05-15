@@ -608,7 +608,7 @@ util.extend (mongoRequestTask.prototype, {
 			if (err) {
 				self.failed(err);
 			} else {
-				console.log(' ----> ', idList);
+				if (self.verbose) self.emit('log', 'Updated IDs', idList);
 				if (idList.length > 1) {
 					self.completed ({
 						_id: { $in: idList }
