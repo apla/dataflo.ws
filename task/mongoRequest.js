@@ -601,27 +601,52 @@ util.extend (mongoRequestTask.prototype, {
 	update: function () {
 		var self = this;
 		var options = self.options || {};
-		var idList;
+		var idList, total = 0, success = 0, failed = 0;
 
 		var callback = function (err) {
-			if (err) {
-				self.failed(err);
-			} else {
-				if (self.verbose) self.emit('log', 'Updated IDs', idList);
-				if (idList.length > 1) {
-					self.completed ({
-						_id: { $in: idList }
-					});
+			
+			// many
+			if (idList.length > 1) {
+				
+				total++;
+				
+				if (err) {
+					failed++
 				} else {
+					success++;
+				}
+				
+				if (total == idList.length) {
+					if (total == success) {
+						if (self.verbose) self.emit('log', 'Updated IDs', idList);
+						self.complete({
+							_id: { $in: idList }
+						});
+					} else {
+						self.failed({
+							msg: 'Not all records updated',
+							failed: failed,
+							total: total,
+							success: success
+						});
+					}
+				}
+			
+			} else {
+				// single
+				if (err) {
+					self.failed(err);
+				} else {
+					
 					self.completed ({
 						_id: idList[0]
 					});
-				}
-
-				if (0 == idList.length) {
-					self.empty();
-				}
+					
+					if (0 == idList.length) {
+						self.empty();
+					}
 			}
+		
 		};
 
 		if (self.verbose)
