@@ -619,7 +619,7 @@ util.extend (mongoRequestTask.prototype, {
 				if (total == idList.length) {
 					if (total == success) {
 						if (self.verbose) self.emit('log', 'Updated IDs', idList);
-						self.complete({
+						self.completed({
 							_id: { $in: idList }
 						});
 					} else {
