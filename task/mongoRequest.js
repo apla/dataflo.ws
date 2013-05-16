@@ -699,7 +699,7 @@ util.extend (mongoRequestTask.prototype, {
 
 					var criteriaObj = self.criteria || {};
 					
-					self.criteriaFields.forEach(function(fieldName) {
+					criteriaFields.forEach(function(fieldName) {
 					
 						if (fieldName == "_id") {
 							criteriaObj[fieldName] = self._objectId(item[fieldName]);
