@@ -708,9 +708,9 @@ util.extend (mongoRequestTask.prototype, {
 						criteriaFields.forEach(function(fieldName) {
 						
 							if (fieldName == "_id") {
-								criteriaObj[fieldName] = self._objectId(item[fieldName]);
+								if (item[fieldName]) criteriaObj[fieldName] = self._objectId(item[fieldName]);
 							} else {
-								criteriaObj[fieldName] = set[fieldName];
+								if (set[fieldName]) criteriaObj[fieldName] = set[fieldName];
 							}
 						
 						});
