@@ -697,17 +697,27 @@ util.extend (mongoRequestTask.prototype, {
 					
 					// criteriaObj
 
-					var criteriaObj = self.criteria || {};
+					var criteriaObj;
 					
-					criteriaFields.forEach(function(fieldName) {
-					
-						if (fieldName == "_id") {
-							criteriaObj[fieldName] = self._objectId(item[fieldName]);
-						} else {
-							criteriaObj[fieldName] = set[fieldName];
-						}
-					
-					});
+					if (!self.criteria) {
+						
+						// default by _id or by defined first level fields just
+						
+						criteriaObj = {};
+						
+						criteriaFields.forEach(function(fieldName) {
+						
+							if (fieldName == "_id") {
+								criteriaObj[fieldName] = self._objectId(item[fieldName]);
+							} else {
+								criteriaObj[fieldName] = set[fieldName];
+							}
+						
+						});
+						
+					} else {
+						criteriaObj = self.criteria;
+					}
 					
 					// newObj
 
