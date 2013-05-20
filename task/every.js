@@ -49,7 +49,7 @@ util.extend(EveryTask.prototype, {
 	_onCompleted: function (wf) {
 		if (this.$collect) {
 			var result = this.getProperty(wf.data, this.$collect);
-			if (undefined !== result && !workflow.isEmpty(result)) {
+			if (undefined !== result) {
 				this.results.push(result);
 			}
 		}
@@ -61,8 +61,8 @@ util.extend(EveryTask.prototype, {
 	},
 
 	unquote: function unquote(source, dest, origKey) {
-		var pattern = /{#(.+?)}/g;
-		var replacement = '{$$$1}'; // get rich or die trying
+		var pattern = /\[([$*][^\]]+)\]/g;
+		var replacement = '{$1}';
 
 		var recur = function (tree, collect, key) {
 			var branch = tree[key];
@@ -93,24 +93,21 @@ util.extend(EveryTask.prototype, {
 		var self = this;
 
 		/**
-		 * Walk the original config tree and replace {#...} with {$...},
+		 * Walk the original config tree and replace [$...] with {$...},
 		 * modifying the interpolated config tree (i.e. `this').
-		 * Don't touch {#...} refs in nested $every tasks.
+		 * Don't touch [$...] refs inside nested $every loops.
 		 */
 		this.unquote(this.originalConfig, this, '$tasks');
 
 		this.$every.forEach(function (item, index, array) {
 			var every = {
 				item: item,
-				index: new Value.Number(index),
+				index: index,
 				array: array
 			};
 
 			var wf = new workflow({
-				tasks: self.$tasks,
-				marks: {
-					start: '{#', end: '}', path: '.'
-				}
+				tasks: self.$tasks
 			}, {
 				every: every
 			});

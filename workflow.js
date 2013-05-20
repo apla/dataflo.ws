@@ -17,46 +17,8 @@ var $global = common.$global;
 
 var taskStateNames = taskClass.prototype.stateNames;
 
-$global.Value = {};
-[ 'Number', 'String', 'Boolean', 'Array', 'Object' ].forEach(function (type) {
-	var protoConstructor = $global[type];
-	var constr = function constructor() {
-		this.constructor = constructor;
-		Object.defineProperty(this, 'value', {
-			configurable: false,
-			enumerable: false,
-			writable: false,
-			value: protoConstructor.apply(this, arguments)
-		});
-	};
-	constr.prototype = Object.create(protoConstructor.prototype);
-	constr.prototype.valueOf = function () {
-		return this.value;
-	};
-	constr.prototype.toString = function () {
-		return this.valueOf().toString.apply(this.value, arguments);
-	};
-	$global.Value[type] = constr;
-});
-$global.Value.hasType = function hasType(obj) {
-	var origType = Object.typeOf(obj.valueOf());
-	var constr = $global.Value[origType];
-	return constr && constr == obj.constructor;
-};
-
-
-function isEmpty(obj) {
-	var type = Object.typeOf(obj);
-	return (
-		('Undefined' == type)                              ||
-		('Null'      == type)                              ||
-		('Boolean'   == type && false === obj)             ||
-		('Number'    == type && (0 === obj || isNaN(obj))) ||
-		('String'    == type && 0 == obj.length)           ||
-		('Array'     == type && 0 == obj.length)           ||
-		('Object'    == type && !$global.Value.hasType(obj) &&
-			0 == Object.keys(obj).length)
-	);
+function isVoid(val) {
+	return void 0 == val;
 }
 
 function taskRequirements (requirements, dict) {
@@ -67,7 +29,7 @@ function taskRequirements (requirements, dict) {
 		var requirement = requirements[k];
 		for (var i = 0; i < requirement.length; i++) {
 			try {
-				if (isEmpty (common.pathToVal (dict, requirement[i])))
+				if (isVoid (common.pathToVal (dict, requirement[i])))
 					result.push (k);
 			} catch (e) {
 				result.push (k);
@@ -103,16 +65,12 @@ function checkTaskParams (params, dict, prefix, marks) {
 			if (Object.is('String', val)) { // string
 
 				try {
-					var tmp = val.interpolate (dict, marks);
-					if (tmp === void 0)
-						modifiedParams.push(val);
-					else
+					var tmp = val.interpolate(dict, marks);
+					if (tmp === undefined) {
+						failedParams.push (prefix+'['+index+']');
+					} else {
 						modifiedParams.push(tmp);
-
-//					console.log (val, ' interpolated to the "', modifiedParams[key], '" and ', isEmpty (modifiedParams[key]) ? ' is empty' : 'is not empty');
-
-					if (isEmpty (modifiedParams[modifiedParams.length-1]))
-						throw "EMPTY VALUE";
+					}
 				} catch (e) {
 					failedParams.push (prefix+'['+index+']');
 				}
@@ -138,25 +96,16 @@ function checkTaskParams (params, dict, prefix, marks) {
 
 			if (Object.is('String', val)) {
 				try {
-					var tmp = modifiedParams[key] =
-							val.interpolate(dict, marks);
-
-
-					if (tmp === void 0) {
-						modifiedParams[key] = val;
+					var tmp = val.interpolate(dict, marks);
+					if (tmp === undefined) {
+						failedParams.push (prefix+key);
+					} else {
+						modifiedParams[key] = tmp;
 					}
-
-					if (isEmpty(modifiedParams[key])) {
-						throw "EMPTY VALUE";
-					}
-
 				} catch (e) {
-
 					//console.error('ERR!');
 					failedParams.push (prefix+key);
-
 				}
-
 			} else if (Object.typeOf(val) in AllowedValueTypes) {
 				modifiedParams[key] = val;
 			} else { // val is hash || array
@@ -402,7 +351,7 @@ var workflow = module.exports = function (config, reqParam) {
 							if (!failed) {
 								this.completed(returnVal);
 
-								if (isEmpty(returnVal)) {
+								if (isVoid(returnVal)) {
 									this.empty();
 								}
 							}
@@ -712,6 +661,7 @@ util.extend (workflow.prototype, {
 	}
 });
 
-workflow.isEmpty = isEmpty;
+// legacy
+workflow.isEmpty = common.isEmpty;
 
 });
