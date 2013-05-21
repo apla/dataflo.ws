@@ -54,6 +54,7 @@ var EventEmitter = require ('events').EventEmitter,
  * - `run`, selects from the DB
  * - `insert`, inserts into the DB
  * - `update`, updates records in the DB
+ * - `remove`, removes records from the DB
  *
  * @cfg {String} filter (required) The name of the property of the workflow
  * instance or the identifier of an object with filter fields for `select`,
@@ -242,7 +243,7 @@ util.extend (mongoRequestTask.prototype, {
 			id = hexString.toString();
 		}
 
-		console.log('ObjectID',id);
+		if (this.verbose) console.log('ObjectID',id);
 
 		return id;
 	},
@@ -356,10 +357,9 @@ util.extend (mongoRequestTask.prototype, {
 
 		if (!self.data) self.data = {};
 
-		console.log('INSERT');
-
-		if (self.verbose)
+		if (self.verbose) {
 			self.emit ('log', 'insert called ' + self.data);
+		}
 
 		self._openCollection (function (err, collection) {
 
@@ -368,17 +368,20 @@ util.extend (mongoRequestTask.prototype, {
 			}
 
 			var docsId = [];
-			self.data.map(function(item) {
-
+			self.data = self.data.map(function(item) {
+				
+				var clone = util.extend(true, {}, item);
 
 				if (self.timestamp) {
-					item.created = item.updated = ~~(new Date().getTime()/1000);
+					clone.created = clone.updated = ~~(new Date().getTime()/1000);
 				}
-				if (item._id == null || item._id == '') {
-					delete item._id;
+				if (clone._id == null || clone._id == '') {
+					delete clone._id;
 				} else {
-					docsId.push(item._id);
+					docsId.push(clone._id);
 				}
+				
+				return clone;
 
 			});
 
@@ -599,30 +602,77 @@ util.extend (mongoRequestTask.prototype, {
 		});
 	},
 
+/**
+ * Params:
+ *
+ * @cfg {Object} criteria - object for select updating object (see MongoDB docs).
+ *
+ * @cfg {Array} criteriaFields - this array must contains field names, by wich will
+ * be constructed criteriaObj. This parameter is for updating many records.
+ *
+ * @cfg {Array | Object} data - main data container.
+ *
+ * @cfg {Object} modify - object {operation: [fieldName], ...} for modifying data,
+ * f.e. {$push: ['comment'], $set: ['title']}
+ *
+ * @cfg {Array} options (upsert, multi, safe)
+ *
+ */
+	
 	update: function () {
-		var self = this;
-		var options = self.options || {};
-		var idList;
-
+		
+		var self = this,
+			options = self.options || {},
+			idList,
+			total = 0,
+			success = 0,
+			failed = 0,
+			criteriaFields = self.criteriaFields || ["_id"];
+			
 		var callback = function (err) {
-			if (err) {
-				self.failed(err);
-			} else {
-				console.log(' ----> ', idList);
-				if (idList.length > 1) {
-					self.completed ({
-						_id: { $in: idList }
-					});
+			
+			if (idList.length > 1) { // many records
+				
+				total++;
+				
+				if (err) {
+					failed++
 				} else {
+					success++;
+				}
+				
+				if (total == idList.length) {
+					if (total == success) {
+						if (self.verbose) self.emit('log', 'Updated IDs', idList);
+						self.completed({
+							_id: { $in: idList }
+						});
+					} else {
+						self.failed({
+							msg: 'Not all records updated',
+							failed: failed,
+							total: total,
+							success: success
+						});
+					}
+				}
+			
+			} else { // single object
+				
+				if (err) {
+					self.failed(err);
+				} else {
+					
 					self.completed ({
 						_id: idList[0]
 					});
-				}
-
-				if (0 == idList.length) {
-					self.empty();
+					
+					if (0 == idList.length) {
+						self.empty();
+					}
 				}
 			}
+		
 		};
 
 		if (self.verbose)
@@ -630,27 +680,48 @@ util.extend (mongoRequestTask.prototype, {
 
 		self._openCollection (function (err, collection) {
 
+			// wrap single record to array
+			
 			if (self.data.constructor != Array) {
 				self.data = [self.data];
 			}
-
-			if (self.verbose)
-				console.log ('data for update', self.data);
 
 			idList = self.data.map (function (item) {
 
 				if (item._id || self.criteria || options.upsert) {
 
-					var set = {};
-					util.extend(true, set, item);
+					// clone before update
+					
+					var set = util.extend(true, {}, item);
 					delete set._id;
+					
+					// criteriaObj
 
-					var criteriaObj = self.criteria || {};
-					if (item._id) {
-						criteriaObj = {
-							_id: self._objectId(item._id)
-						};
+					var criteriaObj;
+					
+					if (!self.criteria) {
+						
+						// default by _id or by defined first level fields just
+						
+						criteriaObj = {};
+						
+						criteriaFields.forEach(function(fieldName) {
+						
+							if (fieldName == "_id") {
+								if (item.hasOwnProperty(fieldName))
+									criteriaObj[fieldName] = self._objectId(item[fieldName]);
+							} else {
+								if (set.hasOwnProperty(fieldName))
+									criteriaObj[fieldName] = set[fieldName];
+							}
+						
+						});
+						
+					} else {
+						criteriaObj = self.criteria;
 					}
+					
+					// newObj
 
 					var newObj;
 
@@ -675,6 +746,8 @@ util.extend (mongoRequestTask.prototype, {
 					} else {
 						newObj = (self.replace) ? (set) : ({$set: set});
 					}
+					
+					// set timestamp
 
 					if (self.timestamp) {
 						var timestamp = ~~(new Date().getTime()/1000);
@@ -682,13 +755,18 @@ util.extend (mongoRequestTask.prototype, {
 						else newObj.updated = timestamp;
 					}
 
+					// safe
+					
 					options.safe = true;
 
+					// show input params
 					if (self.verbose)
 						console.log('collection.update ', criteriaObj, newObj, options);
-
+					
+					// do update
 					collection.update(criteriaObj, newObj, options, callback);
-
+					
+					// return Id for map operation
 					return item._id;
 
 				} else {

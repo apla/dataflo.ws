@@ -11,23 +11,23 @@
 		"$every":"{$testArr}",
 		"$collect":"result1",
 		"$tasks":[{
-			"$every":"{#every.item}",
+			"$every":"[*every.item]",
 			"$collect":"result2",
 			"$tasks":[{
 				"$function":"toUpperCase",
-				"$origin":"{#every.item}",
+				"$origin":"[*every.item]",
 				"$set":"result2"
 			},
 			{
 				"$function":"console.print",
-				"$args":"{$request.url.path}"
+				"$args":"{*request.url.path}"
 			},
 			{
 				"$function":"console.print",
 				"$args":[
-					"Running $every: index: {#every.index},",
-					"item: {#result2}",
-					"array: {$testArr}"
+					"Running $every...",
+					"index: [*every.index], item: [*result2]",
+					"array: {*testArr}"
 				]
 			}],
 			"$set":"result1"
