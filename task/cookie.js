@@ -136,12 +136,14 @@ util.extend (cookieParser.prototype, {
 
 	generate: function(secret) {
 
-		var self = this;
-		var ip = self.request.connection.remoteAddress;
-		var port = self.request.connection.remotePort;
-
-		var date = self.request.connection._idleStart.getTime();
-		var timestamp = date.toString(16);
+		var self = this,
+			ip = self.request.connection.remoteAddress,
+			port = self.request.connection.remotePort,
+			date = self.request.connection._idleStart;
+			timestamp = (date.constructor == Date) ? date.getTime() : date;
+		
+		timestamp = timestamp.toString(16);
+		
 		var rnd = (~~(10e+6*Math.random())).toString(16);
 
 		var str =  ip + ':' + port + '.' + timestamp + '.' + rnd;
