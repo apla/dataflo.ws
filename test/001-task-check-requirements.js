@@ -67,42 +67,42 @@ test('check task requirements', {
 });
 
 
-test('compare interpolation', {
-	'simple': function() {
-		var byTreeWalk = checkTaskParams (data, dict);
-//		console.log (result);
+// test('compare interpolation', {
+// 	'simple': function() {
+// 		var byTreeWalk = checkTaskParams (data, dict);
+// //		console.log (result);
 
-		var interpolateWhat  = common.findInterpolation (data);
-		var taskWaitingFor   = taskRequirements (interpolateWhat, dict);
+// 		var interpolateWhat  = common.findInterpolation (data);
+// 		var taskWaitingFor   = taskRequirements (interpolateWhat, dict);
 
-		// strictly saying string exception below is incorrect
-		// because pathToVal is flawed
-		assert.deepEqual (taskWaitingFor, [
-			'checkFalse.falseExp',
-			'checkFalse.zeroExp',
-			'checkFalse.emptyExp',
-			'checkFalse.emptyArr',
-			'checkFalse.emptyObj',
-			'exception.nothing'
-		]);
+// 		// strictly saying string exception below is incorrect
+// 		// because pathToVal is flawed
+// 		assert.deepEqual (taskWaitingFor, [
+// 			'checkFalse.falseExp',
+// 			'checkFalse.zeroExp',
+// 			'checkFalse.emptyExp',
+// 			'checkFalse.emptyArr',
+// 			'checkFalse.emptyObj',
+// 			'exception.nothing'
+// 		]);
 
-		console.log (taskWaitingFor);
+// 		console.log (taskWaitingFor);
 
-//		var byDirectValueSet = ;
+// //		var byDirectValueSet = ;
 
-		assert.strictEqual (byTreeWalk.modified.arrayExtExp[1], 123);
-		assert.deepEqual (byTreeWalk.failed, [
-			"checkFalse.falseExp",
-			"checkFalse.zeroExp",
-			"checkFalse.emptyExp",
-			"checkFalse.emptyArr",
-			"checkFalse.emptyObj",
+// 		assert.strictEqual (byTreeWalk.modified.arrayExtExp[1], 123);
+// 		assert.deepEqual (byTreeWalk.failed, [
+// 			"checkFalse.falseExp",
+// 			"checkFalse.zeroExp",
+// 			"checkFalse.emptyExp",
+// 			"checkFalse.emptyArr",
+// 			"checkFalse.emptyObj",
 
-			"exception.stringExp2",
-			"exception.nothing"
-		]);
-	}
-});
+// 			"exception.stringExp2",
+// 			"exception.nothing"
+// 		]);
+// 	}
+// });
 
 
 //	'expandString': function() {

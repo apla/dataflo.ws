@@ -33,6 +33,19 @@ Object.is = function (type, obj) {
 	return type == Object.typeOf(obj);
 };
 
+function isEmpty(obj) {
+	var type = Object.typeOf(obj);
+	return (
+		('Undefined' == type)                              ||
+		('Null'      == type)                              ||
+		('Boolean'   == type && false === obj)             ||
+		('Number'    == type && (0 === obj || isNaN(obj))) ||
+		('String'    == type && 0 == obj.length)           ||
+		('Array'     == type && 0 == obj.length)           ||
+		('Object'    == type && 0 == Object.keys(obj).length)
+	);
+}
+
 console.print = function () {
 	var BLUE = '';
 	var RESET = '';
@@ -374,77 +387,60 @@ define (function (require, exports, module) {
 });
 
 
-String.prototype.interpolate = function (dict, marks, checkOnly) {
-	if (!marks)
+String.prototype.interpolate = function (dict, marks) {
+	if (!marks) {
 		marks = {
-			start: '{$', end: '}', path: '.'
+			start: '{', end: '}',
+			path: '.',
+			typeSafe: '$',
+			typeRaw: '*'
 		};
-
-	var result;
-
-	var interpolatePaths = [];
-
-	var template = this;
-
-	var pos = this.indexOf (marks.start);
-	while (pos > -1) {
-		var end = (result || this).indexOf (marks.end, pos);
-		var str = (result || this).substr (pos + 2, end - pos - 2);
-
-		if (checkOnly && str) {
-			interpolatePaths.push (str);
-			pos = this.indexOf (marks.start, end);
-			continue;
-		}
-
-//		console.log ("found replacement: key => ???, requires => $"+this+"\n");
-
-		var fix;
-		if (str.indexOf (marks.path) > -1) { //  treat as path
-			fix = pathToVal (dict, str);
-		} else { // scalar
-			//console.log('- Scalar');
-			fix = dict[str];
-		}
-
-		if (fix === void(0)) {
-			//console.error('ERR fix === void(0)');
-			throw (result || this);
-		}
-
-		if (fix.indexOf && fix.indexOf (marks.start) > -1 && fix.length < 1000) {
-			//console.log('interpolation mark "' + marks.start + '" within interpolation string (' + fix.length + ') is denied', str, dict);
-			throw 'interpolation mark "' + marks.start + '" within interpolation string (' + fix + ') is denied';
-		}
-
-		if (pos == 0 && end == ((result || this).length - 1)) {
-			result = fix;
-		} else {
-			result = (result || this).substr (0, pos) + fix + (result || this).substr (end + 1);
-//			console.log ('!!!', (result || this).toString(), fix.toString(), pos, end, end - pos + 1);
-		}
-
-		//console.log('--', result.length);
-
-		if (
-				(
-					(
-						(result === false || result === 0 || result === "" || result.length > 1000) ? true : result
-					) || this
-				).indexOf
-			) pos = (
-				(
-					(result === false || result === 0 || result === "") ? true : result
-				) || this).indexOf (marks.start);
-		else
-			break;
 	}
 
-	if (checkOnly)
-		return interpolatePaths;
+	// TODO: escape character range delims
+	var re = new RegExp([
+		'[', marks.start, ']',
+		'([', marks.typeSafe, marks.typeRaw, '])',
+		'([^', marks.end, ']+)',
+		'[', marks.end, ']'
+	].join(''), 'g');
 
-	return result;
+	var startRe = new RegExp([
+		'[', marks.start, ']',
+		'([', marks.typeSafe, marks.typeRaw, '])'
+	].join(''), 'g');
 
+	var values = [];
+
+	var replacedStr = this.replace(re, function (_, type, path) {
+		if (path.indexOf(marks.path) > -1) {
+			var value = pathToVal(dict, path);
+		} else {
+			value = dict[path];
+		}
+
+		if (Object.is('String', value) && startRe.test(value)) {
+			throw new Error("Interoplation inside interpolation not allowed");
+		}
+
+		if (type == marks.typeSafe && isEmpty(value)) {
+			value = undefined;
+		}
+
+		values.push(value);
+
+		return value;
+	});
+
+	if (values.some(function (v) { return undefined == v; })) {
+		return undefined;
+	}
+
+	if (values.length === 1 && (values[0] + '') === replacedStr) {
+		return values[0];
+	}
+
+	return replacedStr;
 };
 
 if ($isServerSide) {
@@ -614,3 +610,5 @@ module.exports.getProject = function (rootPath) {
 	}
 	return projectInstance;
 };
+
+module.exports.isEmpty = isEmpty;

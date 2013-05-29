@@ -59,6 +59,10 @@
 							"$set":"sanitizedText"
 						},
 						{
+							"$function":"console.print",
+							"$args":["{$sanitizedText}"]
+						},
+						{
 							"$class":"remoteResource",
 							"method":"toBuffer",
 							"timeout":10000,
@@ -74,9 +78,6 @@
 							"$function":"formatData",
 							"$args":["{$results}"],
 							"$set":"items"
-						}, {
-							"$function":"console.print",
-							"$args":["{$items}"]
 						}
 					],
 					"presenter":{
