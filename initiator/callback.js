@@ -42,7 +42,7 @@ util.extend (callbacki.prototype, {
 				);
 
 				self.emit ("detected", wfRequire, wf);
-				if (item.autoRun || item.autoRun == void 0)
+				if (item.autoRun || item.autoRun == void 0 || wfRequire.autoRun || wfRequire.autoRun == void 0)
 					wf.run ();
 
 				return;
