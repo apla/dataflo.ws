@@ -39,7 +39,7 @@ module.exports = {
 		flow.on ('completed', function (flow) {
 			process.kill();
 		});
-		flow.on ('error', function (flow) {
+		flow.on ('failed', function (flow) {
 			process.kill();
 		});
 
