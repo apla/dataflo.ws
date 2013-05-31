@@ -35,6 +35,7 @@ var httpdi = module.exports = function httpdIConstructor (config) {
 
 	// - change static root by path
 	this.static.root = project.root.fileIO(this.static.root || 'htdocs');
+	this.static.headers = this.static.headers || {};
 
 	// - - - prepare configs
 	this.prepare = config.prepare;
@@ -425,10 +426,20 @@ httpdi.prototype.listen = function () {
 						return;
 
 					} else if (stats.isFile() && readStream) {
+						var headers = {};
 
-						res.writeHead (200, {
+						var uri = req.url.pathname;
+						while (uri.length > 1) {
+							var h = self.static.headers[uri];
+							headers = util.extend(headers, h || {});
+							uri = path.dirname(uri);
+						}
+
+						headers = util.extend(headers, {
 							'Content-Type': contentType
 						});
+
+						res.writeHead (200, headers);
 						readStream.pipe (res);
 						readStream.resume ();
 						return;
