@@ -1,9 +1,7 @@
-var util     = require('util');
-var common   = require('../common');
+var util	 = require('util');
+var common	 = require('../common');
 var workflow = require('../workflow');
-var task     = require('./base');
-
-var $global = common.$global;
+var task	 = require('./base');
 
 var EveryTask = function (cfg) {
 	this.init(cfg);
@@ -16,20 +14,45 @@ util.inherits(EveryTask, task);
 util.extend(EveryTask.prototype, {
 	constructor: EveryTask,
 
+	DEFAULT_CONFIG: {
+		$tasks: [],
+		$every: [],
+		$collect: '',
+		$set: ''
+	},
+
+	getProperty: function (obj, path) {
+		var val = obj;
+		var hasProp = path.split('.').every(function (prop) {
+			val = val[prop];
+			return null != val;
+		});
+		return hasProp ? val : undefined;
+	},
+
 	onWorkflowResult: function () {
 		this.count += 1;
 
 		if (this.count >= this.$every.length) {
-			if (this.results.length) {
-				this.completed(this.results);
+			if (this.$collect) {
+				if (this.results.length) {
+					this.completed(this.results);
+				} else {
+					this.failed('No results');
+				}
 			} else {
-				this.failed('No results');
+				this.completed({ ok: true });
 			}
 		}
 	},
 
 	_onCompleted: function (wf) {
-		this.results.push(wf[this.$collect]);
+		if (this.$collect) {
+			var result = this.getProperty(wf.data, this.$collect);
+			if (undefined !== result) {
+				this.results.push(result);
+			}
+		}
 		this.onWorkflowResult();
 	},
 
@@ -37,44 +60,57 @@ util.extend(EveryTask.prototype, {
 		this.onWorkflowResult();
 	},
 
-	interpolate: function (tree, mapping, exclude) {
-		var recur = (function (branch, key) {
-			tree[key] = this.interpolate(branch, mapping, exclude);
-		}).bind(this);
+	unquote: function unquote(source, dest, origKey) {
+		var pattern = /\[([$*][^\]]+)\]/g;
+		var replacement = '{$1}';
 
-		if (Object.is('String', tree)) {
-			if (tree in mapping) tree = mapping[tree];
-		} else if (Object.is('Array', tree)) {
-			tree.forEach(recur);
-		} else if (Object.is('Object', tree)) {
-			Object.keys(tree).forEach(function (key) {
-				if (!exclude || !(key in exclude)) {
-					recur(tree[key], key);
+		var recur = function (tree, collect, key) {
+			var branch = tree[key];
+			var type = Object.typeOf(branch);
+
+			if ('String' == type) {
+				var interpol = branch.replace(pattern, replacement);
+				if (interpol != branch) {
+					collect[key] = interpol;
 				}
-			});
-		}
+			} else if ('Array' == type) {
+				branch.forEach(function (_, k) {
+					recur(branch, collect[key], k);
+				});
+			} else if ('Object' == type) {
+				Object.keys(branch).forEach(function (k) {
+					if (origKey != k) {
+						recur(branch, collect[key], k);
+					}
+				});
+			}
+		};
 
-		return tree;
+		recur(source, dest, origKey);
 	},
 
 	run: function () {
 		var self = this;
 
-		// copy
-		var tasksJSON = JSON.stringify(this.$tasks);
+		/**
+		 * Walk the original config tree and replace [$...] with {$...},
+		 * modifying the interpolated config tree (i.e. `this').
+		 * Don't touch [$...] refs inside nested $every loops.
+		 */
+		this.unquote(this.originalConfig, this, '$tasks');
 
 		this.$every.forEach(function (item, index, array) {
-			var tasks = JSON.parse(tasksJSON);
-			self.interpolate(tasks, {
-				'#item': item,
-				'#index': index,
-				'#array': array
-			}, {
-				// don't recur into
-				'$tasks': false
-			});
+			var every = {
+				item: item,
+				index: index,
+				array: array
+			};
 
-			var wf = new workflow({ tasks: tasks });
+			var wf = new workflow({
+				tasks: self.$tasks
+			}, {
+				every: every
+			});
 
 			wf.on('completed', self._onCompleted.bind(self));
 			wf.on('failed', self._onFailed.bind(self));

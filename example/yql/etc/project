@@ -1,10 +1,14 @@
 // json
-{
+ {
 	"requires": [ "misc" ],
 
 	"daemon": {
 		"yql": {
 			"initiator": [ "http", "repl" ]
+		},
+
+		"fs": {
+			"initiator": [ "fs-watch" ]
 		}
 	},
 
@@ -19,6 +23,16 @@
 				"code":"404",
 				"presenter":"templates/404.html"
 			}, {
+				"path":"test",
+				"tasks":"<entity/test>",
+				"presenter":{
+					"type":"json",
+					"vars":{
+						"result":"{$resultMessage}"
+					}
+				}
+			},
+			{
 				"path": "entity/search",
 				"workflows": [{
 					"path":"yql",
@@ -26,52 +40,51 @@
 						{
 							"$class":"post",
 							"request":"{$request}",
-							"$set":"data.post"
+							"$set":"post"
 						},
 						{
 							"$function":"print",
-							"$args":"{$data.post.fields}",
+							"$args":["Form params:", "{$post.fields}"],
 							"$origin":"{$global.console}"
 						},
 						{
 							"$function":"String.prototype.trim",
-							"$scope":"{$data.post.fields.q}",
+							"$scope":"{$post.fields.q}",
 							"$args":[],
-							"$set":"data.trimmedText"
+							"$set":"trimmedText"
 						},
 						{
 							"$function":"stripTags",
-							"$args":["{$data.trimmedText}"],
-							"$set":"data.sanitizedText"
+							"$args":["{$trimmedText}"],
+							"$set":"sanitizedText"
 						},
 						{
-							"$function":"encodeURIComponent",
-							"$args":[
-"select * from contentanalysis.analyze where text=\"{$data.sanitizedText}\""
-							],
-							"$set":"data.yql"
+							"$function":"console.print",
+							"$args":["{$sanitizedText}"]
 						},
 						{
-							"$class":"download",
+							"$class":"remoteResource",
+							"method":"toBuffer",
 							"timeout":10000,
 							"retries":5,
-							"url":
-"http://query.yahooapis.com/v1/public/yql?format=json&q={$data.yql}",
-							"$set":"data.results"
+							"url":"http://query.yahooapis.com/v1/public/yql",
+							"query":{
+								"format":"json",
+								"q":
+"select * from contentanalysis.analyze where text=\"{$sanitizedText}\""
+							},
+							"$set":"results"
 						}, {
 							"$function":"formatData",
-							"$args":["{$data.results}"],
-							"$set":"data.items"
-						}, {
-							"$function":"console.print",
-							"$args":["{$data.items}"]
+							"$args":["{$results}"],
+							"$set":"items"
 						}
 					],
 					"presenter":{
 						"file":"templates/results.ejs",
 						"vars":{
-							"items":"{$data.items}",
-							"text":"{$data.sanitizedText}"
+							"items":"{$items}",
+							"text":"{$sanitizedText}"
 						}
 					}
 				}]
@@ -80,6 +93,8 @@
 
 		"repl": {
 			"port": 4005
-		}
+		},
+
+		"fs-watch": "<fs-watch>"
 	}
 }

@@ -54,6 +54,7 @@ var EventEmitter = require ('events').EventEmitter,
  * - `run`, selects from the DB
  * - `insert`, inserts into the DB
  * - `update`, updates records in the DB
+ * - `remove`, removes records from the DB
  *
  * @cfg {String} filter (required) The name of the property of the workflow
  * instance or the identifier of an object with filter fields for `select`,
@@ -219,6 +220,10 @@ util.extend (mongoRequestTask.prototype, {
 		});
 	},
 
+	objectId: function () {
+		this.completed(this._objectId(this.id));
+	},
+
 	// private method to create ObjectID
 
 	_objectId: function (hexString) {
@@ -238,7 +243,7 @@ util.extend (mongoRequestTask.prototype, {
 			id = hexString.toString();
 		}
 
-		console.log('ObjectID',id);
+		if (this.verbose) console.log('ObjectID',id);
 
 		return id;
 	},
@@ -255,7 +260,7 @@ util.extend (mongoRequestTask.prototype, {
 		// we need to return {data: []}
 
 		// open collection
-		self._openCollection (function (err, collection) {
+		self._openColOrFail(function (collection) {
 			var filter = self.filter,
 				options = self.options || {},
 				sort = self.sort || (self.pager && self.pager.sort) || {};
@@ -352,10 +357,9 @@ util.extend (mongoRequestTask.prototype, {
 
 		if (!self.data) self.data = {};
 
-		console.log('INSERT');
-
-		if (self.verbose)
+		if (self.verbose) {
 			self.emit ('log', 'insert called ' + self.data);
+		}
 
 		self._openCollection (function (err, collection) {
 
@@ -364,17 +368,20 @@ util.extend (mongoRequestTask.prototype, {
 			}
 
 			var docsId = [];
-			self.data.map(function(item) {
-
+			self.data = self.data.map(function(item) {
+				
+				var clone = util.extend(true, {}, item);
 
 				if (self.timestamp) {
-					item.created = item.updated = ~~(new Date().getTime()/1000);
+					clone.created = clone.updated = ~~(new Date().getTime()/1000);
 				}
-				if (item._id == null || item._id == '') {
-					delete item._id;
+				if (clone._id == null || clone._id == '') {
+					delete clone._id;
 				} else {
-					docsId.push(item._id);
+					docsId.push(clone._id);
 				}
+				
+				return clone;
 
 			});
 
@@ -595,30 +602,77 @@ util.extend (mongoRequestTask.prototype, {
 		});
 	},
 
+/**
+ * Params:
+ *
+ * @cfg {Object} criteria - object for select updating object (see MongoDB docs).
+ *
+ * @cfg {Array} criteriaFields - this array must contains field names, by wich will
+ * be constructed criteriaObj. This parameter is for updating many records.
+ *
+ * @cfg {Array | Object} data - main data container.
+ *
+ * @cfg {Object} modify - object {operation: [fieldName], ...} for modifying data,
+ * f.e. {$push: ['comment'], $set: ['title']}
+ *
+ * @cfg {Array} options (upsert, multi, safe)
+ *
+ */
+	
 	update: function () {
-		var self = this;
-		var options = self.options || {};
-		var idList;
-
+		
+		var self = this,
+			options = self.options || {},
+			idList,
+			total = 0,
+			success = 0,
+			failed = 0,
+			criteriaFields = self.criteriaFields || ["_id"];
+			
 		var callback = function (err) {
-			if (err) {
-				self.failed(err);
-			} else {
-				console.log(' ----> ', idList);
-				if (idList.length > 1) {
-					self.completed ({
-						_id: { $in: idList }
-					});
+			
+			if (idList.length > 1) { // many records
+				
+				total++;
+				
+				if (err) {
+					failed++
 				} else {
+					success++;
+				}
+				
+				if (total == idList.length) {
+					if (total == success) {
+						if (self.verbose) self.emit('log', 'Updated IDs', idList);
+						self.completed({
+							_id: { $in: idList }
+						});
+					} else {
+						self.failed({
+							msg: 'Not all records updated',
+							failed: failed,
+							total: total,
+							success: success
+						});
+					}
+				}
+			
+			} else { // single object
+				
+				if (err) {
+					self.failed(err);
+				} else {
+					
 					self.completed ({
 						_id: idList[0]
 					});
-				}
-
-				if (0 == idList.length) {
-					self.empty();
+					
+					if (0 == idList.length) {
+						self.empty();
+					}
 				}
 			}
+		
 		};
 
 		if (self.verbose)
@@ -626,27 +680,48 @@ util.extend (mongoRequestTask.prototype, {
 
 		self._openCollection (function (err, collection) {
 
+			// wrap single record to array
+			
 			if (self.data.constructor != Array) {
 				self.data = [self.data];
 			}
-
-			if (self.verbose)
-				console.log ('data for update', self.data);
 
 			idList = self.data.map (function (item) {
 
 				if (item._id || self.criteria || options.upsert) {
 
-					var set = {};
-					util.extend(true, set, item);
+					// clone before update
+					
+					var set = util.extend(true, {}, item);
 					delete set._id;
+					
+					// criteriaObj
 
-					var criteriaObj = self.criteria || {};
-					if (item._id) {
-						criteriaObj = {
-							_id: self._objectId(item._id)
-						};
+					var criteriaObj;
+					
+					if (!self.criteria) {
+						
+						// default by _id or by defined first level fields just
+						
+						criteriaObj = {};
+						
+						criteriaFields.forEach(function(fieldName) {
+						
+							if (fieldName == "_id") {
+								if (item.hasOwnProperty(fieldName))
+									criteriaObj[fieldName] = self._objectId(item[fieldName]);
+							} else {
+								if (set.hasOwnProperty(fieldName))
+									criteriaObj[fieldName] = set[fieldName];
+							}
+						
+						});
+						
+					} else {
+						criteriaObj = self.criteria;
 					}
+					
+					// newObj
 
 					var newObj;
 
@@ -671,6 +746,8 @@ util.extend (mongoRequestTask.prototype, {
 					} else {
 						newObj = (self.replace) ? (set) : ({$set: set});
 					}
+					
+					// set timestamp
 
 					if (self.timestamp) {
 						var timestamp = ~~(new Date().getTime()/1000);
@@ -678,13 +755,18 @@ util.extend (mongoRequestTask.prototype, {
 						else newObj.updated = timestamp;
 					}
 
+					// safe
+					
 					options.safe = true;
 
+					// show input params
 					if (self.verbose)
 						console.log('collection.update ', criteriaObj, newObj, options);
-
+					
+					// do update
 					collection.update(criteriaObj, newObj, options, callback);
-
+					
+					// return Id for map operation
 					return item._id;
 
 				} else {
@@ -699,31 +781,69 @@ util.extend (mongoRequestTask.prototype, {
 
 
 	remove: function () {
-		var self = this;
+		var self = this,
+			ids;
 
 		self.options = self.options || { safe: true };
 
 		if (self.verbose) {
 			self.emit('log', 'remove called ', self.data);
 		}
-
-		var ids = self.data.filter(function (item) {
+		
+		if (!Object.is('Array', self.data)) {
+			self.data = [self.data];
+		}
+		
+		ids = self.data.filter(function (item) {
 			return null != item._id;
-		}).map(function (item) {
-			return item._id;
 		});
+		
+		if (self.data.length != ids.length && ids.length == 0) {
+			
+			ids = self.data.filter(function (id) {
+				return null != id;
+			}). map(function (id) {
+				return self._objectId(id);
+			});
+			
+		} else {
+			
+			ids = ids.map(function (item) {
+				return self._objectId(item._id);
+			});
+			
+		}
 
 		self._openCollection(function (err, collection) {
-			if (!Object.is('Array', self.data)) {
-				self.data = [self.data];
-			}
-
+			
 			if (self.verbose) {
-				console.log('data for update', self.data);
+				console.log('data for remove', self.data);
 			}
 
 			collection.remove({
 				_id: { $in: ids }
+			}, self.options, function (err, records) {
+				self.completed ({
+					err: err,
+					success: err == null,
+					total: records.length,
+					data: records
+				});
+			});
+		});
+	},
+
+	removeAll: function () {
+		var self = this;
+
+		self.options = self.options || { safe: true };
+
+		if (self.verbose) {
+			self.emit('log', 'removeAll');
+		}
+		
+		self._openCollection(function (err, collection) {
+			collection.remove({
 			}, self.options, function (err, records) {
 				self.completed ({
 					err: err,
@@ -970,39 +1090,20 @@ util.extend (mongoRequestTask.prototype, {
  * @param {Function|String} map the mapping function.
  * @param {Function|String} reduce the reduce function.
  * @param {Objects} [options] options for the map reduce job.
- * @param {Function} callback returns the result of the map reduce job, (error, results, [stats])
- * @return {null}
- * @api public
- * function mapReduce (map, reduce, options, callback)
+ * @return {Objects} returns the result of the map reduce job, (error, results, [stats])
  */
 
 	mapReduce: function () {
 		var self = this;
 
-		var db = this._getConnector();
+		var options = self.options || {};
+		options.out = { inline: 1 }; // override any external out defenition
 
-		db.open(function (err, db) {
-			if (err) {
-				self.failed(err);
-				return;
-			}
-
-			db.executeDbCommand({
-				mapreduce: self.collection,
-
-				map: self.map.toString(),
-				reduce: self.reduce.toString(),
-
-				out: { inline: 1 },
-				query: self.pager.filter
-			},
-			function (err, coll) {
-				if (err) {
-					self.failed(err);
-				} else {
-					self.completed(coll);
-				}
-			});
+		self._openColOrFail(function (collection) {
+			collection.mapReduce(
+				self.map, self.reduce, options,
+				self._onResult.bind(self)
+			);
 		});
 	},
 
@@ -1020,9 +1121,14 @@ util.extend (mongoRequestTask.prototype, {
 		if (err) {
 			this.failed();
 		} else {
-			this.completed(data);
+			this.completed({
+				success: true,
+				err: data && data.errmsg,
+				data: data,
+				total: data ? data.length : 0
+			});
 
-			if (!data || 0 === data.length) {
+			if (!data || 0 == data.length) {
 				this.empty();
 			}
 		}
@@ -1035,14 +1141,7 @@ util.extend (mongoRequestTask.prototype, {
 	},
 
 	GET: function () {
-		this._openColOrFail(function (collection) {
-			collection.find(
-				this.query   || {},
-				this.fields  || {},
-				this.options || {},
-				this._onResult.bind(this)
-			);
-		});
+		this.run();
 	},
 
 	POST: function () {

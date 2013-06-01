@@ -47,8 +47,9 @@ util.extend (presenterTask.prototype, {
 		} catch (e) {}
 
 		if (httpStatic) {
-			httpStatic = path.resolve(httpStatic, rootPath);
 			var rootPath = project.root.path;
+			httpStatic = path.resolve(rootPath, httpStatic);
+
 			var dirName = filePath;
 
 			while (dirName != rootPath) {
@@ -76,8 +77,7 @@ util.extend (presenterTask.prototype, {
 			// warn if file is in static HTTP directory
 			if (self.isInStaticDir(theTemplate)) {
 				throw new Error(
-					'Publicly accessible template file at %s!',
-					theTemplate
+					'Publicly accessible template file at '+theTemplate+'!'
 				);
 			}
 
@@ -142,8 +142,12 @@ util.extend (presenterTask.prototype, {
 				cache[self.file] = presenters[self.type][compileMethod](
 					tplStr, self.compileParams || {}
 				);
-
-				self.renderProcess(cache[self.file]);
+				
+				if (self.renderMethod) {
+					self.renderProcess(cache[self.file][self.renderMethod].bind(cache[self.file]))
+				} else {
+					self.renderProcess(cache[self.file]);
+				}
 
 			});
 		});
@@ -225,7 +229,10 @@ util.extend (presenterTask.prototype, {
 				self.setContentType('text/html; charset=utf-8');
 				self.renderFile();
 				break;
-
+			
+			case 'jade':
+			case 'mustache':
+			case 'hogan.js':
 			case 'ejs':
 				self.setContentType('text/html; charset=utf-8');
 				self.renderCompile();

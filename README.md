@@ -1,5 +1,7 @@
-workflow processing for node.js
-===============================
+*dataflo.ws*: workflow processing for node.js
+=============================================
+
+![dataflo.ws logo](http://i.imgur.com/DxczKN2.png)
 
 example
 -------------------------------
@@ -8,7 +10,7 @@ you can see a working example by running
 
 	npm install -g dataflo.ws
 	cd $NODE_PATH/dataflo.ws/example/yql/ # example project directory
-	dataflows daemon example
+	dataflows daemon yql
 
 abstract
 -------------------------------
@@ -131,11 +133,11 @@ synopsis
 		"workflows": [{
 			"url": "/save",
 			"tasks": [{
-				"className": "post",
+				"$class": "post",
 				"request": "{$request}",
-				"produce": "data.body"
+				$set: "data.body"
 			}, {
-				"className": "render",
+				"$class": "render",
 				"type": "json",
 				"data": "{$data.body}",
 				"output": "{$response}"
@@ -143,12 +145,12 @@ synopsis
 		}, {
 			"url": "/entity/tickets/list.json",
 			"tasks": [{
-				"className":  "mongoRequest",
+				"$class":  "mongoRequest",
 				"connector":  "mongo",
 				"collection": "messages",
-				"produce":    "data.filter"
+				$set:    "data.filter"
 			}, {
-				"className": "render",
+				"$class": "render",
 				"type": "json",
 				"data": "{$data.filter}",
 				"output": "{$response}"

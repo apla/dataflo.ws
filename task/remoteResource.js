@@ -46,45 +46,62 @@ util.extend (cacheTask.prototype, {
 	initModel: function () {
 		var self = this;
 
-		try {
-			if (self.url.constructor === String) {
+		if (Object.is('String', self.url)) {
+			try {
 				self.url = urlUtil.parse(self.url, true);
+			} catch (e) {
+				self.emitError(e);
+				return;
 			}
-			self.url.headers = self.headers || {};
-			if (self.post) {
-				if (self.post.constructor === String || self.post.constructor === Buffer) {
-					// so we got somethin in string
-					// content type and length must be defined
-					if (!self.url.headers['content-type']) {
-						self.emitError ('you must define content type when submitting plain string as post data parameter');
+		}
+
+		self.url.headers = self.headers || {};
+
+		if (self.post) {
+			var contentType = self.url.headers['content-type'],
+				postType = Object.typeOf(self.post);
+
+			// default object encoding form-urlencoded
+			if (!contentType && postType == 'Object') {
+				contentType = self.url.headers['content-type']   = 'application/x-www-form-urlencoded';
+			} else if (!contentType) {
+				contentType = 'undefined';
+			}
+
+			switch (contentType) {
+			case 'application/x-www-form-urlencoded':
+				self.url.body = querystring.stringify (self.post);
+				self.url.headers['content-length'] = self.url.body.length;
+				break;
+			case 'application/json':
+				self.url.body = JSON.stringify (self.post);
+				self.url.headers['content-length'] = self.url.body.length;
+				break;
+			case 'multipart/mixed':
+			case 'multipart/alternate':
+				self.emitError ('multipart not yet implemented');
+				return;
+				break;
+			case 'undefined':
+				self.emitError ('you must define content type when submitting plain string as post data parameter');
+				return;
+				break;
+			default:
+				if (!self.url.headers['content-length']) {
+					if (postType == 'String' || postType == 'Buffer') {
+						self.url.headers['content-length'] = self.post.length;
+					} else {
+						self.emitError ('you must define content-length when submitting plain string as post data parameter');
 						return;
 					}
-					self.url.headers['content-length'] = self.post.length;
-					self.url.body = self.post;
-				} else if (self.post instanceof Object && Object.getPrototypeOf (self.post) == Object.prototype) {
-					self.url.body = querystring.stringify (self.post);
-					self.url.headers['content-length'] = self.url.body.length;
-					self.url.headers['content-type']   = 'application/x-www-form-urlencoded';
-				} else if (self.post.constructor === Array) {
-					// TODO: multipart
-					self.emitError ('multipart not yet implemented');
-					return;
-
-				} else {
-					self.emitError ('something wrong with post data. you must supply string, object or array');
-					return;
 				}
-				// if (self.post is plain Object)
-				// if (self.post is a string)
+				break;
 			}
-
-			self.model = new urlModel(self.url);
-			self.url = self.model.url;
-			self.model.url.protocol.length;
-		} catch (e) {
-			self.emitError(e);
-			return;
 		}
+
+		self.model = new urlModel(self.url, self);
+		self.url = self.model.url;
+
 		self.model.on ('data', function (chunks) {
 			self.activityCheck ('model.fetch data');
 		});
@@ -93,7 +110,6 @@ util.extend (cacheTask.prototype, {
 			// console.log("%%%%%%%%%%cache failed");
 			self.emitError(e);
 		});
-	
 	},
 	isSameUrlLoading : function () {
 		var self = this;
@@ -148,7 +164,6 @@ util.extend (cacheTask.prototype, {
 				self.res.srcName = srcName ? srcName : "";
 				console.log("self.res -> ", self.res);*/
 				self.clearOperationTimeout();
-				delete project.caching[self.cacheFilePath];
 				// self.res.cacheFilePath = self.cacheFilePath
 				// self.completed (self.res);
 				self.finishWith ({data: self.download.data});
@@ -156,10 +171,7 @@ util.extend (cacheTask.prototype, {
 
 		}
 
-		if (self.isSameUrlLoading ())
-			return;
-
-		self.emit ('log', 'start caching from ' + self.url.href + ' to ' + self.cacheFilePath);
+		self.emit ('log', 'start caching from ' + self.url.href + ' to memory buffer');
 
 		self.activityCheck ('model.fetch start');
 		self.model.fetch ({to: self.download});
@@ -211,7 +223,7 @@ util.extend (cacheTask.prototype, {
 					delete project.caching[self.cacheFilePath];
 					// self.res.cacheFilePath = self.cacheFilePath
 					// self.completed (self.res);
-					self.finishWith ({fileName: self.cacheFileName});
+					self.finishWith ({fileName: self.cacheFileName, filePath: self.cacheFilePath});
 				});
 			});
 
@@ -230,7 +242,7 @@ util.extend (cacheTask.prototype, {
 
 				self.emit ('log', 'file already downloaded from ' + self.url.href + ' to ' + self.cacheFilePath);
 				delete project.caching[self.cacheFilePath];
-				self.completed (self.cacheFileName);
+				self.finishWith({fileName: self.cacheFileName, filePath: self.cacheFilePath});
 
 				return;
 			}

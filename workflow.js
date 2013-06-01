@@ -17,16 +17,8 @@ var $global = common.$global;
 
 var taskStateNames = taskClass.prototype.stateNames;
 
-function isEmpty(obj) {
-	var type = Object.typeOf(obj);
-	return (
-		('Undefined' == type || 'Null' == type)            ||
-		('Boolean'   == type && false === obj)             ||
-		('Number'    == type && (0 === obj || isNaN(obj))) ||
-		('String'    == type && 0 == obj.length)           ||
-		('Array'     == type && 0 == obj.length)           ||
-		('Object'    == type && 0 == Object.keys(obj).length)
-	);
+function isVoid(val) {
+	return void 0 == val;
 }
 
 function taskRequirements (requirements, dict) {
@@ -37,7 +29,7 @@ function taskRequirements (requirements, dict) {
 		var requirement = requirements[k];
 		for (var i = 0; i < requirement.length; i++) {
 			try {
-				if (isEmpty (common.pathToVal (dict, requirement[i])))
+				if (isVoid (common.pathToVal (dict, requirement[i])))
 					result.push (k);
 			} catch (e) {
 				result.push (k);
@@ -48,7 +40,7 @@ function taskRequirements (requirements, dict) {
 	return result;
 }
 
-function checkTaskParams (params, dict, prefix) {
+function checkTaskParams (params, dict, prefix, marks) {
 	// parse task params
 	// TODO: modify this function because recursive changes of parameters works dirty (indexOf for value)
 
@@ -73,16 +65,12 @@ function checkTaskParams (params, dict, prefix) {
 			if (Object.is('String', val)) { // string
 
 				try {
-					var tmp = val.interpolate (dict);
-					if (tmp === void 0)
-						modifiedParams.push(val);
-					else
+					var tmp = val.interpolate(dict, marks);
+					if (tmp === undefined) {
+						failedParams.push (prefix+'['+index+']');
+					} else {
 						modifiedParams.push(tmp);
-
-//					console.log (val, ' interpolated to the "', modifiedParams[key], '" and ', isEmpty (modifiedParams[key]) ? ' is empty' : 'is not empty');
-
-					if (isEmpty (modifiedParams[modifiedParams.length-1]))
-						throw "EMPTY VALUE";
+					}
 				} catch (e) {
 					failedParams.push (prefix+'['+index+']');
 				}
@@ -90,7 +78,9 @@ function checkTaskParams (params, dict, prefix) {
 			} else if (Object.typeOf(val) in AllowedValueTypes) {
 				modifiedParams.push(val);
 			} else {
-				var result = checkTaskParams(val, dict, prefix+'['+index+']');
+				var result = checkTaskParams(
+					val, dict, prefix+'['+index+']', marks
+				);
 
 				modifiedParams.push(result.modified);
 				failedParams = failedParams.concat (result.failed);
@@ -106,28 +96,20 @@ function checkTaskParams (params, dict, prefix) {
 
 			if (Object.is('String', val)) {
 				try {
-					var tmp = modifiedParams[key] = val.interpolate (dict);
-
-
-					if (tmp === void 0) {
-						modifiedParams[key] = val;
+					var tmp = val.interpolate(dict, marks);
+					if (tmp === undefined) {
+						failedParams.push (prefix+key);
+					} else {
+						modifiedParams[key] = tmp;
 					}
-
-					if (isEmpty(modifiedParams[key])) {
-						throw "EMPTY VALUE";
-					}
-
 				} catch (e) {
-
 					//console.error('ERR!');
 					failedParams.push (prefix+key);
-
 				}
-
 			} else if (Object.typeOf(val) in AllowedValueTypes) {
 				modifiedParams[key] = val;
 			} else { // val is hash || array
-				var result = checkTaskParams(val, dict, prefix+key);
+				var result = checkTaskParams(val, dict, prefix+key, marks);
 
 				modifiedParams[key] = result.modified;
 				failedParams = failedParams.concat (result.failed);
@@ -189,7 +171,7 @@ var workflow = module.exports = function (config, reqParam) {
 		return item;
 	}).join ('');
 
-	this.data = this.data || {};
+	this.data = this.data || { data: {} };
 
 //	console.log ('!!!!!!!!!!!!!!!!!!!' + this.data.keys.length);
 
@@ -205,6 +187,7 @@ var workflow = module.exports = function (config, reqParam) {
 	this.tasks = config.tasks.map (function (taskParams) {
 		var task;
 
+		var originalTaskConfig = JSON.parse(JSON.stringify(taskParams));
 		var actualTaskParams;
 		var taskTemplateName = taskParams.$template;
 		if (self.templates && self.templates[taskTemplateName]) {
@@ -220,8 +203,7 @@ var workflow = module.exports = function (config, reqParam) {
 
 		var checkRequirements = function () {
 
-			var dict    = util.extend(true, {}, reqParam);
-			dict.data   = self.data;
+			var dict    = util.extend(true, self.data, reqParam);
 			dict.global = $global;
 			dict.appMain = $mainModule.exports;
 
@@ -229,7 +211,7 @@ var workflow = module.exports = function (config, reqParam) {
 				dict.project = project;
 			}
 
-			var result = checkTaskParams (actualTaskParams, dict);
+			var result = checkTaskParams (actualTaskParams, dict, self.marks);
 
 			if (result.failed && result.failed.length > 0) {
 				this.unsatisfiedRequirements = result.failed;
@@ -285,6 +267,7 @@ var workflow = module.exports = function (config, reqParam) {
 
 			try {
 				task = new xTaskClass ({
+					originalConfig: originalTaskConfig,
 					className: taskClassName,
 					method:    actualTaskParams.method || actualTaskParams.$method,
 					require:   checkRequirements,
@@ -363,7 +346,7 @@ var workflow = module.exports = function (config, reqParam) {
 							if (!failed) {
 								this.completed(returnVal);
 
-								if (isEmpty(returnVal)) {
+								if (isVoid(returnVal)) {
 									this.empty();
 								}
 							}
@@ -381,6 +364,7 @@ var workflow = module.exports = function (config, reqParam) {
 			});
 
 			task = new xTaskClass ({
+				originalConfig: originalTaskConfig,
 				functionName: taskFnName,
 				logTitle:     actualTaskParams.logTitle || actualTaskParams.$logTitle,
 				require:      checkRequirements,
@@ -519,7 +503,7 @@ util.extend (workflow.prototype, {
 				if (task.state != taskStateNames.scarce && task.state != taskStateNames.skipped)
 					return;
 				if (task.important) {
-					task.failed ("important task didn't started");
+					task.failed ("important task didn't start");
 					self.taskStates[taskStateNames.scarce]--;
 					self.taskStates[task.state]++;
 					self.failed = true;
@@ -584,8 +568,21 @@ util.extend (workflow.prototype, {
 		this.log (task.logTitle,  "("+task.state+")",  msg);
 	},
 	logTaskError: function (task, msg, options) {
-		// TODO: fix by using console.error
-		this.log(task.logTitle, "("+task.state+") \x1B[0;31m" + msg, options || '', "\x1B[0m");
+		var lastFrame = '';
+		if (options && options.stack) {
+			var frames = options.stack.split('\n');
+			var len = frames.length;
+			if (frames.length > 1) {
+				lastFrame = frames[1].trim();
+			}
+		}
+
+		this.log(
+			task.logTitle,
+			'(' + task.state + ') ',
+			'\x1B[0;31m' + msg, options || '', '\x1B[0m',
+			lastFrame
+		);
 	},
 	logError: function (task, msg, options) {
 		// TODO: fix by using console.error
@@ -607,14 +604,14 @@ util.extend (workflow.prototype, {
 
 		task.on ('error', function (e) {
 			self.error = e;
-			self.logTaskError (task, 'error: ', e);// + '\n' + arguments[0].stack);
+			self.logTaskError (task, 'error: ', e);
 		});
 
 		// states
 		task.on ('skip', function () {
 //			if (task.important) {
 //				self.failed = true;
-//				return self.logTaskError (task, 'error ' + arguments[0]);// + '\n' + arguments[0].stack);
+//				return self.logTaskError (task, 'error ' + arguments[0]);
 //			}
 			self.logTask (task, 'task skipped');
 
@@ -636,9 +633,9 @@ util.extend (workflow.prototype, {
 
 			if (result) {
 				if (t.produce || t.$set) {
-					common.pathToVal (self, t.produce || t.$set, result);
+					common.pathToVal (self.data, t.produce || t.$set, result);
 				} else if (t.$mergeWith) {
-					common.pathToVal (self, t.$mergeWith, result, common.mergeObjects);
+					common.pathToVal (self.data, t.$mergeWith, result, common.mergeObjects);
 				}
 			}
 
@@ -652,11 +649,14 @@ util.extend (workflow.prototype, {
 
 		task.on('empty', function (t) {
 			if (t.$empty) {
-				common.pathToVal(self, t.$empty, true);
+				common.pathToVal(self.data, t.$empty, true);
 			}
 		});
 
 	}
 });
+
+// legacy
+workflow.isEmpty = common.isEmpty;
 
 });

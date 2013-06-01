@@ -16,7 +16,7 @@ util.extend (basic.prototype, {
 	run: function() {
 
 		var self = this;
-		self.failed('use method [render|checkExistAndRender|checkNoExistAndRender]');
+		self.failed('use method [render|checkExistAndRender|checkNoExistAndRender|logout]');
 
 	},
 
@@ -26,11 +26,7 @@ util.extend (basic.prototype, {
 			user = self.user,
 			sessionUID = self.sessionUID;
 
-		var index = user.sessionUIDs.indexOf(sessionUID);
-
-		if (index == -1) {
-			user.sessionUIDs.push(sessionUID);
-		}
+		user.sessionUIDs = sessionUID;
 
 		self.completed(user);
 	},
@@ -79,5 +75,13 @@ util.extend (basic.prototype, {
 			self.failed({status: 401, err: "User already exist", errCode: 3});
 
 		}
+	},
+	
+	logout: function() {
+		var self = this,
+			defaultRedirectUrl = self.defaultRedirectUrl,
+			redirectUrl = self.req.url.query && self.req.url.query.redirectUrl;
+		
+		self.completed(redirectUrl || defaultRedirectUrl || '/');
 	}
 });
