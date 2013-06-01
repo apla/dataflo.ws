@@ -185,13 +185,8 @@ var workflow = module.exports = function (config, reqParam) {
 		"" + idString[2] + idString[3],
 		"" + idString[4] + idString[5]
 	].map (function (item) {
-		try {
-			var _p = process;
-			return "\x1B[0;3" + (parseInt(item) % 8)  + "m" + item + "\x1B[0m";
-		} catch (e) {
-			return item;
-		}
-
+		if ($isServerSide) return "\x1B[0;3" + (parseInt(item) % 8)  + "m" + item + "\x1B[0m";
+		return item;
 	}).join ('');
 
 	this.data = this.data || {};

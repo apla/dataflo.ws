@@ -23,6 +23,37 @@ define ('util', [], function () {
 		}});
 	};
 
+	util.class2type = {};
+
+	"Boolean Number String Function Array Date RegExp Object Error".split(" ").forEach (function(name, i) {
+		util.class2type[ "[object " + name + "]" ] = name.toLowerCase();
+	});
+
+	util.isPlainObject = function isPlainObject (obj) {
+
+		var isObject = typeof obj === "object" || typeof obj === "function" ? util.class2type[{}.toString.call(obj)] || "object" : typeof obj;
+		if (isObject !== "object" || obj.nodeType || obj === obj.window) {
+			return false;
+		}
+
+		// Support: Firefox <20
+		// The try/catch suppresses exceptions thrown when attempting to access
+		// the "constructor" property of certain host objects, ie. |window.location|
+		// https://bugzilla.mozilla.org/show_bug.cgi?id=814622
+		try {
+			if (obj.constructor &&
+					!{}.hasOwnProperty.call(obj.constructor.prototype, "isPrototypeOf")) {
+				return false;
+			}
+		} catch (e) {
+			return false;
+		}
+
+		// If the function hasn't returned already, we're confident that
+		// |obj| is a plain object, created by {} or constructed with new Object
+		return true;
+	};
+
 	util.extend = function extend () {
 		// copy reference to target object
 		var target = arguments[0] || {}, i = 1, length = arguments.length, deep = false, options, name, src, copy;
@@ -36,24 +67,6 @@ define ('util', [], function () {
 		// Handle case when target is a string or something (possible in deep copy)
 		if (typeof target !== "object" && !typeof target === 'function')
 			target = {};
-		var isPlainObject = function(obj) {
-			// Must be an Object.
-			// Because of IE, we also have to check the presence of the constructor property.
-			// Make sure that DOM nodes and window objects don't pass through, as well
-			if (!obj || toString.call(obj) !== "[object Object]" || obj.nodeType || obj.setInterval)
-				return false;
-			var has_own_constructor = hasOwnProperty.call(obj, "constructor");
-			var has_is_property_of_method = hasOwnProperty.call(obj.constructor.prototype, "isPrototypeOf");
-			// Not own constructor property must be Object
-			if (obj.constructor && !has_own_constructor && !has_is_property_of_method)
-				return false;
-			// Own properties are enumerated firstly, so to speed up,
-			// if last one is own, then all properties are own.
-			var last_key;
-			for (key in obj)
-				last_key = key;
-			return typeof last_key === "undefined" || hasOwnProperty.call(obj, last_key);
-		};
 		for (; i < length; i++) {
 			// Only deal with non-null/undefined values
 			if ((options = arguments[i]) !== null) {
@@ -65,8 +78,8 @@ define ('util', [], function () {
 					if (target === copy)
 						continue;
 					// Recurse if we're merging object literal values or arrays
-					if (deep && copy && (isPlainObject(copy) || Array.isArray(copy))) {
-						var clone = src && (isPlainObject(src) || Array.isArray(src)) ? src : Array.isArray(copy) ? [] : {};
+					if (deep && copy && (util.isPlainObject(copy) || Array.isArray(copy))) {
+						var clone = src && (util.isPlainObject(src) || Array.isArray(src)) ? src : Array.isArray(copy) ? [] : {};
 						// Never move original objects, clone them
 						target[name] = extend(deep, clone, copy);
 						// Don't bring in undefined values
