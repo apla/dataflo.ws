@@ -347,9 +347,9 @@ var workflow = module.exports = function (config, reqParam) {
 								this.completed(returnVal);
 
 //								if (isVoid(returnVal)) {
-								if (common.isEmpty(returnVal)) {
-									this.empty();
-								}
+//								if (common.isEmpty(returnVal)) {
+//									this.empty();
+//								}
 							}
 						} else {
 							failed = taskFnName + ' is not a function';
