@@ -236,6 +236,11 @@ util.extend (task.prototype, taskStateMethods, {
 			}
 		}
 
+        //@behrad set $empty on completion of all task types
+        if( common.isEmpty( result ) ) {
+            this.empty();
+        }
+
 		/**
 		 * @event complete
 		 * Published upon task completion.
