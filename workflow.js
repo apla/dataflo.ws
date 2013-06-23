@@ -346,7 +346,8 @@ var workflow = module.exports = function (config, reqParam) {
 							if (!failed) {
 								this.completed(returnVal);
 
-								if (isVoid(returnVal)) {
+//								if (isVoid(returnVal)) {
+								if (common.isEmpty(returnVal)) {
 									this.empty();
 								}
 							}
