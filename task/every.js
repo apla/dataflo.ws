@@ -1,3 +1,11 @@
+var define;
+if (typeof define === "undefined")
+	define = function (classInstance) {
+		classInstance (require, exports, module);
+	}
+
+define (function (require, exports, module) {
+
 var util	 = require('util');
 var common	 = require('../common');
 var workflow = require('../workflow');
@@ -148,3 +156,7 @@ util.extend(EveryTask.prototype, {
 });
 
 module.exports = EveryTask;
+
+return EveryTask;
+
+});
