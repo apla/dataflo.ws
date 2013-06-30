@@ -33,9 +33,18 @@ util.extend(EveryTask.prototype, {
 	onWorkflowResult: function () {
 		this.count += 1;
 
+		// TODO: failed dataflows and completed ones must be separated
+		// so, every task must fail only when one or more dataflows is failed
+		// otherwise, we need to emit empty
 		if (this.count >= this.$every.length) {
-			if (this.$collect) {
+			if (this.$collect || this.$collectArray) {
 				if (this.results.length) {
+					this.completed(this.results);
+				} else {
+					this.failed('No results');
+				}
+			} else if (this.$collectObject) {
+				if (Object.keys(this.results).length) {
 					this.completed(this.results);
 				} else {
 					this.failed('No results');
@@ -47,12 +56,21 @@ util.extend(EveryTask.prototype, {
 	},
 
 	_onCompleted: function (wf) {
-		if (this.$collect) {
-			var result = this.getProperty(wf.data, this.$collect);
+		if (this.$collect || this.$collectArray) {
+			var propertyName = this.$collect || this.$collectArray;
+			var result = this.getProperty(wf.data, propertyName);
 			if (undefined !== result) {
 				this.results.push(result);
 			}
-		}
+		} else if (this.$collectObject) {
+			var result = this.getProperty(wf.data, this.$collectObject);
+			if (undefined !== result) {
+				for (var objectField in result) {
+					this.results[objectField] = result[objectField];
+    				}
+			}
+		} 
+		
 		this.onWorkflowResult();
 	},
 
@@ -98,6 +116,15 @@ util.extend(EveryTask.prototype, {
 		 * Don't touch [$...] refs inside nested $every loops.
 		 */
 		this.unquote(this.originalConfig, this, '$tasks');
+		
+		if ((this.$collect || this.$collectArray) && this.$collectObject) {
+			console.error ('options $collectArray and $collectObject are mutually exclusive');
+			this.failed ('Configuration error');
+		}
+		
+		if (this.$collectObject) {
+			this.results = {};
+		}
 
 		this.$every.forEach(function (item, index, array) {
 			var every = {
