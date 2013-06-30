@@ -412,6 +412,7 @@ function timestamp () {
 util.extend (workflow.prototype, {
 	checkTaskParams: checkTaskParams,
 	taskRequirements: taskRequirements,
+	failed: false,
 	isIdle: true,
 	haveCompletedTasks: false,
 
@@ -426,8 +427,8 @@ util.extend (workflow.prototype, {
 
 		if (self.stopped)
 			return;
-
-		self.failed = false;
+        /* @behrad following was overriding already set failed status by failed tasks */
+//		self.failed = false;
 		self.isIdle = false;
 		self.haveCompletedTasks = false;
 
