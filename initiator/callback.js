@@ -28,29 +28,39 @@ util.extend (callbacki.prototype, {
 
 		var self = this;
 
-		var wf;
+		var wfConf;
 
-		self.workflows.map (function (item) {
+		if (self.workflows.constructor === Array) {
+			self.workflows.map (function (item) {
 
-			var match = (token == item.token);
+				var match = (token == item.token);
 
-			if (match) { //exact match
+				if (match) { //exact match
+					wfConf = item;
+				}
+			});
+		} else { // assume object
+			wfConf = self.workflows[token];
+		}
+		
+		if (!wfConf) {
+			self.emit ("unknown", wfRequire);
+			return;
+		}
 
-				wf = new workflow (
-					util.extend (true, {}, item),
-					wfRequire
-				);
+		var wf = new workflow (
+			util.extend (true, {}, wfConf),
+			wfRequire
+		);
 
-				self.emit ("detected", wfRequire, wf);
-				if (item.autoRun || item.autoRun == void 0 || wfRequire.autoRun || wfRequire.autoRun == void 0)
-					wf.run ();
+		self.emit ("detected", wfRequire, wf);
+		if (wfConf.autoRun || wfConf.autoRun == void 0 || wfRequire.autoRun || wfRequire.autoRun == void 0)
+			wf.run ();
 
-				return;
-			}
-		});
-
-		if (!wf)
-			self.emit ("unknown", wfRequire, wf);
+		if (!wf) {
+			self.emit ("unknown", wfRequire);
+			return;
+		}
 
 		return wf;
 	}
