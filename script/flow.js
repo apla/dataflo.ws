@@ -4,7 +4,8 @@ module.exports = {
 	launchContext: function () {
 		return {
 			token:    process.argv[3],
-			param:     process.argv[4]
+			param:    process.argv[4],
+			params:   process.argv.slice(4)
 		};
 	},
 	launch: function (conf) {
@@ -21,7 +22,7 @@ module.exports = {
 		*/
 
 		var callbackIConf = conf.initiator['callback'];
-		
+
 		var callbackIClass = dataflows.initiator('callback');
 
 		if ('function' == typeof callbackIClass) {
@@ -32,7 +33,10 @@ module.exports = {
 
 		var flow = processor.process (this.launchContext().token, {
 			templates: {},
-			request: {param: this.launchContext().param},
+			request: {
+				param: this.launchContext().param,
+				params: this.launchContext().params
+			},
 			autoRun: false
 		});
 
