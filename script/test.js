@@ -19,40 +19,50 @@ module.exports = {
 
 		var flows = processor.dataflows || processor.flows;
 		var cases = [];
-		for (i in flows) {
-			if (i.match(/^test/))
-				cases.push(i);
+		for (var token in flows) {
+			if (token.match(/^test\W/))
+				cases.push(token);
 		}
 		cases.sort();
 
 		var context = this.launchContext();
 		var casesToRun = cases.length;
-		var casesResult = { success: 0, fail: 0 };
+		var casesResult = { ok: 0, fail: 0 };
 
 		var onTestEnd = function() {
 			if (--casesToRun)
 				return;
 
-			console.log('Completed: ' + casesResult['success'] + ' tests of ' + cases.length );
-			console.log('Failed: ' + casesResult['fail'] + ' test of ' + cases.length );
+			console.log('Completed: ' + casesResult['ok'] + ' of ' + cases.length );
+			console.log('Failed:    ' + casesResult['fail'] + ' of ' + cases.length );
 			process.kill();
 		}
 
-		cases.forEach(function(test) {
-			console.log('Running test case ' + test);
+		cases.forEach(function(token) {
+			var successKey = 'ok';
+			var failKey    = 'fail';
 
-			var flow = processor.process(test, {
+			var m = token.match (/^test\W(ok|fail)?/);
+			
+			if (m[1] == 'fail') {
+				successKey = 'fail';
+				failKey    = 'ok';
+			}
+			
+			console.print ('Running test case ' + token + '; expected ' + successKey);
+
+			var flow = processor.process(token, {
 				templates: {},
 				request: context.param,
 				autoRun: false
 			});
 
 			flow.on('completed', function(flow) {
-				casesResult['success']++;
+				casesResult[successKey]++;
 				onTestEnd();
 			});
 			flow.on('failed', function(flow) {
-				casesResult['fail']++;
+				casesResult[failKey]++;
 				onTestEnd();
 			});
 

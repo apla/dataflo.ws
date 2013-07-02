@@ -10,21 +10,32 @@
 		"callback": {
 		
 			"flows": {
-				"test-basic": {
+				"test:ok:01-origin": "<test/01-origin>",
+				"test:fail:02-every": {
 					"tasks": [{
-						"$function":"toUpperCase",
-						"$origin":"string",
-						"$set":"uppercase"
-					}, {
-						"$function": "equal",
-						"$args": [
-							"STRING",
-							"{$uppercase}"
-						],
-						"$set": "result"
+						"$every": [2, 1, 2],
+						"$tasks": [{
+							"$function": "throwUnlessEqual",
+							"$args": [
+								"[*every.index]",
+								"[*every.item]"
+							]
+						}]
 					}]
 				},
-				"test-every-000": {
+				"test:ok:02-every": {
+					"tasks": [{
+						"$every": [0, 1, 2],
+						"$tasks": [{
+							"$function": "throwUnlessEqual",
+							"$args": [
+								"[*every.index]",
+								"[*every.item]"
+							]
+						}]
+					}]
+				},
+				"xtest-every-000": {
 					"data": {
 						"articleSelector":
 							"//article/media[@media2article-type=\"photo\"]"
