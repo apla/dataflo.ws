@@ -48,11 +48,7 @@ module.exports = {
 			});
 
 			flow.on('completed', function(flow) {
-				if (typeof flow.result == "undefined" || flow.result) {
-					casesResult['success']++;
-				} else {
-					casesResult['fail']++;
-				}
+				casesResult['success']++;
 				onTestEnd();
 			});
 			flow.on('failed', function(flow) {
