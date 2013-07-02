@@ -8,7 +8,7 @@
 
 	"initiator": {
 		"callback": {
-		
+
 			"flows": {
 				"test-basic": {
 					"tasks": [{
@@ -22,12 +22,6 @@
 							"{$uppercase}"
 						],
 						"$set": "result"
-//					}, {
-//							"$function":"console.print",
-//								"$args":[
-//									"Running equal...",
-//									"STRING against {$uppercase}"
-//								]
 					}]
 				},
 				"test-every-000": {
