@@ -172,8 +172,8 @@ util.extend (task.prototype, taskStateMethods, {
 		this.cancel = function () {
 
 			this.attempts ++;
-
-			if (this.state == 2) return;
+            /* behrad: this would be expected to ignore not running tasks */
+			if (this.state != 2) return;
 
 			this.state = 5;
 
