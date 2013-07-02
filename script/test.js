@@ -50,9 +50,10 @@ module.exports = {
 			}
 			
 			console.print ('Running test case ' + token + '; expected ' + successKey);
+//			console.log (conf.templates.task);
 
 			var flow = processor.process(token, {
-				templates: {},
+				templates: conf.templates.task,
 				request: context.param,
 				autoRun: false
 			});
