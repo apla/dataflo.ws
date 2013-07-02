@@ -38,6 +38,7 @@ project.on('ready', function () {
 	var scriptName = process.argv[2];
 
 	var scriptClass = require (path.join (MODULE_NAME, 'script', scriptName));
+	if (!scriptClass) scriptClass = require (path.join (project.root, 'bin', scriptName));
 	if (!scriptClass) {
 		// TODO: list all available scripts with descriptions
 		console.error('sorry, there is no such script "%s"', scriptName);
