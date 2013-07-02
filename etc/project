@@ -1,0 +1,31 @@
+// json
+{
+	"daemon": {
+		"test": {
+			"initiator": [ "timer", "repl", "http" ]
+		}
+	},
+
+	"initiator": {
+		"callback": {
+		
+			"flows": {
+			
+				"test-every-000": {
+					"data": {
+						"articleSelector":
+							"//article/media[@media2article-type=\"photo\"]"
+					},
+
+					"tasks": [{
+						
+					}],
+
+				}
+
+			}
+		},
+		"http": {
+		}
+	}
+}

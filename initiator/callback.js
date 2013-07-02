@@ -13,7 +13,7 @@ var EventEmitter = require ('events').EventEmitter,
 var callbacki = module.exports = function (config) {
 	var self = this;
 
-	this.workflows = config.workflows;
+	this.flows = config.workflows || config.flows;
 }
 
 util.inherits (callbacki, EventEmitter);
@@ -30,8 +30,8 @@ util.extend (callbacki.prototype, {
 
 		var wfConf;
 
-		if (self.workflows.constructor === Array) {
-			self.workflows.map (function (item) {
+		if (self.flows.constructor === Array) {
+			self.flows.map (function (item) {
 
 				var match = (token == item.token);
 
@@ -40,7 +40,7 @@ util.extend (callbacki.prototype, {
 				}
 			});
 		} else { // assume object
-			wfConf = self.workflows[token];
+			wfConf = self.flows[token];
 		}
 		
 		if (!wfConf) {

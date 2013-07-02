@@ -15,6 +15,16 @@ var EveryTask = function (cfg) {
 	this.init(cfg);
 	this.count = 0;
 	this.results = [];
+
+	if ((this.$collect || this.$collectArray) && this.$collectObject) {
+		console.error ('options $collectArray and $collectObject are mutually exclusive');
+		this.failed ('Configuration error');
+	}
+	
+	if (this.$collectObject) {
+		this.results = {};
+	}
+
 };
 
 util.inherits(EveryTask, task);
@@ -125,15 +135,6 @@ util.extend(EveryTask.prototype, {
 		 */
 		this.unquote(this.originalConfig, this, '$tasks');
 		
-		if ((this.$collect || this.$collectArray) && this.$collectObject) {
-			console.error ('options $collectArray and $collectObject are mutually exclusive');
-			this.failed ('Configuration error');
-		}
-		
-		if (this.$collectObject) {
-			this.results = {};
-		}
-
 		this.$every.forEach(function (item, index, array) {
 			var every = {
 				item: item,
