@@ -187,19 +187,34 @@ var workflow = module.exports = function (config, reqParam) {
 	this.tasks = config.tasks.map (function (taskParams) {
 		var task;
 
-		var originalTaskConfig = JSON.parse(JSON.stringify(taskParams));
-		var actualTaskParams;
+		var actualTaskParams = {};
 		var taskTemplateName = taskParams.$template;
-		if (self.templates && self.templates[taskTemplateName]) {
-
-			actualTaskParams = {};
+		if (taskTemplateName && self.templates && self.templates[taskTemplateName]) {
 			util.extend (true, actualTaskParams, self.templates[taskTemplateName]);
-			util.extend (true, actualTaskParams, taskParams);
-
 			delete actualTaskParams.$template;
-		} else {
-			actualTaskParams = util.extend(true, {}, taskParams);
 		}
+
+		// we expand templates in every place in config
+		// for tasks such as every
+		util.extend (true, actualTaskParams, taskParams);
+
+		if (actualTaskParams.$every) {
+			actualTaskParams.$class = 'every';
+			actualTaskParams.$tasks.forEach (function (everyTaskConf, idx) {
+				var taskTemplateName = everyTaskConf.$template;
+				if (taskTemplateName && self.templates && self.templates[taskTemplateName]) {
+					var newEveryTaskConf = util.extend (true, {}, self.templates[taskTemplateName]);
+					util.extend (true, newEveryTaskConf, everyTaskConf);
+					util.extend (true, everyTaskConf, newEveryTaskConf);
+					delete everyTaskConf.$template;
+					console.log (everyTaskConf, actualTaskParams.$tasks[idx]);//everyTaskConf.$tasks
+				}
+				
+			});
+		}
+		
+//		var originalTaskConfig = JSON.parse(JSON.stringify(actualTaskParams));
+		var originalTaskConfig = util.extend (true, {}, actualTaskParams);
 
 		var checkRequirements = function () {
 
@@ -225,10 +240,6 @@ var workflow = module.exports = function (config, reqParam) {
 		// check for data persistence in self.templates[taskTemplateName], taskParams
 
 //		console.log (taskParams);
-
-		if (actualTaskParams.$every) {
-			actualTaskParams.$class = 'every';
-		}
 
 		var taskClassName = actualTaskParams.className || actualTaskParams.$class;
 		var taskFnName = actualTaskParams.functionName || actualTaskParams.$function;

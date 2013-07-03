@@ -16,6 +16,13 @@
 				"$origin":    "{$global.JSON}",
 				"$function":  "parse",
 				"$set":       "result"
+			},
+			"indexEqItem": {
+				"$function": "throwUnlessEqual",
+				"$args": [
+					"[*every.index]",
+					"[*every.item]"
+				]
 			}
 		}
 	},
@@ -79,6 +86,14 @@
 					}, {
 						"$function": "throwUnlessDefined",
 						"$args": ["{$result.c}"]
+					}]
+				},
+				"test:ok:04-every-template": {
+					"tasks": [{
+						"$every": [0, 1, 2],
+						"$tasks": [{
+							"$template": "indexEqItem"
+						}]
 					}]
 				},
 				"xtest-every-000": {
