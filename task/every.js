@@ -85,7 +85,7 @@ util.extend(EveryTask.prototype, {
 			if (undefined !== result) {
 				for (var objectField in result) {
 					this.results[objectField] = result[objectField];
-    				}
+				}
 			}
 		} 
 		
@@ -133,20 +133,26 @@ util.extend(EveryTask.prototype, {
 		 * modifying the interpolated config tree (i.e. `this').
 		 * Don't touch [$...] refs inside nested $every loops.
 		 */
-		this.unquote(this.originalConfig, this, '$tasks');
+		// katspaugh is so stupid
+		// if we run already interpolated values second time,
+		// we face a problem with double interpolated values
+		// and missing functions
+		var everyTasks = util.extend (true, {}, this.originalConfig);
+		this.unquote(everyTasks, everyTasks, '$tasks');
 		
 		this.$every.forEach(function (item, index, array) {
 			var every = {
-				item: item,
+				item:  item,
 				index: index,
 				array: array
 			};
+			var dict = self.getDict();
+			dict.every = every;
 
 			var wf = new workflow({
-				tasks: self.$tasks
-			}, {
-				every: every
-			});
+				tasks: everyTasks.$tasks,
+				idPrefix: self.flowId + '>'
+			}, dict);
 
 			wf.on('completed', self._onCompleted.bind(self));
 			wf.on('failed', self._onFailed.bind(self));

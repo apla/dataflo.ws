@@ -154,6 +154,7 @@ var workflow = module.exports = function (config, reqParam) {
 	// TODO: check for cpu load
 	var salt = (Math.random () * 1e6).toFixed(0);
 	this.id      = this.id || (this.started ^ salt) % 1e6;
+	if (!this.idPrefix) this.idPrefix = '';
 
 	if (!this.stage) this.stage = 'workflow';
 
@@ -216,8 +217,7 @@ var workflow = module.exports = function (config, reqParam) {
 //		var originalTaskConfig = JSON.parse(JSON.stringify(actualTaskParams));
 		var originalTaskConfig = util.extend (true, {}, actualTaskParams);
 
-		var checkRequirements = function () {
-
+		function createDict () {
 			var dict    = util.extend(true, self.data, reqParam);
 			dict.global = $global;
 			dict.appMain = $mainModule.exports;
@@ -225,6 +225,12 @@ var workflow = module.exports = function (config, reqParam) {
 			if ($isServerSide) {
 				dict.project = project;
 			}
+			
+			return dict;
+		}
+		
+		var checkRequirements = function () {
+			var dict = createDict ();
 
 			var result = checkTaskParams (actualTaskParams, dict, self.marks);
 
@@ -282,7 +288,9 @@ var workflow = module.exports = function (config, reqParam) {
 					className: taskClassName,
 					method:    actualTaskParams.method || actualTaskParams.$method,
 					require:   checkRequirements,
-					important: actualTaskParams.important || actualTaskParams.$important
+					important: actualTaskParams.important || actualTaskParams.$important,
+					flowId:    self.coloredId,
+					getDict:   createDict
 				});
 			} catch (e) {
 				console.log ('instance of "'+taskClassName+'" creation failed:');
@@ -563,7 +571,7 @@ util.extend (workflow.prototype, {
 //		if (this.quiet || process.quiet) return;
 		var toLog = [
 			timestamp (),
-			this.stageMarker[this.stage][0] + this.coloredId + this.stageMarker[this.stage][1]
+			this.stageMarker[this.stage][0] + this.idPrefix + this.coloredId + this.stageMarker[this.stage][1]
 		];
 		for (var i = 0, len = arguments.length; i < len; ++i) {
 			toLog.push (arguments[i]);
