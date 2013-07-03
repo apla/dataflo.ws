@@ -218,6 +218,7 @@ var workflow = module.exports = function (config, reqParam) {
 		var originalTaskConfig = util.extend (true, {}, actualTaskParams);
 
 		function createDict () {
+			// TODO: very bad idea: reqParam overwrites self.data
 			var dict    = util.extend(true, self.data, reqParam);
 			dict.global = $global;
 			dict.appMain = $mainModule.exports;

@@ -96,6 +96,19 @@
 						}]
 					}]
 				},
+				"test:ok:05-every-double-expansion": {
+					"tasks": [{
+						"$every": [0, 1, 2],
+						"$tasks": [{
+							"$function": "throwUnlessEqual",
+							"$args": [
+								"[*every.index]",
+								"[*every.item]"
+							]
+						}]
+					}]
+				},
+				
 				"xtest-every-000": {
 					"data": {
 						"articleSelector":
