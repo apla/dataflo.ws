@@ -182,15 +182,17 @@ util.extend (facebook.prototype, {
 		};
 
 		var emailName;
+		
 		if (user.username) {
 			emailName = user.username;
 			mapped.avatar = 'http://graph.facebook.com/' +
 				user.username + '/picture';
 		} else {
 			emailName = user.id;
-			mapped.fbId = user.id;
 			mapped.avatar = '';
 		}
+		
+		mapped.externalId = user.id;
 		mapped.email = user.email || (emailName + '@facebook.com');
 
 		return mapped;
