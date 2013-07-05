@@ -53,7 +53,7 @@ util.extend (userRender.prototype, {
 			user = data[0];
 
 		} else {
-			user = {role: 'anonymous'};
+			user = {};
 		}
 
 		self.completed(user);

@@ -188,6 +188,7 @@ util.extend (facebook.prototype, {
 				user.username + '/picture';
 		} else {
 			emailName = user.id;
+			mapped.fbId = user.id;
 			mapped.avatar = '';
 		}
 		mapped.email = user.email || (emailName + '@facebook.com');
