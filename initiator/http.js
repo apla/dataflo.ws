@@ -405,7 +405,7 @@ httpdi.prototype.listen = function () {
 
 			if (mime && mime.lookup) {
 				contentType = mime.lookup (pathName);
-				charset = mime.charsets.lookup(contentType);
+				charset = mime.charsets.lookup(contentType, 'utf-8'); // The logic for charset lookups is pretty rudimentary.
 				if (charset) contentType += '; charset='+charset;
 			} else if (!contentType) {
 				console.error(
@@ -421,8 +421,8 @@ httpdi.prototype.listen = function () {
 					if (stats.isDirectory() && !readStream) {
 
 						res.statusCode = 303;
-						res.setHeader('Location', pathName +'/');
-						res.end('Redirecting to ' + pathName +'/');
+						res.setHeader('Location', req.url.pathname +'/');
+						res.end('Redirecting to ' + req.url.pathname +'/');
 						return;
 
 					} else if (stats.isFile() && readStream) {
