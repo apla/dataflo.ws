@@ -11,8 +11,7 @@ var timeri = module.exports = function (config) {
 	// 3. using interval, in milliseconds (every: 1000)
 
 	this.workflows = config.workflows;
-	this.wfRequire = config.wfRequire || {time: new Date(), data: {}};
-
+	
 	this.ready ();
 }
 
@@ -23,26 +22,57 @@ timeri.prototype.ready = function () {
 	var self = this;
 
 	self.workflows.map(function (workflowParams) {
-
-		var closure = function () {
-
+		
+		var wfCycle = {};
+		
+		wfCycle.run = function (rerun) {
+			
 			var wf = new workflow (
 				util.extend (true, {}, workflowParams),
-				self.wfRequire
+				{
+					timestamp: Date.now()
+				}
 			);
+			
+			if (rerun) {
+			
+				wf.on ('completed', function () {
+						wfCycle.end();
+				});
+					
+				wf.on ('failed', function () {
+						wfCycle.end();
+				});
+			
+			}
 
 			wf.run ();
 
 		};
+		
+		wfCycle.end = function() {
+			
+			setTimeout(function() {
+				wfCycle.run(true);
+			}, workflowParams.interval);
+			
+		};
 
 		if (workflowParams.interval) {
 
-			setInterval (closure, workflowParams.interval);
-			if (workflowParams.startRun) setTimeout(closure, 0);
+			if (workflowParams.startRun) {
+				wfCycle.run(true);
+			} else {
+				wfCycle.end();
+			}
 
 		} else if (workflowParams.timeout) {
 
-			setTimeout (closure, workflowParams.timeout);
+			setTimeout (function() {
+				
+				wfCycle.run(false);
+				
+			}, workflowParams.timeout);
 
 		}
 	});
