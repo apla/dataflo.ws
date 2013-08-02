@@ -576,15 +576,22 @@ if ($isServerSide) {
 			try {
 				mod = require(inProjectPath);
 			} catch (e) {
+				// assuming format: Error: Cannot find module 'csv2array' {"code":"MODULE_NOT_FOUND"}
+				if (e.toString().indexOf(name + '\'') > 0 && e.code == "MODULE_NOT_FOUND") {
 				try {
 					mod = require(inPackagePath);
-				} catch (e) {
+				} catch (ee) {
+					if (ee.toString().indexOf(name + '\'') > 0 && ee.code == "MODULE_NOT_FOUND") {
 					try {
 						mod = require(name);
-					} catch (e) {
+					} catch (eee) {
+						if (!(eee.toString().indexOf(name + '\'') > 0 && eee.code == "MODULE_NOT_FOUND"))
+							console.error ('when require \"' + name + '\": ' + eee.toString());
 						mod = null;
-					}
-				}
+					}} else
+					console.error ('when require \"' + inPackagePath + '\": ' + ee.toString());
+				}} else
+				console.error ('when require \"' + inProjectPath + '\": ' + e.toString());
 			}
 			return mod;
 		},
