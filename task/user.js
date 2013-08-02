@@ -70,6 +70,7 @@ util.extend (userRender.prototype, {
 			result.avatar = user.avatar || '';
 			result.sessionUID = session;
 			if (user.externalId) result.externalId = user.externalId;
+			result.authType = user.authType;
 		} else {
 			result.statusCode = 401;
 			result.err = 'User not authorized';
