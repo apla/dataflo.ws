@@ -1,0 +1,161 @@
+// json
+{
+	"daemon": {
+		"test": {
+			"initiator": [ "timer", "repl", "http" ]
+		}
+	},
+	"templates": {
+		"task": {
+			"jsonParseAndMerge": {
+				"$origin":    "{$global.JSON}",
+				"$function":  "parse",
+				"$mergeWith": "result"
+			},
+			"jsonParseAndSet": {
+				"$origin":    "{$global.JSON}",
+				"$function":  "parse",
+				"$set":       "result"
+			},
+			"indexEqItem": {
+				"$function": "throwUnlessEqual",
+				"$args": [
+					"[*every.index]",
+					"[*every.item]"
+				]
+			}
+		}
+	},
+	"initiator": {
+		"callback": {
+		
+			"flows": {
+				"test:ok:01-origin": "<test/01-origin>",
+				"test:fail:02-every": {
+					"description": "basic 'every' task test",
+					"tasks": [{
+						"$every": [2, 1, 2],
+						"$tasks": [{
+							"$function": "throwUnlessEqual",
+							"$args": [
+								"[*every.index]",
+								"[*every.item]"
+							]
+						}]
+					}]
+				},
+				"test:ok:02-every": {
+					"tasks": [{
+						"$every": [0, 1, 2],
+						"$tasks": [{
+							"$function": "throwUnlessEqual",
+							"$args": [
+								"[*every.index]",
+								"[*every.item]"
+							]
+						}]
+					}]
+				},
+				"test:ok:03-template-merge": {
+					"tasks": [{
+						"$template": "jsonParseAndMerge",
+						"$args": ["{\"a\":\"b\"}"]
+					}, {
+						"$template": "jsonParseAndMerge",
+						"$args":     ["{\"c\":\"d\"}"],
+						"require":   "{$result}"
+					}, {
+						"$function": "throwUnlessDefined",
+						"$args": ["{$result.a}"]
+					}, {
+						"$function": "throwUnlessDefined",
+						"$args": ["{$result.c}"]
+					}]
+				},
+				"test:ok:03-template-set": {
+					"tasks": [{
+						"$template": "jsonParseAndSet",
+						"$args": ["{\"a\":\"b\"}"]
+					}, {
+						"$template": "jsonParseAndSet",
+						"$args":     ["{\"c\":\"d\"}"],
+						"require":   "{$result}"
+					}, {
+						"$function": "throwNow",
+						"$args": ["{$result.a}"]
+					}, {
+						"$function": "throwUnlessDefined",
+						"$args": ["{$result.c}"]
+					}]
+				},
+				"test:ok:04-every-template": {
+					"tasks": [{
+						"$every": [0, 1, 2],
+						"$tasks": [{
+							"$template": "indexEqItem"
+						}]
+					}]
+				},
+				"test:ok:05-every-double-expansion": {
+					"tasks": [{
+						"$every": [0, 1, 2],
+						"$tasks": [{
+							"$function": "throwUnlessEqual",
+							"$args": [
+								"[*every.index]",
+								"[*every.item]"
+							]
+						}]
+					}]
+				},
+				
+				"xtest-every-000": {
+					"data": {
+						"articleSelector":
+							"//article/media[@media2article-type=\"photo\"]"
+					},
+
+					"tasks": [{
+						"$function":"Array",
+						"$args":[
+							[ "data", "must", "flow" ],
+							[ "in", "nested", "loops" ]
+						],
+						"$set":"testArr"
+					}, {
+						"$every":"{$testArr}",
+						"$collect":"result1",
+						"$tasks":[{
+							"$every":"[*every.item]",
+							"$collect":"result2",
+							"$tasks":[{
+								"$function":"toUpperCase",
+								"$origin":"[*every.item]",
+								"$set":"result2"
+							},
+							{
+								"$function":"console.print",
+								"$args":[
+									"Running $every...",
+									"index: [*every.index], item: [*result2]",
+									"array: {*testArr}"
+								]
+							}],
+							"$set":"result1"
+						}],
+						"$set":"mappedArr"
+					}, {
+						"$function":"Array.prototype.join",
+						"$args":[" "],
+						"$scope":"{$mappedArr}",
+						"$set":"resultMessage"
+					}]
+
+				}
+
+			}
+		},
+		"http": {
+		}
+	}
+}

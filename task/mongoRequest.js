@@ -159,8 +159,10 @@ util.extend (mongoRequestTask.prototype, {
 
 		connOptions = connectorConfig.options;
 
+		/*
 		if (!connOptions.hasOwnProperty('native_parser'))
 			connOptions['native_parser'] = true;
+		*/
 
 		if (!connOptions.hasOwnProperty('journal') ||
 			!connOptions.hasOwnProperty('w') ||

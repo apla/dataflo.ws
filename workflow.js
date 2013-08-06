@@ -154,6 +154,7 @@ var workflow = module.exports = function (config, reqParam) {
 	// TODO: check for cpu load
 	var salt = (Math.random () * 1e6).toFixed(0);
 	this.id      = this.id || (this.started ^ salt) % 1e6;
+	if (!this.idPrefix) this.idPrefix = '';
 
 	if (!this.stage) this.stage = 'workflow';
 
@@ -187,22 +188,37 @@ var workflow = module.exports = function (config, reqParam) {
 	this.tasks = config.tasks.map (function (taskParams) {
 		var task;
 
-		var originalTaskConfig = JSON.parse(JSON.stringify(taskParams));
-		var actualTaskParams;
+		var actualTaskParams = {};
 		var taskTemplateName = taskParams.$template;
-		if (self.templates && self.templates[taskTemplateName]) {
-
-			actualTaskParams = {};
+		if (taskTemplateName && self.templates && self.templates[taskTemplateName]) {
 			util.extend (true, actualTaskParams, self.templates[taskTemplateName]);
-			util.extend (true, actualTaskParams, taskParams);
-
 			delete actualTaskParams.$template;
-		} else {
-			actualTaskParams = util.extend(true, {}, taskParams);
 		}
 
-		var checkRequirements = function () {
+		// we expand templates in every place in config
+		// for tasks such as every
+		util.extend (true, actualTaskParams, taskParams);
 
+		if (actualTaskParams.$every) {
+			actualTaskParams.$class = 'every';
+			actualTaskParams.$tasks.forEach (function (everyTaskConf, idx) {
+				var taskTemplateName = everyTaskConf.$template;
+				if (taskTemplateName && self.templates && self.templates[taskTemplateName]) {
+					var newEveryTaskConf = util.extend (true, {}, self.templates[taskTemplateName]);
+					util.extend (true, newEveryTaskConf, everyTaskConf);
+					util.extend (true, everyTaskConf, newEveryTaskConf);
+					delete everyTaskConf.$template;
+					console.log (everyTaskConf, actualTaskParams.$tasks[idx]);//everyTaskConf.$tasks
+				}
+				
+			});
+		}
+		
+//		var originalTaskConfig = JSON.parse(JSON.stringify(actualTaskParams));
+		var originalTaskConfig = util.extend (true, {}, actualTaskParams);
+
+		function createDict () {
+			// TODO: very bad idea: reqParam overwrites self.data
 			var dict    = util.extend(true, self.data, reqParam);
 			dict.global = $global;
 			dict.appMain = $mainModule.exports;
@@ -210,6 +226,12 @@ var workflow = module.exports = function (config, reqParam) {
 			if ($isServerSide) {
 				dict.project = project;
 			}
+			
+			return dict;
+		}
+		
+		var checkRequirements = function () {
+			var dict = createDict ();
 
 			var result = checkTaskParams (actualTaskParams, dict, self.marks);
 
@@ -225,10 +247,6 @@ var workflow = module.exports = function (config, reqParam) {
 		// check for data persistence in self.templates[taskTemplateName], taskParams
 
 //		console.log (taskParams);
-
-		if (actualTaskParams.$every) {
-			actualTaskParams.$class = 'every';
-		}
 
 		var taskClassName = actualTaskParams.className || actualTaskParams.$class;
 		var taskFnName = actualTaskParams.functionName || actualTaskParams.$function;
@@ -271,7 +289,9 @@ var workflow = module.exports = function (config, reqParam) {
 					className: taskClassName,
 					method:    actualTaskParams.method || actualTaskParams.$method,
 					require:   checkRequirements,
-					important: actualTaskParams.important || actualTaskParams.$important
+					important: actualTaskParams.important || actualTaskParams.$important,
+					flowId:    self.coloredId,
+					getDict:   createDict
 				});
 			} catch (e) {
 				console.log ('instance of "'+taskClassName+'" creation failed:');
@@ -552,7 +572,7 @@ util.extend (workflow.prototype, {
 //		if (this.quiet || process.quiet) return;
 		var toLog = [
 			timestamp (),
-			this.stageMarker[this.stage][0] + this.coloredId + this.stageMarker[this.stage][1]
+			this.stageMarker[this.stage][0] + this.idPrefix + this.coloredId + this.stageMarker[this.stage][1]
 		];
 		for (var i = 0, len = arguments.length; i < len; ++i) {
 			toLog.push (arguments[i]);

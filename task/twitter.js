@@ -106,7 +106,7 @@ util.extend (twitter.prototype, {
 			"HMAC-SHA1");
 
 		oa.getProtectedResource(
-			"https://api.twitter.com/1/users/show.json?id="+self.userId,
+			"https://api.twitter.com/1.1/users/show.json?id="+self.userId,
 			"GET",
 			tokens.oauth_token,
 			tokens.oauth_token_secret,

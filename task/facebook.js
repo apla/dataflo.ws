@@ -182,6 +182,7 @@ util.extend (facebook.prototype, {
 		};
 
 		var emailName;
+		
 		if (user.username) {
 			emailName = user.username;
 			mapped.avatar = 'http://graph.facebook.com/' +
@@ -190,6 +191,8 @@ util.extend (facebook.prototype, {
 			emailName = user.id;
 			mapped.avatar = '';
 		}
+		
+		mapped.externalId = user.id;
 		mapped.email = user.email || (emailName + '@facebook.com');
 
 		return mapped;

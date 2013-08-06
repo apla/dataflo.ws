@@ -1,0 +1,15 @@
+{
+	"description":   "here is simple scalar string. task made uppercase string",
+	"isTest":        true,
+	"tasks": [{
+		"$function": "toUpperCase",
+		"$origin":   "string",
+		"$set":      "uppercase"
+	}, {
+		"$function": "throwUnlessEqual",
+		"$args":     [
+			"STRING",
+			"{$uppercase}"
+		]
+	}]
+}

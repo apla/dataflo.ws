@@ -53,7 +53,7 @@ util.extend (userRender.prototype, {
 			user = data[0];
 
 		} else {
-			user = {role: 'anonymous'};
+			user = {};
 		}
 
 		self.completed(user);
@@ -69,6 +69,8 @@ util.extend (userRender.prototype, {
 			result.name = user.name;
 			result.avatar = user.avatar || '';
 			result.sessionUID = session;
+			if (user.externalId) result.externalId = user.externalId;
+			result.authType = user.authType;
 		} else {
 			result.statusCode = 401;
 			result.err = 'User not authorized';
