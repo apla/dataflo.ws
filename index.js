@@ -67,10 +67,20 @@ function registryLookup (instanceType, instanceName) {
 					MODULE_NAME, instanceType, fixedName
 				));
 			} catch (ee) {
-				console.error(
-					'cannot find %s named %s', instanceType, fixedName
-				);
-				throw e;
+                try {
+                    instanceClass = require(path.join(
+                        project.root.path, instanceType, fixedName
+                    ));
+                } catch (eee) {
+                    console.error(
+                        'cannot find %s named %s', instanceType, fixedName
+                    );
+                    throw eee;
+                }
+//				console.error(
+//					'cannot find %s named %s', instanceType, fixedName
+//				);
+//				throw e;
 			}
 		}
 	}
