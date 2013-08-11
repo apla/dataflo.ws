@@ -175,7 +175,7 @@ util.extend (task.prototype, taskStateMethods, {
 
 			this.attempts ++;
 
-//			if (this.state == 2) return;
+			if (this.state == 2) return;
 
 			this.state = 5;
 
