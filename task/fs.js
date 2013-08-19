@@ -41,6 +41,19 @@ util.extend(FileTask.prototype, {
 				self.completed(filePath);
 			}
 		});
+	},
+	
+	remove: function () {
+		var self = this;
+		var filePath = path.resolve($global.project.root.path, this.filePath);
+
+		fs.unlink(filePath, function (err) {
+			if (err) {
+				self.failed(err);
+			} else {
+				self.completed(filePath);
+			}
+		});
 	}
 });
 
