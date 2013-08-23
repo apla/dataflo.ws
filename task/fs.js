@@ -41,7 +41,45 @@ util.extend(FileTask.prototype, {
 				self.completed(filePath);
 			}
 		});
+	},
+	copy: function () {
+	},
+	remove: function () {
+	},
+
+	rename: function () {
+		var self = this;
+		var src = path.resolve($global.project.root.path, this.filePath);
+		var dst = path.resolve($global.project.root.path, this.to);
+
+		fs.rename (src, dst, function (err) {
+			if (err.code !== 'EXDEV') {
+				self.failed(err);
+			} else {
+				// TODO: move to copy task
+				// rename file between fs boundsries
+				var readStream = fs.createReadStream (src);
+				readStream.on ('open', function (rdid) {
+					// TODO: check for null id
+					readStream.pause();
+					var writeStream = fs.createWriteStream (dst);
+					writeStream.on ('open', function (wrid) {
+						// TODO: check for null id
+						readStream.pipe (writeStream);
+						readStream.resume ();
+					});
+					// TODO: add handlers for 
+				});
+				// TODO: here we need to set timeout
+			}
+			if (err) {
+				self.failed(err);
+			} else {
+				self.completed(filePath);
+			}
+		});
 	}
+
 });
 
 module.exports = FileTask;
