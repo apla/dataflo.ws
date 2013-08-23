@@ -45,6 +45,16 @@ util.extend(FileTask.prototype, {
 	copy: function () {
 	},
 	remove: function () {
+		var self = this;
+		var filePath = path.resolve($global.project.root.path, this.filePath);
+
+		fs.unlink(filePath, function (err) {
+			if (err) {
+				self.failed(err);
+			} else {
+				self.completed(filePath);
+			}
+		});
 	},
 
 	rename: function () {

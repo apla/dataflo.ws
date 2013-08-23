@@ -61,7 +61,19 @@ timeri.prototype.ready = function () {
 		if (workflowParams.interval) {
 
 			if (workflowParams.startRun) {
-				wfCycle.run(true);
+				
+				if (workflowParams.delay) {
+					
+					setTimeout (function() {
+						wfCycle.run(true);
+					}, workflowParams.delay);
+					
+				} else {
+				
+					wfCycle.run(true);
+					
+				}
+				
 			} else {
 				wfCycle.end();
 			}
