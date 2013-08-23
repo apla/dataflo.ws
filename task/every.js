@@ -146,7 +146,8 @@ util.extend(EveryTask.prototype, {
 				index: index,
 				array: array
 			};
-			var dict = self.getDict();
+			// dict the same between every, so we need to host a local copy
+			var dict = util.extend (true, {}, self.getDict());
 			dict.every = every;
 
 			var wf = new workflow({
