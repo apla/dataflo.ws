@@ -1,10 +1,12 @@
 var dataflows = require('dataflo.ws');
+var minimist = require('minimist');
 
 module.exports = {
 	launchContext: function () {
 		return {
 			token:    process.argv[3],
-			param:     process.argv[4]
+			param:    process.argv[4],
+			args:     minimist(process.argv.slice(4));
 		};
 	},
 	launch: function (conf) {
@@ -32,7 +34,10 @@ module.exports = {
 
 		var flow = processor.process (this.launchContext().token, {
 			templates: {},
-			request: {param: this.launchContext().param},
+			request: {
+				param: this.launchContext().param,
+				args:  this.launchContext().args
+			},
 			autoRun: false
 		});
 
