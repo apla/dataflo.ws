@@ -6,7 +6,7 @@ module.exports = {
 		return {
 			token:    process.argv[3],
 			param:    process.argv[4],
-			args:     minimist(process.argv.slice(4));
+			args:     minimist(process.argv.slice(4))
 		};
 	},
 	launch: function (conf) {
