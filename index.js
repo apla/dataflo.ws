@@ -67,10 +67,20 @@ function registryLookup (instanceType, instanceName) {
 					MODULE_NAME, instanceType, fixedName
 				));
 			} catch (ee) {
-				console.error(
-					'cannot find %s named %s', instanceType, fixedName
-				);
-				throw e;
+                try {
+                    instanceClass = require(path.join(
+                        project.root.path, instanceType, fixedName
+                    ));
+                } catch (eee) {
+                    console.error(
+                        'cannot find %s named %s', instanceType, fixedName
+                    );
+                    throw eee;
+                }
+//				console.error(
+//					'cannot find %s named %s', instanceType, fixedName
+//				);
+//				throw e;
 			}
 		}
 	}
@@ -93,8 +103,8 @@ instanceTypes.forEach(function(instanceType) {
 module.exports.install = function (moduleName) {
 	var baseDir = path.dirname(require.resolve(MODULE_NAME));
 	var nodePath = path.dirname(baseDir);
-	var moduleDir = path.join(nodePath, moduleName);
-
+//	var moduleDir = path.join(nodePath, moduleName);
+    var moduleDir = path.dirname(require.resolve(moduleName));
 	instanceTypes.forEach(function (dir) {
 		var srcDir = path.join(moduleDir, dir);
 		var destDir = path.join(baseDir, dir);
