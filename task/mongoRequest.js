@@ -819,7 +819,9 @@ util.extend (mongoRequestTask.prototype, {
 		self._openCollection(function (err, collection) {
 			
 			if (self.verbose) {
-				console.log('data for remove', self.data);
+				console.log('remove by filter', {
+					_id: { $in: ids }
+				})
 			}
 
 			collection.remove({
