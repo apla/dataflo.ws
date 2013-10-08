@@ -315,7 +315,7 @@ util.extend (mongoRequestTask.prototype, {
 				if (include) {
 					include.map(function(field) {fields[field] = 1});
 				} else if (exclude) {
-					include.map(function(field) {fields[field] = 0})
+					exclude.map(function(field) {fields[field] = 0})
 				}
 			}
 
