@@ -989,91 +989,14 @@ util.extend (mongoRequestTask.prototype, {
  */
 
 	group: function () {
-
+		
 		var self = this;
 
-		if (this.verbose)
-			self.emit ('log', 'group called');
-
-		// open collection
-		/*self._openCollection (function (err, collection) {
-			var filter = self.filter,
-				options = self.options || {},
-				sort = self.sort || self.pager && self.pager.sort || {};
-
-			if (self.pager) {
-				if (self.pager.page && self.pager.limit && self.pager.limit < 100) {
-					options.skip = self.pager.start;
-					options.limit = self.pager.limit;
-				}
-
-				filter = self.pager.filter;
-				options.sort = sort;
-			}
-
-			// find by filter or all records
-			if (filter) {
-				if (filter.constructor === Array)
-					filter = {_id: {'$in': filter}};
-				// filter is string
-				if (filter.substring) {
-					filter = {_id: self._objectId (filter)};
-				// filter is hash
-				} else if (filter._id) {
-					// filter._id is string
-					if (filter._id.substring) filter._id = self._objectId (filter._id);
-					// filter._id is hash with $in quantificators
-					if (filter._id['$in']) {
-						filter._id['$in'] = filter._id['$in'].map(function(id) {
-							return self._objectId(id);
-						});
-					}
-				}
-			}
-
-			//remap options fields
-			if (options.fields) {
-				var fields = options.fields,
-					include = fields["$inc"],
-					exclude = fields["$exc"];
-
-				delete fields.$inc;
-				delete fields.$exc;
-
-				if (include) {
-					include.map(function(field) {fields[field] = 1});
-				} else if (exclude) {
-					include.map(function(field) {fields[field] = 0})
-				}
-			}
-
-			if (self.verbose)
-				console.log ("collection.find", self.collection, filter, options);
-
-			var cursor = collection.find(filter, options);
-			cursor.toArray (function (err, docs) {
-
-				if (self.verbose)
-					console.log ("findResult", docs);
-
-				if (docs) {
-					docs.map (function (item) {
-						if (self.mapping) {
-							self.mapFields (item);
-						}
-					});
-				}
-
-				cursor.count(function (err, n) {
-					self.completed ({
-						success:	(err == null),
-						total:		n || 0,
-						err:		err,
-						data:		docs
-					});
-				});
-			});
-		});*/
+		self._openColOrFail(function (collection) {
+			
+			collection.group(self.key, self.condition, self.initial, self.reduce, self._onResult.bind(self));
+			
+		});
 	},
 
 /**
