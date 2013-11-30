@@ -994,7 +994,7 @@ util.extend (mongoRequestTask.prototype, {
 
 		self._openColOrFail(function (collection) {
 			
-			collection.group(self.key, self.condition, self.initial, self.reduce, self._onResult.bind(self));
+			collection.group(self.keys, self.condition, self.initial, self.reduce, self._onResult.bind(self));
 			
 		});
 	},
