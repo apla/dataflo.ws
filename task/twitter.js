@@ -54,7 +54,6 @@ util.extend (twitter.prototype, {
 
 		  } else {
 
-			//req.twitter_redirect_url = req.url;
 			req.twitter_oauth_token_secret = oauth_token_secret;
 			req.twitter_oauth_token = oauth_token;
 
@@ -160,6 +159,7 @@ util.extend (twitter.prototype, {
 
 		return {
 			name: user.name,
+			externalId: user.id,
 			username: user.screen_name,
 			email: user.screen_name+"@twitter.com",
 			avatar: user.profile_image_url,
