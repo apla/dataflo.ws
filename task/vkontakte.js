@@ -98,15 +98,17 @@ util.extend (vkontakte.prototype, {
 		}
 
 		var oa = new OAuth2(vkontakteConfig.appId,  vkontakteConfig.appSecret,  vkontakteConfig.baseUrl, vkontakteConfig.authorizeUrl, vkontakteConfig.accessTokenUrl);
-
+		
 		oa.getOAuthAccessToken(
 			query.code,
-			{},
-			function( error, access_token, refresh_token, results){
+			{
+				redirect_uri: vkontakteConfig.callbackUrl
+			},
+			function(error, access_token, refresh_token, results){
 
-				if (error) {
+				if (error || !access_token) {
 
-					self.failed(error);
+					self.failed(error || 'Bad request!');
 
 				} else {
 
@@ -156,6 +158,7 @@ util.extend (vkontakte.prototype, {
 			email: "id"+user.uid+ "@vk.com",
 			avatar: user.photo,
 			link: "http://vk.com/id"+user.uid,
+			externalId: user.id,
 			authType: 'vk'
 		};
 
