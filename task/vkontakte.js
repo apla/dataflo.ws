@@ -90,7 +90,8 @@ util.extend (vkontakte.prototype, {
 		var self = this;
 		var req = self.req;
 		var query = req.url.query;
-		var tokens = req.user.tokens;
+		
+		req.user.tokens  = {};
 
 		if (query.error || !query.code) {
 			self.failed (query.error_description || "token was not accepted");
@@ -109,8 +110,8 @@ util.extend (vkontakte.prototype, {
 
 				} else {
 
-					tokens.oauth_access_token = access_token;
-					if (refresh_token) tokens.oauth_refresh_token = refresh_token;
+					req.user.tokens.oauth_access_token = access_token;
+					if (refresh_token) req.user.tokens.oauth_refresh_token = refresh_token;
 
 					self.completed (results.user_id);
 				}
