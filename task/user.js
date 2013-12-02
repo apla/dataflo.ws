@@ -27,6 +27,8 @@ util.extend (userRender.prototype, {
 			user = request.user;
 
 		var authUser = self.userData;
+		
+		authUser.enterCount = 1;
 
 		util.extend (authUser, user);
 
