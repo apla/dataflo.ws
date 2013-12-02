@@ -158,7 +158,7 @@ util.extend (vkontakte.prototype, {
 			email: "id"+user.uid+ "@vk.com",
 			avatar: user.photo,
 			link: "http://vk.com/id"+user.uid,
-			externalId: user.id,
+			externalId: user.uid,
 			authType: 'vk'
 		};
 
