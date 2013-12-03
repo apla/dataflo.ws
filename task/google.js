@@ -168,6 +168,7 @@ util.extend (google.prototype, {
 		return {
 			name: user.name,
 			email: user.email,
+			externalId: user.id,
 			avatar: user.picture,
 			link: user.link,
 			authType: 'google'
