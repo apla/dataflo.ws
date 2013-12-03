@@ -57,22 +57,7 @@ function registryLookup (instanceType, instanceName) {
 		}
 
 		var project = common.getProject();
-		try {
-			instanceClass = require(path.join(
-				project.root.path, 'node_modules', instanceType, fixedName
-			));
-		} catch (e) {
-			try {
-				instanceClass = require(path.join(
-					MODULE_NAME, instanceType, fixedName
-				));
-			} catch (ee) {
-				console.error(
-					'cannot find %s named %s', instanceType, fixedName
-				);
-				throw e;
-			}
-		}
+		instanceClass = project.getModule (instanceType, fixedName);
 	}
 
 	return registry[instanceType][instanceName] = instanceClass;
