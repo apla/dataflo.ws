@@ -569,30 +569,30 @@ if ($isServerSide) {
 		connections: {},
 
 		getModule: function (type, name) {
-			var inPackagePath = path.join('dataflo.ws', type, name);
-			var inProjectPath = path.resolve(this.root.path, type, name);
-
 			var mod;
-			try {
-				mod = require(inProjectPath);
-			} catch (e) {
-				// assuming format: Error: Cannot find module 'csv2array' {"code":"MODULE_NOT_FOUND"}
-				if (e.toString().indexOf(name + '\'') > 0 && e.code == "MODULE_NOT_FOUND") {
+			var taskFound = [
+				path.join('dataflo.ws', type, name),
+				path.resolve(this.root.path, type, name),
+				path.resolve(this.root.path, 'node_modules', type, name),
+				name
+			].some (function (path) {
 				try {
-					mod = require(inPackagePath);
-				} catch (ee) {
-					if (ee.toString().indexOf(name + '\'') > 0 && ee.code == "MODULE_NOT_FOUND") {
-					try {
-						mod = require(name);
-					} catch (eee) {
-						if (!(eee.toString().indexOf(name + '\'') > 0 && eee.code == "MODULE_NOT_FOUND"))
-							console.error ('when require \"' + name + '\": ' + eee.toString());
-						mod = null;
-					}} else
-					console.error ('when require \"' + inPackagePath + '\": ' + ee.toString());
-				}} else
-				console.error ('when require \"' + inProjectPath + '\": ' + e.toString());
-			}
+					mod = require(path);
+					return true;
+				} catch (e) {
+					// assuming format: Error: Cannot find module 'csv2array' {"code":"MODULE_NOT_FOUND"}
+					if (e.toString().indexOf(name + '\'') > 0 && e.code == "MODULE_NOT_FOUND") {
+						return false;
+					} else {
+						console.error ('when require \"' + path + '\": ' + e.toString());
+						return true;
+					}
+				}
+			});
+
+			if (!mod)
+				console.error ("module " + type + " " + name + "cannot be used");
+
 			return mod;
 		},
 
