@@ -1,7 +1,8 @@
-var task = require ('./base'),
-	path = require ('path'),
-	fs   = require ('fs'),
-	util = require ('util');
+var task   = require ('./base'),
+	path   = require ('path'),
+	fs     = require ('fs'),
+	util   = require ('util'),
+	stream = require('stream');
 
 var presenters = {};
 
@@ -169,15 +170,20 @@ util.extend (presenterTask.prototype, {
 	 */
 
 	renderResult: function(result) {
+		console.log (123);
 		if (this.headers) {
 			for (var key in this.headers) {
 				this.response.setHeader(key, this.headers[key]);
 			}
 		}
-
 		this.headers.connection = 'close';
 
-		this.response.end(result);
+		if (result instanceof stream.Readable) {
+			result.pipe(this.response);
+		} else {
+			this.response.end(result);	
+		}
+
 		this.completed();
 
 	},
@@ -204,6 +210,7 @@ util.extend (presenterTask.prototype, {
 		 * - `ejs`, EJS template
 		 * - `json`, JSON string
 		 * - `asis`, plain text.
+		 * - `fileAsIs`, file from disk (please provide `file` param)
 		 */
 
 		/**
@@ -224,7 +231,7 @@ util.extend (presenterTask.prototype, {
 			console.log ('guessed ' + self.type + ' presenter type from filename: ' + self.file);
 		}
 
-		switch (self.type) {
+		switch (self.type.toLowerCase()) {
 			case 'html':
 				self.setContentType('text/html; charset=utf-8');
 				self.renderFile();
@@ -244,6 +251,30 @@ util.extend (presenterTask.prototype, {
 					JSON.stringify (self.vars)
 				);
 				break;
+
+			case 'fileasis':
+				var mmm;
+				try {
+					mmm = require ('mmmagic');
+				} catch (e) {
+					console.error ("module 'mmmagic' not found.",
+						"this module required if you plan to use fileAsIs presenter type");
+					process.kill();
+				}
+				
+				var Magic = mmm.Magic;
+
+				var magic = new Magic(mmm.MAGIC_MIME_TYPE);
+				magic.detectFile(self.file, function(err, contentType) {
+				    if (err) throw err;
+				    
+				    self.setContentType(contentType);
+				    var fileStream = fs.createReadStream(self.file);
+				    self.renderResult (fileStream);
+				});
+
+				break;
+
 
 			case 'asis':
 			default:
