@@ -1,8 +1,12 @@
-var fs = require('fs'),
-	path = require('path'),
-	util = require('util'),
+var fs     = require('fs'),
+	path   = require('path'),
+	util   = require('util'),
+	os     = require('os'),
+	exists = fs.exists || path.exists,
+	_c     = require('constants'),
 	common = require('../common'),
 	task = require ('./base');
+
 
 var $global = common.$global;
 
@@ -44,7 +48,38 @@ util.extend(FileTask.prototype, {
 	},
 	copy: function () {
 	},
-	remove: function () {
+	_randomName: function () {
+		var fileName = [
+			('tmp-' || this.prefix),
+			process.pid,
+			(Math.random() * 0x1000000000).toString(36),
+			this.postfix
+		].join ('');
+
+		return fileName;
+	},
+	_createFile: function (name) {
+		var self = this;
+		fs.open(name, _c.O_CREAT | _c.O_EXCL | _c.O_RDWR, 0600, function _fileCreated(err, fd) {
+			if (err) return self.failed ();
+			self.completed(name);
+		});
+	},
+	tmpFileName: function () {
+		var self = this;
+		var tmpDir = os.tmpDir();
+		var tmpFileName = this._randomName ();
+		var tmpPath = path.join (tmpDir, tmpFileName);
+		exists (tmpPath, function (pathExists) {
+			if (!pathExists) {
+				self._createFile (tmpPath);
+				return;
+			}
+			self.failed ();
+		});
+		
+	},
+	unlink: function () {
 		var self = this;
 		var filePath = path.resolve($global.project.root.path, this.filePath);
 
