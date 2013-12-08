@@ -170,7 +170,6 @@ util.extend (presenterTask.prototype, {
 	 */
 
 	renderResult: function(result) {
-		console.log (123);
 		if (this.headers) {
 			for (var key in this.headers) {
 				this.response.setHeader(key, this.headers[key]);
@@ -178,7 +177,7 @@ util.extend (presenterTask.prototype, {
 		}
 		this.headers.connection = 'close';
 
-		if (result instanceof stream.Readable) {
+		if (result instanceof stream) {
 			result.pipe(this.response);
 		} else {
 			this.response.end(result);	
