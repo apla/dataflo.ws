@@ -326,7 +326,7 @@ util.extend (mongoRequestTask.prototype, {
 			cursor.toArray (function (err, docs) {
 
 				if (self.verbose)
-					console.log ("findResult", docs.length);
+					console.log ("findResult", docs && docs.length || 0);
 
 				if (docs) {
 					docs.map (function (item) {
