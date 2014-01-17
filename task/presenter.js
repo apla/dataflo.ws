@@ -36,7 +36,6 @@ util.extend (presenterTask.prototype, {
 		templateIO.readFile (function (err, data) {
 			cb.call (this, err, data);
 		});
-
 	},
 
 	isInStaticDir: function (filePath) {
@@ -64,11 +63,15 @@ util.extend (presenterTask.prototype, {
 		return false;
 	},
 
-	getTemplateIO: function (callback) {
-		var self = this;
-		var defTemplate = path.resolve(
+	getAbsPath: function () {
+		return path.resolve(
 			project.root.path, this.DEFAULT_TEMPLATE_DIR, this.file
 		);
+	},
+
+	getTemplateIO: function (callback) {
+		var self = this;
+		var defTemplate = this.getAbsPath();
 		var origTemplate = path.resolve(project.root.path, this.file);
 		var theTemplate;
 
@@ -107,7 +110,7 @@ util.extend (presenterTask.prototype, {
 	renderCompile: function() {
 		var self = this;
 
-		if (self.file in cache) {
+		if (self.file in cache && cache[self.file]) {
 			self.renderProcess(cache[self.file]);
 			return;
 		}
@@ -140,10 +143,22 @@ util.extend (presenterTask.prototype, {
 					);
 				}
 
+				var isWatched
+					= ((typeof cache[self.file]) != "undefined")
+					&& (self.file in cache && !cache[self.file]);
+
 				cache[self.file] = presenters[self.type][compileMethod](
 					tplStr, self.compileParams || {}
 				);
-				
+
+				if (!isWatched) {
+					self.emit ('log', 'setting up watch for presentation file');
+					fs.watch (self.getAbsPath(), function () {
+						self.emit ('log', 'presentation file is changed');
+						delete cache[self.file];
+					});
+				}
+
 				if (self.renderMethod) {
 					self.renderProcess(cache[self.file][self.renderMethod].bind(cache[self.file]))
 				} else {
@@ -159,8 +174,15 @@ util.extend (presenterTask.prototype, {
 	 */
 	renderProcess: function(render) {
 
+		var responseData;
+		try {
+			responseData = render (this.vars);
+		} catch (e) {
+			this.emit ('error', e);
+			// console.log (e);
+		}
 		this.renderResult (
-			render (this.vars)
+			responseData
 		);
 
 	},
