@@ -236,11 +236,15 @@ util.extend (presenterTask.prototype, {
 				self.renderFile();
 				break;
 			
+			case 'ejs':
+				self.compileParams = {filename: path.resolve(
+					project.root.path, self.DEFAULT_TEMPLATE_DIR, self.file
+				)};
 			case 'jade':
 			case 'mustache':
 			case 'hogan.js':
-			case 'ejs':
 				self.setContentType('text/html; charset=utf-8');
+
 				self.renderCompile();
 				break;
 
