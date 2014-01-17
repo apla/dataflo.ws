@@ -185,6 +185,8 @@ var workflow = module.exports = function (config, reqParam) {
 
 	// TODO: optimize usage - find placeholders and check only placeholders
 
+	config.tasks = config.tasks || [];
+
 	this.tasks = config.tasks.map (function (taskParams) {
 		var task;
 
