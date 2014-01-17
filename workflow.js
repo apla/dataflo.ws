@@ -531,10 +531,10 @@ util.extend (workflow.prototype, {
 					self.taskStates[taskStateNames.scarce]--;
 					self.taskStates[task.state]++;
 					self.failed = true;
-					scarceTaskMessage += '(important)';
+					scarceTaskMessage += '(important) ';
 				}
 
-				if (task.state == taskStateNames.scarce)
+				if (task.state == taskStateNames.scarce || task.state == taskStateNames.failed)
 					scarceTaskMessage += (task.logTitle) + ' => ' + task.unsatisfiedRequirements.join (', ') + '; ';
 			});
 			self.log (scarceTaskMessage);
