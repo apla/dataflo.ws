@@ -4,7 +4,9 @@ var task   = require ('./base'),
 	util   = require ('util'),
 	stream = require('stream');
 
-var presenters = {};
+var presenters = {},
+	defaultTemplateDir = (project && project.config && project.config.templateDir) || 'share/presentation',
+	isWatched = (project && project.config && project.config.debug);
 
 /**
  * @class task.presenterTask
@@ -27,8 +29,8 @@ util.inherits (presenterTask, task);
 var cache = {};
 
 util.extend (presenterTask.prototype, {
-	DEFAULT_TEMPLATE_DIR: 'share/presentation',
-
+	
+	DEFAULT_TEMPLATE_DIR: defaultTemplateDir,
 	/**
 	 * @private
 	 */
@@ -143,21 +145,19 @@ util.extend (presenterTask.prototype, {
 					);
 				}
 
-				var isWatched
-					= ((typeof cache[self.file]) != "undefined")
-					&& (self.file in cache && !cache[self.file]);
-
-				cache[self.file] = presenters[self.type][compileMethod](
-					tplStr, self.compileParams || {}
-				);
-
-				if (!isWatched) {
+				if (isWatched) {
+				
 					self.emit ('log', 'setting up watch for presentation file');
 					fs.watch (self.getAbsPath(), function () {
 						self.emit ('log', 'presentation file is changed');
 						delete cache[self.file];
 					});
+				
 				}
+				
+				cache[self.file] = presenters[self.type][compileMethod](
+					tplStr, self.compileParams || {}
+				);
 
 				if (self.renderMethod) {
 					self.renderProcess(cache[self.file][self.renderMethod].bind(cache[self.file]))
@@ -259,9 +259,11 @@ util.extend (presenterTask.prototype, {
 				break;
 			
 			case 'ejs':
-				self.compileParams = {filename: path.resolve(
-					project.root.path, self.DEFAULT_TEMPLATE_DIR, self.file
-				)};
+				if (!self.compileParams) { // compileParams can be defined in task initConfig
+					self.compileParams = {filename: path.resolve(
+						project.root.path, self.DEFAULT_TEMPLATE_DIR, self.file
+					)};
+				}
 			case 'jade':
 			case 'mustache':
 			case 'hogan.js':
