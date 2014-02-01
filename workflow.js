@@ -439,6 +439,15 @@ util.extend (workflow.prototype, {
 	/**
 	 * @method run Initiators call this method to launch the workflow.
 	 */
+	runDelayed: function () {
+		var self = this;
+		if ($isClientSide) {
+			setTimeout (function () {self.run ();}, 0);
+		} else if ($isServerSide) {
+			process.nextTick (function () {self.run ()});
+		}
+	},
+
 	run: function () {
 		if (!this.started)
 			this.started = new Date().getTime();
@@ -504,11 +513,7 @@ util.extend (workflow.prototype, {
 		} else if (self.haveCompletedTasks) {
 			console.log ('have completed tasks');
 			// stack will be happy
-			if ($isClientSide) {
-				setTimeout (function () {self.run ();}, 0);
-			} else if ($isServerSide) {
-				process.nextTick (function () {self.run ()});
-			}
+			self.runDelayed();
 
 			self.isIdle = true;
 
@@ -638,7 +643,7 @@ util.extend (workflow.prototype, {
 			self.logTask (task, 'task skipped');
 
 			if (self.isIdle)
-				self.run ();
+				self.runDelayed ();
 
 		});
 
@@ -648,7 +653,7 @@ util.extend (workflow.prototype, {
 			self.failed = true;
 
 			if (self.isIdle)
-				self.run ();
+				self.runDelayed ();
 		});
 
 		task.on ('complete', function (t, result) {
@@ -663,9 +668,9 @@ util.extend (workflow.prototype, {
 
 			self.logTask (task, 'task completed');
 
-			if (self.isIdle)
-				self.run ();
-			else
+			if (self.isIdle) {
+				self.runDelayed ();
+			} else
 				self.haveCompletedTasks = true;
 		});
 
