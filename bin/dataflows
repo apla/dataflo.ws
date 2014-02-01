@@ -20,7 +20,7 @@ project.on('ready', function () {
 		requires = [ requires ];
 	}
 	requires.forEach(function (modName) {
-		var mod = project.require(modName);
+		var mod = project.require(modName, true);
 
 		// exporting everything to mainModule,
 		// be careful about name conflicts
