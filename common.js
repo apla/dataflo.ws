@@ -420,7 +420,7 @@ String.prototype.interpolate = function (dict, marks) {
 		}
 
 		if (Object.is('String', value) && startRe.test(value)) {
-			throw new Error("Interoplation inside interpolation not allowed");
+			throw new Error("Interpolation inside interpolation not allowed");
 		}
 
 		if (type == marks.typeSafe && isEmpty(value)) {
@@ -591,7 +591,7 @@ if ($isServerSide) {
 			});
 
 			if (!mod)
-				console.error ("module " + type + " " + name + "cannot be used");
+				console.error ("module " + type + " " + name + " cannot be used");
 
 			return mod;
 		},
