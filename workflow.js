@@ -488,7 +488,7 @@ util.extend (workflow.prototype, {
 			if (task.isReady ()) {
 				self.logTask (task, 'started');
 				try {
-					task.run ();
+					task._launch ();
 				} catch (e) {
 					self.logTaskError (task, 'failed to run', e);
 				}
@@ -573,15 +573,14 @@ util.extend (workflow.prototype, {
 
 	},
 	stageMarker: {prepare: "()", workflow: "[]", presentation: "<>"},
-	log: function (msg) {
+	_log: function (level, msg) {
 //		if (this.quiet || process.quiet) return;
-		var toLog = [
+		var toLog = [].slice.call (arguments);
+		var level = toLog.shift() || 'log';
+		toLog.unshift (
 			timestamp (),
 			this.stageMarker[this.stage][0] + this.idPrefix + this.coloredId + this.stageMarker[this.stage][1]
-		];
-		for (var i = 0, len = arguments.length; i < len; ++i) {
-			toLog.push (arguments[i]);
-		}
+		);
 
 		// TODO: also check for bad clients (like ie9)
 		if ($isPhoneGap) {
@@ -589,10 +588,15 @@ util.extend (workflow.prototype, {
 			toLog = [toLog.join (' ')];
 		}
 
-		console.log.apply (console, toLog);
+		console[level].apply (console, toLog);
+	},
+	log: function () {
+		var args = [].slice.call (arguments);
+		args.unshift ('log');
+		this._log.apply (this, args);
 	},
 	logTask: function (task, msg) {
-		this.log (task.logTitle,  "("+task.state+")",  msg);
+		this._log ('log', task.logTitle,  "("+task.state+")",  msg);
 	},
 	logTaskError: function (task, msg, options) {
 		var lastFrame = '';
@@ -604,16 +608,24 @@ util.extend (workflow.prototype, {
 			}
 		}
 
-		this.log(
+		var red   = $isServerSide ? '\x1B[0;31m' : '';
+		var clear = $isServerSide ? '\x1B[0m' : '';
+
+		this._log (
+			'error',
 			task.logTitle,
 			'(' + task.state + ') ',
-			'\x1B[0;31m' + msg, options || '', '\x1B[0m',
+			red + msg, options || '', clear,
 			lastFrame
 		);
 	},
 	logError: function (task, msg, options) {
 		// TODO: fix by using console.error
-		this.log(" \x1B[0;31m" + msg, options || '', "\x1B[0m");
+		if ($isServerSide) {
+			this._log('error', " \x1B[0;31m" + msg, options || '', "\x1B[0m");
+			return;	
+		}
+		this._log('error', msg, options || '');
 	},
 	addEventListenersToTask: function (task) {
 		var self = this;
