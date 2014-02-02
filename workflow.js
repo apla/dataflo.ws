@@ -224,7 +224,11 @@ var workflow = module.exports = function (config, reqParam) {
 			dict.appMain = $mainModule.exports;
 
 			if ($isServerSide) {
-				dict.project = project;
+				try {
+					dict.project = project;
+				} catch (e) {
+
+				}
 			}
 			
 			return dict;
