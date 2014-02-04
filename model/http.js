@@ -197,7 +197,7 @@ util.extend (httpModel.prototype, {
 		});
 
 		// add this for watching into httpModelManager
-		project.httpModelManager.add(this, {
+		global.httpModelManager.add(this, {
 			url: this.params,
 			headers: this.headers,
 			postBody: this.postBody
