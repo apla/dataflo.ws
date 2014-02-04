@@ -166,7 +166,10 @@ util.extend (cacheTask.prototype, {
 				self.clearOperationTimeout();
 				// self.res.cacheFilePath = self.cacheFilePath
 				// self.completed (self.res);
-				self.finishWith ({data: self.download.data});
+				self.finishWith ({
+					code: self.model.dataSource.res.statusCode,
+					data: self.download.data
+				});
 			});
 
 		}
