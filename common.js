@@ -419,10 +419,6 @@ String.prototype.interpolate = function (dict, marks) {
 			value = dict[path];
 		}
 
-		if (Object.is('String', value) && startRe.test(value)) {
-			throw new Error("Interpolation inside interpolation not allowed");
-		}
-
 		if (type == marks.typeSafe && isEmpty(value)) {
 			value = undefined;
 		}
