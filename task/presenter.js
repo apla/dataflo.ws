@@ -30,7 +30,7 @@ var cache = {};
 
 util.extend (presenterTask.prototype, {
 
-	DEFAULT_TEMPLATE_DIR: defaultTemplateDir,
+	defaultTemplateDir: defaultTemplateDir,
 	/**
 	 * @private
 	 */
@@ -67,27 +67,46 @@ util.extend (presenterTask.prototype, {
 
 	getAbsPath: function () {
 		return path.resolve(
-			project.root.path, this.DEFAULT_TEMPLATE_DIR, this.file
+			project.root.path, this.defaultTemplateDir, this.file
 		);
 	},
 
 	getTemplateIO: function (callback) {
 		var self = this;
 		var defTemplate = this.getAbsPath();
-		var origTemplate = path.resolve(project.root.path, this.file);
-		var theTemplate;
+		var rootTemplate = path.resolve(project.root.path, this.file);
 
-		fs.exists(defTemplate, function (exists) {
-			theTemplate = exists ? defTemplate : origTemplate;
-
+		function isTemplateOk (templateIO) {
 			// warn if file is in static HTTP directory
+
 			if (self.isInStaticDir(theTemplate)) {
 				throw new Error(
 					'Publicly accessible template file at '+theTemplate+'!'
 				);
 			}
+			callback (project.root.fileIO (templateIO));
+		}
 
-			callback(project.root.fileIO(theTemplate));
+		fs.exists(defTemplate, function (exists) {
+			if (exists) {
+				isTemplateOk (defTemplate);
+			} else {
+				fs.exists(rootTemplate, function (exists) {
+					if (exists) {
+						isTemplateOk (rootTemplate);
+					} else {
+						var statusCode = self.response.statusCode;
+						self.response.statusCode = (statusCode >= 200 && statusCode <= 300) ? 500 : statusCode;
+						// if we have good response, but no template file, this is failure.
+						// redirects, 4xx and 5xx codes seems ok without template
+						// self.response.writeHead ((statusCode >= 200 && statusCode <= 300) ? 500 : statusCode);
+						self.renderResult (null, "failure");
+						self.emit ("error", "template not found in '" + defTemplate + "' or '" + rootTemplate + "'");
+						// self.failed ();
+					}
+
+				});
+			}
 		});
 	},
 
@@ -97,9 +116,9 @@ util.extend (presenterTask.prototype, {
 		this.getTemplateIO(function (templateIO) {
 			templateIO.readFile(function (err, data) {
 				if (err) {
-					self.response.writeHead (self.response.statusCode);
+					// self.response.writeHead (self.response.statusCode);
+					self.renderResult (null, "failure");
 					self.emit ("error", "template error: can't access file " + templateIO.path);
-					self.failed ();
 				} else {
 					self.renderResult(data.toString());
 				}
@@ -193,7 +212,7 @@ util.extend (presenterTask.prototype, {
 	 * @private
 	 */
 
-	renderResult: function(result) {
+	renderResult: function(result, failure) {
 		if (this.headers) {
 			for (var key in this.headers) {
 				this.response.setHeader(key, this.headers[key]);
@@ -201,13 +220,19 @@ util.extend (presenterTask.prototype, {
 		}
 		this.headers.connection = 'close';
 
-		if (result instanceof stream) {
+		if (!result) {
+			this.response.end();
+		} else if (result instanceof stream) {
 			result.pipe(this.response);
 		} else {
 			this.response.end(result);
 		}
 
-		this.completed();
+		if (!failure) {
+			this.completed();
+		} else {
+			this.failed();
+		}
 
 	},
 
@@ -263,7 +288,7 @@ util.extend (presenterTask.prototype, {
 			case 'ejs':
 				if (!self.compileParams) { // compileParams can be defined in task initConfig
 					self.compileParams = {filename: path.resolve(
-						project.root.path, self.DEFAULT_TEMPLATE_DIR, self.file
+						project.root.path, self.defaultTemplateDir, self.file
 					)};
 				}
 			case 'jade':
