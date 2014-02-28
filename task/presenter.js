@@ -29,7 +29,7 @@ util.inherits (presenterTask, task);
 var cache = {};
 
 util.extend (presenterTask.prototype, {
-	
+
 	DEFAULT_TEMPLATE_DIR: defaultTemplateDir,
 	/**
 	 * @private
@@ -97,7 +97,9 @@ util.extend (presenterTask.prototype, {
 		this.getTemplateIO(function (templateIO) {
 			templateIO.readFile(function (err, data) {
 				if (err) {
-					console.error("can't access file %s", templateIO.path);
+					self.response.writeHead (self.response.statusCode);
+					self.emit ("error", "template error: can't access file " + templateIO.path);
+					self.failed ();
 				} else {
 					self.renderResult(data.toString());
 				}
@@ -146,15 +148,15 @@ util.extend (presenterTask.prototype, {
 				}
 
 				if (isWatched) {
-				
+
 					self.emit ('log', 'setting up watch for presentation file');
 					fs.watch (self.getAbsPath(), function () {
 						self.emit ('log', 'presentation file is changed');
 						delete cache[self.file];
 					});
-				
+
 				}
-				
+
 				cache[self.file] = presenters[self.type][compileMethod](
 					tplStr, self.compileParams || {}
 				);
@@ -202,7 +204,7 @@ util.extend (presenterTask.prototype, {
 		if (result instanceof stream) {
 			result.pipe(this.response);
 		} else {
-			this.response.end(result);	
+			this.response.end(result);
 		}
 
 		this.completed();
@@ -257,7 +259,7 @@ util.extend (presenterTask.prototype, {
 				self.setContentType('text/html; charset=utf-8');
 				self.renderFile();
 				break;
-			
+
 			case 'ejs':
 				if (!self.compileParams) { // compileParams can be defined in task initConfig
 					self.compileParams = {filename: path.resolve(
@@ -288,13 +290,13 @@ util.extend (presenterTask.prototype, {
 						"this module required if you plan to use fileAsIs presenter type");
 					process.kill();
 				}
-				
+
 				var Magic = mmm.Magic;
 
 				var magic = new Magic(mmm.MAGIC_MIME_TYPE);
 				magic.detectFile(self.file, function(err, contentType) {
 				    if (err) throw err;
-				    
+
 				    self.setContentType(contentType);
 				    var fileStream = fs.createReadStream(self.file);
 				    self.renderResult (fileStream);
