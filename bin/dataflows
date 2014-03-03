@@ -39,10 +39,10 @@ project.on('ready', function () {
 
 	var scriptClass;
 	try {
-		scriptClass = require (path.join (MODULE_NAME, 'script', scriptName));
+		scriptClass = require (project.root.fileIO ('bin', scriptName).path);
 	} catch (e) {
 		try {
-			scriptClass = require (project.root.fileIO ('bin', scriptName).path);
+			scriptClass = require (path.join (MODULE_NAME, 'script', scriptName));	
 		} catch (e) {
 			// console.log (e);
 		}
