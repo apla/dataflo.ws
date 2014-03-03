@@ -20,7 +20,7 @@ var EveryTask = function (cfg) {
 		console.error ('options $collectArray and $collectObject are mutually exclusive');
 		this.failed ('Configuration error');
 	}
-	
+
 	if (this.$collectObject) {
 		this.results = {};
 	}
@@ -54,6 +54,11 @@ util.extend(EveryTask.prototype, {
 		// TODO: failed dataflows and completed ones must be separated
 		// so, every task must fail only when one or more dataflows is failed
 		// otherwise, we need to emit empty
+		// if (this.subtaskFail) {
+		// 	this.failed ('Task failed');
+		// 	return;
+		// }
+
 		if (this.count >= this.$every.length) {
 			if (this.$collect || this.$collectArray) {
 				if (this.results.length) {
@@ -87,12 +92,13 @@ util.extend(EveryTask.prototype, {
 					this.results[objectField] = result[objectField];
 				}
 			}
-		} 
-		
+		}
+
 		this.onWorkflowResult();
 	},
 
 	_onFailed: function (wf) {
+		this.subtaskFail = true;
 		this.onWorkflowResult();
 	},
 
@@ -139,7 +145,7 @@ util.extend(EveryTask.prototype, {
 		// and missing functions
 		var everyTasks = util.extend (true, {}, this.originalConfig);
 		this.unquote(everyTasks, everyTasks, '$tasks');
-		
+
 		this.$every.forEach(function (item, index, array) {
 			var every = {
 				item:  item,
