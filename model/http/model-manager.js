@@ -1,12 +1,12 @@
 var util     = require ('util')
-	urlUtil    = require ('url');
+	urlUtil  = require ('url');
 
 //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 var connectionLimits;
 
 try {
-	connectionLimits = project.config.outgoingLimits.http;
+	connectionLimits = project.config.http.outgoingLimits;
 } catch (e) {
 	connectionLimits = {};
 }
@@ -168,4 +168,4 @@ util.extend(HttpModelManager.prototype, {
 	
 });
 
-project.httpModelManager = new HttpModelManager();
+global.httpModelManager = new HttpModelManager();

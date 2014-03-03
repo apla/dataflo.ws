@@ -419,10 +419,6 @@ String.prototype.interpolate = function (dict, marks) {
 			value = dict[path];
 		}
 
-		if (Object.is('String', value) && startRe.test(value)) {
-			throw new Error("Interoplation inside interpolation not allowed");
-		}
-
 		if (type == marks.typeSafe && isEmpty(value)) {
 			value = undefined;
 		}
@@ -568,7 +564,8 @@ if ($isServerSide) {
 		connectors:  {},
 		connections: {},
 
-		getModule: function (type, name) {
+		getModule: function (type, name, optional) {
+			optional = optional || false;
 			var mod;
 			var taskFound = [
 				path.join('dataflo.ws', type, name),
@@ -590,8 +587,8 @@ if ($isServerSide) {
 				}
 			});
 
-			if (!mod)
-				console.error ("module " + type + " " + name + "cannot be used");
+			if (!mod && !optional)
+				console.error ("module " + type + " " + name + " cannot be used");
 
 			return mod;
 		},
@@ -604,9 +601,9 @@ if ($isServerSide) {
 			return this.getModule('task', name);
 		},
 
-		require: function (name) {
-			return this.getModule('node_modules', name) ||
-				this.getModule('', name);
+		require: function (name, optional) {
+			return this.getModule('node_modules', name, optional) ||
+				this.getModule('', name, optional);
 		}
 	});
 }

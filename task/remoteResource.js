@@ -6,13 +6,18 @@ var crypto       = require ('crypto'),
 	path         = require('path'),
 	urlModel     = require ('../model/from-url');
 
-var cachePath = project.config.cachePath;
-
-if (!project.caching) {
-	project.caching = {};
-}
 
 var cacheTask = module.exports = function (config) {
+
+	try {
+		this.cachePath = project.config.cachePath;
+
+		if (!project.caching) {
+			project.caching = {};
+		}
+	} catch (e) {
+	}
+
 
 	this.url = config.url;
 
@@ -34,7 +39,7 @@ util.extend (cacheTask.prototype, {
 
 		var shasum = crypto.createHash('sha1');
 		shasum.update(this.url.href);
-		this.cacheFile = project.root.file_io (cachePath, shasum.digest('hex'));
+		this.cacheFile = project.root.file_io (this.cachePath, shasum.digest('hex'));
 		this.cacheFilePath = this.cacheFile.path;
 		this.cacheFileName = path.basename(this.cacheFile.path);
 
@@ -166,7 +171,10 @@ util.extend (cacheTask.prototype, {
 				self.clearOperationTimeout();
 				// self.res.cacheFilePath = self.cacheFilePath
 				// self.completed (self.res);
-				self.finishWith ({data: self.download.data});
+				self.finishWith ({
+					code: self.model.dataSource.res.statusCode,
+					data: self.download.data
+				});
 			});
 
 		}

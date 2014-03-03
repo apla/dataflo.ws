@@ -73,9 +73,9 @@ httpdi.prototype.ready = function () {
 }
 
 httpdi.prototype.runPrepare = function (wf, request, response) {
-	
+
 	var self = this;
-	
+
 	var prepareCfg = wf.prepare,
 		prepare    = this.prepare;
 
@@ -199,11 +199,11 @@ httpdi.prototype.createPresenter = function (wf, request, response, state) {
 		tasks: tasks,
 		stage: 'presentation'
 	}, reqParams);
-	
+
 	presenterWf.on ('completed', function () {
 		//self.log ('presenter done');
 	});
-	
+
 	presenterWf.on ('failed', function () {
 		presenterWf.log ('Presenter failed: ' + request.method + ' to ' + request.url.pathname);
 		self.createWorkflowByCode(500, request, response) || response.end();
@@ -233,14 +233,14 @@ httpdi.prototype.createWorkflow = function (cfg, req, res) {
 	});
 
 	wf.on('failed', function (wf) {
-		
+
 		var presenter = self.createPresenter(wf, req, res, 'failed');
 		if (presenter) {
 			presenter.run ();
 		} else {
 			self.createWorkflowByCode(500, req, res);
 		}
-			
+
 	});
 
 	self.emit('detected', req, res, wf);
@@ -384,7 +384,7 @@ httpdi.prototype.listen = function () {
 		req.url = url.parse (req.url, true);
 		// use for workflow match
 		req[req.method] = true;
-		
+
 		// NOTE: we don't want to serve static files using nodejs.
 		// NOTE: but for rapid development this is acceptable.
 		// NOTE: you MUST write static: false for production
@@ -414,10 +414,39 @@ httpdi.prototype.listen = function () {
 			}
 
 			var file = project.root.fileIO(pathName);
-			file.readStream (function (readStream, stats) {
+			var fileOptions = {flags: "r"};
+
+			var statusCode = 200;
+			var start = 0;
+			var end   = 0;
+			var rangeHeader = req.headers['range'];
+			if (rangeHeader != null) {
+				// console.log (rangeHeader);
+				var range = rangeHeader.split ('bytes=')[1].split ('-');
+				start = parseInt(range[0]);
+				end   = parseInt(range[1]);
+				if (!isNaN(start)) {
+					if (!isNaN(end) && start > end) {
+						// error, return 200
+					} else {
+						statusCode = 206;
+						fileOptions.start = start;
+						if (!isNaN(end))
+							fileOptions.end = end;
+						// console.log (
+						// 	'Browser requested bytes from %d to %d of file %s',
+						// 	start, end, file.name
+						// );
+
+
+					}
+				}
+			}
+
+			file.readStream (fileOptions, function (readStream, stats) {
 
 				if (stats) {
-
+					// if (isNaN(end) || end == 0) end = stat.size-1;
 					if (stats.isDirectory() && !readStream) {
 
 						res.statusCode = 303;
@@ -435,15 +464,31 @@ httpdi.prototype.listen = function () {
 							uri = path.dirname(uri);
 						}
 
-						headers = util.extend(headers, {
-							'Content-Type': contentType
-						});
+						var headersExtend = {
+							'Content-Type': contentType,
+						};
 
-						res.writeHead (200, headers);
+						if (statusCode == 206) {
+							end = fileOptions.end ? fileOptions.end : stats.size-1;
+							headersExtend['Content-Range'] = 'bytes '
+								+fileOptions.start+'-'
+								+(end)+'/'+stats.size;
+							headersExtend["Accept-Ranges"]  = "bytes";
+							headersExtend["Content-Length"] = end - fileOptions.start + 1;
+
+							// console.log (headersExtend);
+						}
+
+						headers = util.extend (headers, headersExtend);
+
+						res.writeHead (statusCode, headers);
 						readStream.pipe (res);
 						readStream.resume ();
 						return;
 					}
+
+					self.handleFileStream (stats, readStream, req, res);
+					return;
 				}
 
 				// TODO: factor this out

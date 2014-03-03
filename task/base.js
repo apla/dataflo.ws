@@ -144,17 +144,21 @@ util.extend (task.prototype, taskStateMethods, {
 		var state = this.checkState ();
 //		console.log (this.url, 'state is', stateList[state], ' (' + state + ')', (state == 0 ? (this.require instanceof Array ? this.require.join (', ') : this.require) : ''));
 
-		var oldRun = this[this.method || 'run'];
-
-		this.run = function () {
-
+		this._launch = function () {
 			//this.emit ('log', 'RUN RETRIES : ' + this.retries);
 
 			if (this.state != 1) return;
 
 			this.state = 2;
 
-			if (oldRun) oldRun.call (this);
+			var method = this[this.method || 'run'];
+			if (!method) {
+				this.state = 5;
+				this.emit ('error', 'no method named "' + (this.method || 'run') + "\" in current task's class");
+
+				return;
+			}
+			method.call (this);
 		}
 
 		var oldCancel = this.cancel;

@@ -4,7 +4,9 @@ var task   = require ('./base'),
 	util   = require ('util'),
 	stream = require('stream');
 
-var presenters = {};
+var presenters = {},
+	defaultTemplateDir = (project && project.config && project.config.templateDir) || 'share/presentation',
+	isWatched = (project && project.config && project.config.debug);
 
 /**
  * @class task.presenterTask
@@ -27,8 +29,8 @@ util.inherits (presenterTask, task);
 var cache = {};
 
 util.extend (presenterTask.prototype, {
-	DEFAULT_TEMPLATE_DIR: 'share/presentation',
 
+	defaultTemplateDir: defaultTemplateDir,
 	/**
 	 * @private
 	 */
@@ -65,27 +67,46 @@ util.extend (presenterTask.prototype, {
 
 	getAbsPath: function () {
 		return path.resolve(
-			project.root.path, this.DEFAULT_TEMPLATE_DIR, this.file
+			project.root.path, this.defaultTemplateDir, this.file
 		);
 	},
 
 	getTemplateIO: function (callback) {
 		var self = this;
 		var defTemplate = this.getAbsPath();
-		var origTemplate = path.resolve(project.root.path, this.file);
-		var theTemplate;
+		var rootTemplate = path.resolve(project.root.path, this.file);
 
-		fs.exists(defTemplate, function (exists) {
-			theTemplate = exists ? defTemplate : origTemplate;
-
+		function isTemplateOk (templateIO) {
 			// warn if file is in static HTTP directory
+
 			if (self.isInStaticDir(theTemplate)) {
 				throw new Error(
 					'Publicly accessible template file at '+theTemplate+'!'
 				);
 			}
+			callback (project.root.fileIO (templateIO));
+		}
 
-			callback(project.root.fileIO(theTemplate));
+		fs.exists(defTemplate, function (exists) {
+			if (exists) {
+				isTemplateOk (defTemplate);
+			} else {
+				fs.exists(rootTemplate, function (exists) {
+					if (exists) {
+						isTemplateOk (rootTemplate);
+					} else {
+						var statusCode = self.response.statusCode;
+						self.response.statusCode = (statusCode >= 200 && statusCode <= 300) ? 500 : statusCode;
+						// if we have good response, but no template file, this is failure.
+						// redirects, 4xx and 5xx codes seems ok without template
+						// self.response.writeHead ((statusCode >= 200 && statusCode <= 300) ? 500 : statusCode);
+						self.renderResult (null, "failure");
+						self.emit ("error", "template not found in '" + defTemplate + "' or '" + rootTemplate + "'");
+						// self.failed ();
+					}
+
+				});
+			}
 		});
 	},
 
@@ -95,7 +116,9 @@ util.extend (presenterTask.prototype, {
 		this.getTemplateIO(function (templateIO) {
 			templateIO.readFile(function (err, data) {
 				if (err) {
-					console.error("can't access file %s", templateIO.path);
+					// self.response.writeHead (self.response.statusCode);
+					self.renderResult (null, "failure");
+					self.emit ("error", "template error: can't access file " + templateIO.path);
 				} else {
 					self.renderResult(data.toString());
 				}
@@ -143,21 +166,19 @@ util.extend (presenterTask.prototype, {
 					);
 				}
 
-				var isWatched
-					= ((typeof cache[self.file]) != "undefined")
-					&& (self.file in cache && !cache[self.file]);
+				if (isWatched) {
 
-				cache[self.file] = presenters[self.type][compileMethod](
-					tplStr, self.compileParams || {}
-				);
-
-				if (!isWatched) {
 					self.emit ('log', 'setting up watch for presentation file');
 					fs.watch (self.getAbsPath(), function () {
 						self.emit ('log', 'presentation file is changed');
 						delete cache[self.file];
 					});
+
 				}
+
+				cache[self.file] = presenters[self.type][compileMethod](
+					tplStr, self.compileParams || {}
+				);
 
 				if (self.renderMethod) {
 					self.renderProcess(cache[self.file][self.renderMethod].bind(cache[self.file]))
@@ -191,7 +212,7 @@ util.extend (presenterTask.prototype, {
 	 * @private
 	 */
 
-	renderResult: function(result) {
+	renderResult: function(result, failure) {
 		if (this.headers) {
 			for (var key in this.headers) {
 				this.response.setHeader(key, this.headers[key]);
@@ -199,13 +220,19 @@ util.extend (presenterTask.prototype, {
 		}
 		this.headers.connection = 'close';
 
-		if (result instanceof stream) {
+		if (!result) {
+			this.response.end();
+		} else if (result instanceof stream) {
 			result.pipe(this.response);
 		} else {
-			this.response.end(result);	
+			this.response.end(result);
 		}
 
-		this.completed();
+		if (!failure) {
+			this.completed();
+		} else {
+			this.failed();
+		}
 
 	},
 
@@ -257,11 +284,13 @@ util.extend (presenterTask.prototype, {
 				self.setContentType('text/html; charset=utf-8');
 				self.renderFile();
 				break;
-			
+
 			case 'ejs':
-				self.compileParams = {filename: path.resolve(
-					project.root.path, self.DEFAULT_TEMPLATE_DIR, self.file
-				)};
+				if (!self.compileParams) { // compileParams can be defined in task initConfig
+					self.compileParams = {filename: path.resolve(
+						project.root.path, self.defaultTemplateDir, self.file
+					)};
+				}
 			case 'jade':
 			case 'mustache':
 			case 'hogan.js':
@@ -286,13 +315,13 @@ util.extend (presenterTask.prototype, {
 						"this module required if you plan to use fileAsIs presenter type");
 					process.kill();
 				}
-				
+
 				var Magic = mmm.Magic;
 
 				var magic = new Magic(mmm.MAGIC_MIME_TYPE);
 				magic.detectFile(self.file, function(err, contentType) {
 				    if (err) throw err;
-				    
+
 				    self.setContentType(contentType);
 				    var fileStream = fs.createReadStream(self.file);
 				    self.renderResult (fileStream);

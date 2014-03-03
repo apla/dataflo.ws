@@ -10,6 +10,9 @@ var _required = {
 
 };
 
+define ('fs', [], function () {});
+define ('path', [], function () {});
+
 define ('util', [], function () {
 	var util = {};
 	util.inherits = function (ctor, superCtor) {
