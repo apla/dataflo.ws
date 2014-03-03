@@ -33,10 +33,10 @@ module.exports = {
 			if (--casesToRun)
 				return;
 
-			console.log('Completed: ' + casesResult['ok'].length + ' of ' + cases.length );
+			console.log('Completed: ' + casesResult.ok.length + ' of ' + cases.length );
 			console.log(
-				'Failed:    ' + casesResult['fail'].length + ' of ' + cases.length
-				+ ': ' + casesResult['fail'].join (', ');
+				'Failed:    ' + casesResult.fail.length + ' of ' + cases.length
+				+ ': ' + casesResult.fail.join (', ')
 			);
 			process.kill();
 		}
@@ -46,12 +46,12 @@ module.exports = {
 			var failKey    = 'fail';
 
 			var m = token.match (/^test\W(ok|fail)?/);
-			
+
 			if (m[1] == 'fail') {
 				successKey = 'fail';
 				failKey    = 'ok';
 			}
-			
+
 			console.print ('Running test case ' + token + '; expected ' + successKey);
 //			console.log (conf.templates.task);
 
@@ -63,12 +63,12 @@ module.exports = {
 
 			flow.on('completed', function(flow) {
 				console.print ('Test case ' + token + ' ok');
-				casesResult[successKey][token] = true;
+				casesResult[successKey].push (token);
 				onTestEnd(token);
 			});
 			flow.on('failed', function(flow) {
 				console.print ('Test case ' + token + ' failed');
-				casesResult[failKey][token] = true;
+				casesResult[failKey].push (token);
 				onTestEnd(token);
 			});
 

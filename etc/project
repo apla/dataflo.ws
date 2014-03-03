@@ -88,6 +88,23 @@
 						"$args": ["{$result.c}"]
 					}]
 				},
+				"test:ok:03-template-set-important": {
+					"tasks": [{
+						"$template": "jsonParseAndSet",
+						"$args": ["{\"a\":\"b\"}"]
+					}, {
+						"$template": "jsonParseAndSet",
+						"$args":     ["{\"c\":\"d\"}"],
+						"require":   "{$result}"
+					}, {
+						"$function": "throwNow",
+						"$args": ["{$result.a}"],
+						"$important": true
+					}, {
+						"$function": "throwUnlessDefined",
+						"$args": ["{$result.c}"]
+					}]
+				},
 				"test:ok:04-every-template": {
 					"tasks": [{
 						"$every": [0, 1, 2],
