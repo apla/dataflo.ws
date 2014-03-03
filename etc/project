@@ -28,8 +28,24 @@
 	},
 	"initiator": {
 		"callback": {
-		
+
 			"flows": {
+				"test:ok:00-expansion": {
+					"description": "basic 'every' task test",
+					"tasks": [{
+						"$function": "console.log",
+						"$args": ["123"]
+					}, {
+						"$every": [2, 1, 2],
+						"$tasks": [{
+							"$function": "throwUnlessEqual",
+							"$args": [
+								"[*every.index]",
+								"[*every.item]"
+							]
+						}]
+					}]
+				},
 				"test:ok:01-origin": "<test/01-origin>",
 				"test:fail:02-every": {
 					"description": "basic 'every' task test",
@@ -44,7 +60,7 @@
 						}]
 					}]
 				},
-				"test:ok:02-every": {
+				"test:ok:03-every": {
 					"tasks": [{
 						"$every": [0, 1, 2],
 						"$tasks": [{
@@ -56,7 +72,7 @@
 						}]
 					}]
 				},
-				"test:ok:03-template-merge": {
+				"test:ok:04-template-merge": {
 					"tasks": [{
 						"$template": "jsonParseAndMerge",
 						"$args": ["{\"a\":\"b\"}"]
@@ -72,7 +88,7 @@
 						"$args": ["{$result.c}"]
 					}]
 				},
-				"test:ok:03-template-set": {
+				"test:ok:05-template-set": {
 					"tasks": [{
 						"$template": "jsonParseAndSet",
 						"$args": ["{\"a\":\"b\"}"]
@@ -88,7 +104,7 @@
 						"$args": ["{$result.c}"]
 					}]
 				},
-				"test:ok:03-template-set-important": {
+				"test:fail:06-template-set-important": {
 					"tasks": [{
 						"$template": "jsonParseAndSet",
 						"$args": ["{\"a\":\"b\"}"]
@@ -98,6 +114,8 @@
 						"require":   "{$result}"
 					}, {
 						"$function": "throwNow",
+						"// 1 ": "this task must fail because unsatisfied dependencies of result.a",
+						"// 2 ": "which replaced by second JSON parse task. task state is skipped, but $important fail skipped task",
 						"$args": ["{$result.a}"],
 						"$important": true
 					}, {
@@ -105,7 +123,7 @@
 						"$args": ["{$result.c}"]
 					}]
 				},
-				"test:ok:04-every-template": {
+				"test:ok:07-every-template": {
 					"tasks": [{
 						"$every": [0, 1, 2],
 						"$tasks": [{
@@ -113,7 +131,7 @@
 						}]
 					}]
 				},
-				"test:ok:05-every-double-expansion": {
+				"test:ok:08-every-double-expansion": {
 					"tasks": [{
 						"$every": [0, 1, 2],
 						"$tasks": [{
@@ -125,7 +143,7 @@
 						}]
 					}]
 				},
-				
+
 				"xtest-every-000": {
 					"data": {
 						"articleSelector":
