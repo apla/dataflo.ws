@@ -27,14 +27,17 @@ module.exports = {
 
 		var context = this.launchContext();
 		var casesToRun = cases.length;
-		var casesResult = { ok: 0, fail: 0 };
+		var casesResult = { ok: [], fail: [] };
 
-		var onTestEnd = function() {
+		var onTestEnd = function(token) {
 			if (--casesToRun)
 				return;
 
-			console.log('Completed: ' + casesResult['ok'] + ' of ' + cases.length );
-			console.log('Failed:    ' + casesResult['fail'] + ' of ' + cases.length );
+			console.log('Completed: ' + casesResult['ok'].length + ' of ' + cases.length );
+			console.log(
+				'Failed:    ' + casesResult['fail'].length + ' of ' + cases.length
+				+ ': ' + casesResult['fail'].join (', ');
+			);
 			process.kill();
 		}
 
@@ -59,12 +62,14 @@ module.exports = {
 			});
 
 			flow.on('completed', function(flow) {
-				casesResult[successKey]++;
-				onTestEnd();
+				console.print ('Test case ' + token + ' ok');
+				casesResult[successKey][token] = true;
+				onTestEnd(token);
 			});
 			flow.on('failed', function(flow) {
-				casesResult[failKey]++;
-				onTestEnd();
+				console.print ('Test case ' + token + ' failed');
+				casesResult[failKey][token] = true;
+				onTestEnd(token);
 			});
 
 			flow.run();
