@@ -565,7 +565,8 @@ util.extend (workflow.prototype, {
 			// workflow stopped and failed
 
 			self.emit ('failed', self);
-			self.log (this.stage + ' failed in ' + (self.stopped - self.started) + 'ms; ' + this.taskStates[taskStateNames.failed]+' tasks of ' + self.tasks.length);
+			var failedtasksCount = this.taskStates[taskStateNames.failed]
+			self.log (this.stage + ' failed in ' + (self.stopped - self.started) + 'ms; ' + failedtasksCount + ' ' + (failedtasksCount == 1 ? 'task': 'tasks') +' out of ' + self.tasks.length);
 
 		} else {
 			// workflow stopped and not failed

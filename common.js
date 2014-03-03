@@ -412,14 +412,14 @@ String.prototype.interpolate = function (dict, marks) {
 
 	var values = [];
 
-	var replacedStr = this.replace(re, function (_, type, path) {
-		if (path.indexOf(marks.path) > -1) {
-			var value = pathToVal(dict, path);
+	var replacedStr = this.replace(re, function (_, varType, varPath) {
+		if (varPath.indexOf(marks.path) > -1) {
+			var value = pathToVal(dict, varPath);
 		} else {
-			value = dict[path];
+			value = dict[varPath];
 		}
 
-		if (type == marks.typeSafe && isEmpty(value)) {
+		if (isEmpty(value) && varType == marks.typeSafe) {
 			value = undefined;
 		}
 
@@ -428,7 +428,7 @@ String.prototype.interpolate = function (dict, marks) {
 		return value;
 	});
 
-	if (values.some(function (v) { return undefined == v; })) {
+	if (values.some(function (v) { return (typeof v === "undefined"); })) {
 		return undefined;
 	}
 
