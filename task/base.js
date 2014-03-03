@@ -130,7 +130,7 @@ util.extend (task.prototype, taskStateMethods, {
 
 		// TODO: this is provided only on run
 		self.timeout = config.timeout || 1;
-		self.retries = config.retries || 0;
+		self.retries = config.retries || null;
 
 		self.attempts = 0;
 

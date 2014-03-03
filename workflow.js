@@ -212,10 +212,10 @@ var workflow = module.exports = function (config, reqParam) {
 					delete everyTaskConf.$template;
 					console.log (everyTaskConf, actualTaskParams.$tasks[idx]);//everyTaskConf.$tasks
 				}
-				
+
 			});
 		}
-		
+
 //		var originalTaskConfig = JSON.parse(JSON.stringify(actualTaskParams));
 		var originalTaskConfig = util.extend (true, {}, actualTaskParams);
 
@@ -232,10 +232,10 @@ var workflow = module.exports = function (config, reqParam) {
 
 				}
 			}
-			
+
 			return dict;
 		}
-		
+
 		var checkRequirements = function () {
 			var dict = createDict ();
 
@@ -629,7 +629,7 @@ util.extend (workflow.prototype, {
 		// TODO: fix by using console.error
 		if ($isServerSide) {
 			this._log('error', " \x1B[0;31m" + msg, options || '', "\x1B[0m");
-			return;	
+			return;
 		}
 		this._log('error', msg, options || '');
 	},
@@ -667,7 +667,8 @@ util.extend (workflow.prototype, {
 
 		task.on ('cancel', function () {
 
-			self.logTaskError (task, 'canceled, retries = ' + task.retries);
+			if (task.retries !== null)
+				self.logTaskError (task, 'canceled, retries = ' + task.retries);
 			self.failed = true;
 
 			if (self.isIdle)
