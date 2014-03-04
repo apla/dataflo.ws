@@ -79,9 +79,9 @@ util.extend (presenterTask.prototype, {
 		function isTemplateOk (templateIO) {
 			// warn if file is in static HTTP directory
 
-			if (self.isInStaticDir(theTemplate)) {
+			if (self.isInStaticDir(templateIO)) {
 				throw new Error(
-					'Publicly accessible template file at '+theTemplate+'!'
+					'Publicly accessible template file at '+templateIO+'!'
 				);
 			}
 			callback (project.root.fileIO (templateIO));
