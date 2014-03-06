@@ -370,6 +370,30 @@ httpdi.prototype.hierarchical.findByPath = function (
 	}
 };
 
+httpdi.prototype.httpDate = function (date) {
+	date = date || new Date ();
+	var fstr = "%a, %d %b %Y %H:%M:%S UTC";
+	var utc  = 'getUTC';
+	//utc = utc ? 'getUTC' : 'get';
+	var shortDayNames = 'Sun Mon Tue Wed Thu Fri Sat'.split (' ');
+	var shortMonNames = 'Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec'.split (' ');
+	return fstr.replace (/%[YmdHMSab]/g, function (m) {
+		switch (m) {
+			case '%Y': return date[utc + 'FullYear'] (); // no leading zeros required
+			case '%m': m = 1 + date[utc + 'Month'] (); break;
+			case '%d': m = date[utc + 'Date'] (); break;
+			case '%H': m = date[utc + 'Hours'] (); break;
+			case '%M': m = date[utc + 'Minutes'] (); break;
+			case '%S': m = date[utc + 'Seconds'] (); break;
+			case '%a': return shortDayNames[date[utc + 'Day'] ()]; // no leading zeros required
+			case '%b': return shortMonNames[date[utc + 'Month'] ()]; // no leading zeros required
+			default: return m.slice (1); // unknown code, remove %
+		}
+		// add leading zero if required
+		return ('0' + m).slice (-2);
+	});
+}
+
 httpdi.prototype.listen = function () {
 
 	var self = this;
@@ -398,14 +422,16 @@ httpdi.prototype.listen = function () {
 			);
 
 			var contentType, charset;
-			if ('.html' == path.extname(pathName)) {
-				contentType = 'text/html';
-				charset = 'utf-8';
-			}
-
+			// make sure html return fast as possible
+			// if ('.html' == path.extname(pathName)) {
+			// 	contentType = 'text/html';
+			// 	charset = 'utf-8';
+			// } else
 			if (mime && mime.lookup) {
 				contentType = mime.lookup (pathName);
-				charset = mime.charsets.lookup(contentType, 'utf-8'); // The logic for charset lookups is pretty rudimentary.
+				// The logic for charset lookups is pretty rudimentary.
+				if (contentType.match (/^text\//))
+					charset = mime.charsets.lookup(contentType, 'utf-8');
 				if (charset) contentType += '; charset='+charset;
 			} else if (!contentType) {
 				console.error(
@@ -466,7 +492,13 @@ httpdi.prototype.listen = function () {
 
 						var headersExtend = {
 							'Content-Type': contentType,
+							'Content-Length': stats.size,
+							'Date': self.httpDate (stats.mtime),
 						};
+
+						if (project.config.debug) {
+							headersExtend['Cache-Control'] = 'no-store, no-cache';
+						}
 
 						if (statusCode == 206) {
 							end = fileOptions.end ? fileOptions.end : stats.size-1;
@@ -480,6 +512,10 @@ httpdi.prototype.listen = function () {
 						}
 
 						headers = util.extend (headers, headersExtend);
+
+						req.on('close', function() {
+							readStream.destroy();
+						});
 
 						res.writeHead (statusCode, headers);
 						readStream.pipe (res);
