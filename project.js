@@ -10,10 +10,10 @@ var Project = function (rootPath) {
 	this.root = projectRoot;
 	var self = this;
 
-	var configDir = '.dataflows';
-	var varDir    = '.dataflows';
+	this.configDir = '.dataflows';
+	this.varDir    = '.dataflows';
 
-	this.loadConfig (configDir, varDir);
+	this.loadConfig (this.configDir, this.varDir);
 };
 
 module.exports = Project;
@@ -61,7 +61,7 @@ Project.prototype.loadConfig = function (configDir, varDir) {
 
 		self.id     = config.id;
 
-		self.loadIncludes(config, function (err, config) {
+		self.loadIncludes(config, 'projectRoot', function (err, config) {
 			if (err) {
 				console.error(err);
 				console.warn("Couldn't load includes.");
@@ -126,7 +126,7 @@ Project.prototype.loadConfig = function (configDir, varDir) {
 					self.emit ('ready');
 				});
 			});
-		}, 'projectRoot');
+		});
 	});
 }
 
@@ -178,10 +178,10 @@ Project.prototype.require = function (name, optional) {
 
 var configCache = {};
 
-Project.prototype.loadIncludes = function (config, cb, level) {
+Project.prototype.loadIncludes = function (config, level, cb) {
 	var self = this;
 
-	var DEFAULT_ROOT = 'etc/',
+	var DEFAULT_ROOT = this.configDir,
 		DELIMITER = ' > ',
 		tagRe = /<([^>]+)>/,
 		cnt = 0,
@@ -230,40 +230,40 @@ Project.prototype.loadIncludes = function (config, cb, level) {
 			if (match) {
 				len += 1;
 
-				var path = match[1];
+				var incPath = match[1];
 
-				if (0 !== path.indexOf('/')) {
-					path = DEFAULT_ROOT + path;
+				if (0 !== incPath.indexOf('/')) {
+					incPath = path.join (DEFAULT_ROOT, incPath);
 				}
 
-				if (path in levelHash) {
+				if (incPath in levelHash) {
 					//console.error('\n\n\nError: on level "' + level + '" key "' + key + '" linked to "' + value + '" in node:\n', node);
 					throw new Error('circular linking');
 				}
 
 				delete node[key];
 
-				if (configCache[path]) {
+				if (configCache[incPath]) {
 
-					node[key] = util.clone(configCache[path]);
+					node[key] = util.clone(configCache[incPath]);
 					onLoad();
 
 				} else {
 
-					self.root.fileIO(path).readFile(function (err, data) {
+					self.root.fileIO(incPath).readFile(function (err, data) {
 						if (err) {
 
 							onError(err);
 
 						} else {
 
-							self.loadIncludes(JSON.parse(data), function(tree, includeConfig) {
+							self.loadIncludes(JSON.parse(data), path.join(level, DELIMITER, incPath), function(tree, includeConfig) {
 
-								configCache[path] = includeConfig;
+								configCache[incPath] = includeConfig;
 
-								node[key] = util.clone(configCache[path]);
+								node[key] = util.clone(configCache[incPath]);
 								onLoad();
-							}, level + DELIMITER + path);
+							});
 
 						}
 					});
