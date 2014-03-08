@@ -101,7 +101,7 @@ Project.prototype.loadConfig = function () {
 		}
 
 
-		self.id     = config.id;
+		self.id = config.id;
 
 		self.loadIncludes(config, 'projectRoot', function (err, config) {
 			if (err) {
@@ -113,60 +113,51 @@ Project.prototype.loadConfig = function () {
 
 			self.config = config;
 
-			self.root.fileIO ('var/instance').readFile (function (err, data) {
+			if (!self.instance) {
+				self.emit ('ready');
+				return;
+			}
 
+			self.root.fileIO (path.join(self.configDir, self.instance, 'fixup')).readFile (function (err, data) {
 				if (err) {
-					console.error ("PROBABLY HARMFUL: can't access var/instance: "+err);
+					console.error (
+						"PROBABLY HARMFUL: can't access "+path.join(self.configDir, instance, 'fixup')+" file. "
+						+ "create one and define local configuration fixup. "
+					);
 					self.emit ('ready');
+					// process.kill ();
+					return;
+
+				}
+
+				var fixupData = (""+data).match (/(\w+)(\W[^]*)/);
+				fixupData.shift ();
+				var fixupParser = fixupData.shift ();
+
+				var fixupData = (""+data).match (/(\w+)(\W[^]*)/);
+				fixupData.shift ();
+				var fixupParser = fixupData.shift ();
+
+				// console.log ('parsing etc/' + instance + '/fixup using "' + fixupParser + '" parser');
+				// TODO: error handling
+
+				if (fixupParser == 'json') {
+					var config = JSON.parse (fixupData[0]);
+
+					util.extend (true, self.config, config);
+				} else {
+					console.error (
+						'parser ' + fixupParser + ' unknown in etc/' + instance + 'fixup; '
+						+ 'we analyze parser using first string of file; '
+						+ 'you must put in first string comment with file format, like "// json"');
+
+					// process.kill ();
 					return;
 				}
 
-				var instance = (""+data).split (/\n/)[0];
+				console.log ('project ready');
 
-				self.instance = instance;
-
-				console.log ('instance is: ', instance);
-
-				self.root.fileIO (path.join(self.configDir, instance, 'fixup')).readFile (function (err, data) {
-					if (err) {
-						console.error ("PROBABLY HARMFUL: can't access "+path.join(self.configDir, instance, 'fixup')+" file. "
-									   + "create one and define local configuration fixup. "
-									  );
-						self.emit ('ready');
-						// process.kill ();
-						return;
-
-					}
-
-					var fixupData = (""+data).match (/(\w+)(\W[^]*)/);
-					fixupData.shift ();
-					var fixupParser = fixupData.shift ();
-
-					var fixupData = (""+data).match (/(\w+)(\W[^]*)/);
-					fixupData.shift ();
-					var fixupParser = fixupData.shift ();
-
-					// console.log ('parsing etc/' + instance + '/fixup using "' + fixupParser + '" parser');
-					// TODO: error handling
-
-					if (fixupParser == 'json') {
-						var config = JSON.parse (fixupData[0]);
-
-						util.extend (true, self.config, config);
-					} else {
-						console.error (
-							'parser ' + fixupParser + ' unknown in etc/' + instance + 'fixup; '
-							+ 'we analyze parser using first string of file; '
-							+ 'you must put in first string comment with file format, like "// json"');
-
-						// process.kill ();
-						return;
-					}
-
-					console.log ('project ready');
-
-					self.emit ('ready');
-				});
+				self.emit ('ready');
 			});
 		});
 	});
