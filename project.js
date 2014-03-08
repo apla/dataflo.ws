@@ -39,9 +39,10 @@ Project.prototype.prepare = function (cb) {
 	var self = this;
 	this.root.fileIO ('etc/project').stat(function (err, stats) {
 		if (!err && stats && stats.isFile()) {
-			console.warn ("'etc/project' found. dataflo.ws@0.60.0 and later storing project config in '.dataflows' directory. please run 'dataflows doctor'.");
+			console.warn ("in dataflo.ws@0.60.0 we have changed configuration layout. please run 'dataflows doctor'.");
 			self.configDir = 'etc';
 			self.varDir    = 'var';
+			self.legacy    = true;
 		}
 		self.emit ('prepared');
 	})
@@ -53,7 +54,8 @@ Project.prototype.readInstance = function () {
 
 		// assume .dataflows dir always correct
 		if (err && self.varDir != '.dataflows') {
-			console.error ("PROBABLY HARMFUL: can't access "+self.varDir+"/instance: "+err);
+			// console.error ("PROBABLY HARMFUL: can't access "+self.varDir+"/instance: "+err);
+			console.warn ('dataflo.ws instance not defined');
 		} else {
 			var instance = (""+data).split (/\n/)[0];
 			self.instance = instance;
@@ -70,8 +72,10 @@ Project.prototype.loadConfig = function () {
 
 	this.root.fileIO (path.join(this.configDir, 'project')).readFile (function (err, data) {
 		if (err) {
-			console.error ("can't access "+self.configDir+"/project file. create one and define project id");
+			var message = "can't access "+self.configDir+"/project file. create one and define project id";
+			console.error (message);
 			// process.kill ();
+			self.emit ('error', message);
 			return;
 		}
 
@@ -86,16 +90,19 @@ Project.prototype.loadConfig = function () {
 			try {
 				var config = JSON.parse (configData[0]);
 			} catch (e) {
-				console.log ('WARNING: project config cannot parsed');
-				throw e;
+				var message ='project config cannot parsed';
+				console.error (message);
+				self.emit ('error', message);
 			}
 
 			// TODO: read config fixup
 		} else {
-			console.error (
+			var message =
 				'parser ' + parser + ' unknown in '+self.configDir+'/project; '
 				+ 'we analyze parser using first string of file; '
-				+ 'you must put in first string comment with file format, like "// json"');
+				+ 'you must put in first string comment with file format, like "// json"';
+			console.error (message);
+			self.emit ('error', message);
 			// process.kill ();
 			return;
 		}
@@ -168,6 +175,7 @@ Project.prototype.connectors = {};
 Project.prototype.connections = {};
 
 Project.prototype.getModule = function (type, name, optional) {
+	var self = this;
 	optional = optional || false;
 	var mod;
 	var taskFound = [
@@ -175,16 +183,16 @@ Project.prototype.getModule = function (type, name, optional) {
 		path.resolve(this.root.path, type, name),
 		path.resolve(this.root.path, 'node_modules', type, name),
 		name
-	].some (function (path) {
+	].some (function (modPath) {
 		try {
-			mod = require(path);
+			mod = require(modPath);
 			return true;
 		} catch (e) {
 			// assuming format: Error: Cannot find module 'csv2array' {"code":"MODULE_NOT_FOUND"}
 			if (e.toString().indexOf(name + '\'') > 0 && e.code == "MODULE_NOT_FOUND") {
 				return false;
 			} else {
-				console.error ('when require \"' + path + '\": ' + e.toString());
+				console.error ('requirement failed: ', e.toString(), " in \"" + self.root.relative (modPath) + '\"');
 				return true;
 			}
 		}
@@ -205,8 +213,7 @@ Project.prototype.getTask = function (name) {
 };
 
 Project.prototype.require = function (name, optional) {
-	return this.getModule('node_modules', name, optional) ||
-		this.getModule('', name, optional);
+	return this.getModule('', name, optional);
 }
 
 var configCache = {};

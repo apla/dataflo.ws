@@ -13,6 +13,11 @@ var io = module.exports = function (path) {
 
 }
 
+io.prototype.relative = function (relPath) {
+	return Path.relative (this.path, relPath);
+};
+
+
 io.prototype.isFile = function () {
 	return this.stats ? this.stats.isFile () : null;
 };

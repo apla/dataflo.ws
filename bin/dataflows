@@ -11,30 +11,7 @@ var common = require(path.join(MODULE_NAME, 'common'));
 var $global = common.$global;
 var project = $global.project = common.getProject(); // used by initiators
 
-project.on('ready', function () {
-	var conf = project.config;
-
-	// load local modules
-	var requires = conf.requires || [ DEFAULT_REQUIRE ];
-	if (!Object.is('Array', requires)) {
-		requires = [ requires ];
-	}
-	requires.forEach(function (modName) {
-		var mod = project.require(modName, true);
-
-		// exporting everything to mainModule,
-		// be careful about name conflicts
-		if (mod) {
-			Object.keys(mod).forEach(function (key) {
-				$global.$mainModule.exports[key] = mod[key];
-			});
-		} else {
-			console.warn('Module %s not found', modName);
-		}
-	});
-
-	// now we can launch script;
-	// script require postponed until project get prepared
+function launchScript (conf, err) {
 	var scriptName = process.argv[2];
 
 	var scriptClass;
@@ -42,12 +19,12 @@ project.on('ready', function () {
 		scriptClass = require (project.root.fileIO ('bin', scriptName).path);
 	} catch (e) {
 		try {
-			scriptClass = require (path.join (MODULE_NAME, 'script', scriptName));	
+			scriptClass = require (path.join (MODULE_NAME, 'script', scriptName));
 		} catch (e) {
 			// console.log (e);
 		}
 	}
-	
+
 	if (!scriptClass) {
 		// TODO: list all available scripts with descriptions
 		console.error('sorry, there is no such script "%s"', scriptName);
@@ -63,7 +40,9 @@ project.on('ready', function () {
 		}
 	}
 
-	if (typeof scriptClass[scriptMethod] == 'function') {
+	if (err && typeof scriptClass[scriptMethod + 'Anyway'] == 'function') {
+		scriptClass[scriptMethod + 'Anyway'](conf);
+	} else if (typeof scriptClass[scriptMethod] == 'function') {
 		scriptClass[scriptMethod](conf);
 	} else {
 		console.error(
@@ -72,4 +51,46 @@ project.on('ready', function () {
 		);
 		process.exit();
 	}
+
+}
+
+project.on ('ready', function () {
+	var conf = project.config;
+
+	// load local modules
+	var requires = conf.requires || [ DEFAULT_REQUIRE ];
+	if (!Object.is('Array', requires)) {
+		requires = [ requires ];
+	}
+
+	requires.forEach(function (modName) {
+		var mod = project.require(modName, true);
+
+		// exporting everything to mainModule,
+		// be careful about name conflicts
+		if (mod) {
+			Object.keys(mod).forEach(function (key) {
+				$global.$mainModule.exports[key] = mod[key];
+			});
+		} else {
+			// console.warn('Module %s not found', modName);
+		}
+	});
+
+	// now we can launch script;
+	// script require postponed until project get prepared
+
+	launchScript(conf);
 });
+
+project.on ('error', function () {
+	if (project.config) {
+		// project emits error only if project config cannot be parsed
+
+	}
+	// now we can launch script;
+	// script require postponed until project get prepared
+
+	launchScript (null, err);
+});
+
