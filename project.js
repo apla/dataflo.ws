@@ -3,17 +3,30 @@ var util = require ('util');
 
 var io = require ('./io/easy');
 
+// var fsm = StateMachine.create({
+//   events: [
+//     {name: 'prepare',     from: 'none',         to: 'prepared'},
+//     {name: 'instantiate', from: 'prepared',     to: 'instantiated'},
+//     {name: 'configure',   from: 'instantiated', to: 'configured'},
+// ]});
+// alert(fsm.current); // "none"
+// fsm.prepare ();
+// alert(fsm.current); // "green"
+
 var Project = function (rootPath) {
 	var rootPath = rootPath || process.env['PROJECT_ROOT'] || process.cwd();
 	var projectRoot = new io(rootPath);
 
 	this.root = projectRoot;
-	var self = this;
+	var self  = this;
 
 	this.configDir = '.dataflows';
 	this.varDir    = '.dataflows';
 
-	this.loadConfig (this.configDir, this.varDir);
+	this.on ('prepared', this.readInstance.bind(this));
+	this.on ('instantiated', this.loadConfig.bind(this));
+
+	this.prepare ();
 };
 
 module.exports = Project;
@@ -22,13 +35,42 @@ var EventEmitter = require ('events').EventEmitter;
 
 util.inherits (Project, EventEmitter);
 
-Project.prototype.loadConfig = function (configDir, varDir) {
+Project.prototype.prepare = function (cb) {
+	var self = this;
+	this.root.fileIO ('etc/project').stat(function (err, stats) {
+		if (!err && stats && stats.isFile()) {
+			console.warn ("'etc/project' found. dataflo.ws@0.60.0 and later storing project config in '.dataflows' directory. please run 'dataflows doctor'.");
+			self.configDir = 'etc';
+			self.varDir    = 'var';
+		}
+		self.emit ('prepared');
+	})
+}
+
+Project.prototype.readInstance = function () {
+	var self = this;
+	this.root.fileIO (path.join (this.varDir, 'instance')).readFile (function (err, data) {
+
+		// assume .dataflows dir always correct
+		if (err && self.varDir != '.dataflows') {
+			console.error ("PROBABLY HARMFUL: can't access "+self.varDir+"/instance: "+err);
+		} else {
+			var instance = (""+data).split (/\n/)[0];
+			self.instance = instance;
+			console.log ('instance is: ', instance);
+		}
+
+		self.emit ('instantiated');
+	});
+}
+
+Project.prototype.loadConfig = function () {
 
 	var self = this;
 
-	this.root.fileIO (path.join(configDir, 'project')).readFile (function (err, data) {
+	this.root.fileIO (path.join(this.configDir, 'project')).readFile (function (err, data) {
 		if (err) {
-			console.error ("can't access "+configDir+"/project file. create one and define project id");
+			console.error ("can't access "+self.configDir+"/project file. create one and define project id");
 			// process.kill ();
 			return;
 		}
@@ -51,7 +93,7 @@ Project.prototype.loadConfig = function (configDir, varDir) {
 			// TODO: read config fixup
 		} else {
 			console.error (
-				'parser ' + parser + ' unknown in '+configDir+'/project; '
+				'parser ' + parser + ' unknown in '+self.configDir+'/project; '
 				+ 'we analyze parser using first string of file; '
 				+ 'you must put in first string comment with file format, like "// json"');
 			// process.kill ();
@@ -85,9 +127,9 @@ Project.prototype.loadConfig = function (configDir, varDir) {
 
 				console.log ('instance is: ', instance);
 
-				self.root.fileIO (path.join(configDir, instance, 'fixup')).readFile (function (err, data) {
+				self.root.fileIO (path.join(self.configDir, instance, 'fixup')).readFile (function (err, data) {
 					if (err) {
-						console.error ("PROBABLY HARMFUL: can't access "+path.join(configDir, instance, 'fixup')+" file. "
+						console.error ("PROBABLY HARMFUL: can't access "+path.join(self.configDir, instance, 'fixup')+" file. "
 									   + "create one and define local configuration fixup. "
 									  );
 						self.emit ('ready');
