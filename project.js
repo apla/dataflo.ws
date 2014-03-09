@@ -54,14 +54,18 @@ Project.prototype.readInstance = function () {
 	this.root.fileIO (path.join (this.varDir, 'instance')).readFile (function (err, data) {
 
 		// assume .dataflows dir always correct
-		if (err && self.varDir != '.dataflows') {
+		// if (err && self.varDir != '.dataflows') {
 			// console.error ("PROBABLY HARMFUL: can't access "+self.varDir+"/instance: "+err);
 			// console.warn (log.dataflows(), 'instance not defined');
-		} else {
+		// } else {
 			var instance = (""+data).split (/\n/)[0];
-			self.instance = instance;
-			console.log (log.dataflows(), 'instance is: ', instance);
-		}
+			self.instance = instance == "undefined" ? null : instance;
+			args = [log.dataflows(), 'instance is:', instance];
+			if (err) {
+				args.push ('(' + log.c.red (err) + ')');
+			}
+			console.log.apply (console, args);
+		// }
 
 		self.emit ('instantiated');
 	});
@@ -129,8 +133,8 @@ Project.prototype.loadConfig = function () {
 			self.root.fileIO (path.join(self.configDir, self.instance, 'fixup')).readFile (function (err, data) {
 				if (err) {
 					console.error (
-						"config fixup file unavailable ("+color(path.join(self.configDir, instance, 'fixup'), "blue")+")"
-						+ "create one and define local configuration fixup. "
+						"config fixup file unavailable ("+log.path (path.join(self.configDir, self.instance, 'fixup'))+")",
+						"create one and define local configuration fixup"
 					);
 					self.emit ('ready');
 					// process.kill ();
@@ -146,7 +150,7 @@ Project.prototype.loadConfig = function () {
 				fixupData.shift ();
 				var fixupParser = fixupData.shift ();
 
-				// console.log ('parsing etc/' + instance + '/fixup using "' + fixupParser + '" parser');
+				// console.log ('parsing etc/' + self.instance + '/fixup using "' + fixupParser + '" parser');
 				// TODO: error handling
 
 				if (fixupParser == 'json') {
@@ -155,7 +159,7 @@ Project.prototype.loadConfig = function () {
 					util.extend (true, self.config, config);
 				} else {
 					console.error (
-						'parser ' + fixupParser + ' unknown in etc/' + instance + 'fixup; '
+						'parser ' + fixupParser + ' unknown in etc/' + self.instance + 'fixup; '
 						+ 'we analyze parser using first string of file; '
 						+ 'you must put in first string comment with file format, like "// json"');
 
