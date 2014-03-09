@@ -10,6 +10,6 @@ To generate documentation site, you need to install JSDuck:
 
 And run the command:
 
-    jsduck -o output-directory/ workflow.js/
+    jsduck -o output-directory/ dataflows.js/
 
 Don't mind the warnings (JSDuck isn't aware of Node.js built-ins).
