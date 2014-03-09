@@ -1,16 +1,17 @@
 var EventEmitter = require ('events').EventEmitter,
 	http         = require ('http'),
 	util         = require ('util'),
-	flow         = require ('../flow'),
-	common       = require('../common'),
+	flow         = require ('dataflo.ws/flow'),
+	common       = require ('dataflo.ws/common'),
 	url          = require ('url'),
 	path         = require ('path'),
-	os			 = require ('os');
+	os           = require ('os');
+	log          = require ('dataflo.ws/log');
 
 try {
 	var mime     = require ('mime');
 } catch (e) {
-	console.error ('cannot find mime module');
+	console.error (log.c.red('cannot find mime module'));
 };
 
 /**
@@ -64,9 +65,12 @@ util.inherits (httpdi, EventEmitter);
 httpdi.prototype.ready = function () {
 	// called from server listen
 	console.log(
-		'Server running at http://'
-		+(this.host ? this.host : '127.0.0.1')
-		+(this.port == 80 ? '' : ':'+this.port)+'/'
+		'HTTP initiator running at',
+		log.path (
+			'http://'
+			+(this.host ? this.host : '127.0.0.1')
+			+(this.port == 80 ? '' : ':'+this.port)+'/'
+		)
 	);
 
 	this.emit ('ready', this.server);

@@ -24,10 +24,16 @@ var Project = function (rootPath) {
 	this.configDir = '.dataflows';
 	this.varDir    = '.dataflows';
 
-	this.on ('prepared', this.readInstance.bind(this));
+	// common.waitAll ([
+	// 	[this, 'legacy-checked'], // check legacy config
+	// 	[this, 'config-checked'], // check current config
+	// ], this.readInstance.bind(this));
+
+	this.on ('legacy-checked', this.checkConfig.bind(this));
+	this.on ('config-checked', this.readInstance.bind(this));
 	this.on ('instantiated', this.loadConfig.bind(this));
 
-	this.prepare ();
+	this.checkLegacy ();
 };
 
 module.exports = Project;
@@ -36,18 +42,43 @@ var EventEmitter = require ('events').EventEmitter;
 
 util.inherits (Project, EventEmitter);
 
-Project.prototype.prepare = function (cb) {
+Project.prototype.checkLegacy = function (cb) {
 	var self = this;
 	this.root.fileIO ('etc/project').stat(function (err, stats) {
 		if (!err && stats && stats.isFile()) {
-			console.warn ("in", log.dataflows ("@0.60.0"), "we have changed configuration layout. please run", log.path("dataflows doctor"));
+			console.error (log.c.red ('project has legacy configuration layout. you can migrate by running those commands:'));
+			console.error ("\n\tcd "+project.root.path);
+			console.error ("\tmv etc .dataflows");
+
+			// console.warn ("in", log.dataflows ("@0.60.0"), "we have changed configuration layout. please run", log.path("dataflows doctor"));
 			self.configDir = 'etc';
 			self.varDir    = 'var';
 			self.legacy    = true;
 		}
-		self.emit ('prepared');
+		self.emit ('legacy-checked');
 	})
 }
+
+Project.prototype.checkConfig = function (cb) {
+	var self = this;
+	if (self.legacy) {
+		self.emit ('config-checked');
+		return;
+	}
+	this.root.fileIO ('.dataflows').stat(function (err, stats) {
+		if (!err && stats && stats.isDirectory ()) {
+			self.emit ('config-checked');
+		} else {
+			console.error (
+				'no', log.dataflows(),
+				'project config found. please run',
+				log.path ('dataflows help'), 'or', log.path ('dataflows init')
+			);
+		}
+
+	})
+}
+
 
 Project.prototype.readInstance = function () {
 	var self = this;
@@ -58,12 +89,16 @@ Project.prototype.readInstance = function () {
 			// console.error ("PROBABLY HARMFUL: can't access "+self.varDir+"/instance: "+err);
 			// console.warn (log.dataflows(), 'instance not defined');
 		// } else {
+
 			var instance = (""+data).split (/\n/)[0];
 			self.instance = instance == "undefined" ? null : instance;
 			args = [log.dataflows(), 'instance is:', instance];
 			if (err) {
 				args.push ('(' + log.c.red (err) + ')');
+			} else if (self.legacy) {
+				console.error ("\tmv var/instance .dataflows/");
 			}
+			if (self.legacy) console.log ();
 			console.log.apply (console, args);
 		// }
 
@@ -95,9 +130,10 @@ Project.prototype.loadConfig = function () {
 			try {
 				var config = JSON.parse (configData[0]);
 			} catch (e) {
-				var message = 'project config cannot parsed';
-				console.error (log.c.red (message));
-				self.emit ('error', message);
+				var message = 'project config cannot parsed:';
+				console.error (message, log.c.red (e));
+				self.emit ('error', message + ' ' + e.toString());
+				process.kill ();
 			}
 
 			// TODO: read config fixup
