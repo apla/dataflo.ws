@@ -169,7 +169,7 @@
 								"$set":"result2"
 							},
 							{
-								"$function":"console.print",
+								"$function":"console.log",
 								"$args":[
 									"Running $every...",
 									"index: [*every.index], item: [*result2]",

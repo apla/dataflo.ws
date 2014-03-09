@@ -1,5 +1,6 @@
 var dataflows = require('dataflo.ws');
 var common    = require('dataflo.ws/common');
+var log       = require('dataflo.ws/log');
 var minimist  = require('minimist');
 
 module.exports = {
@@ -19,11 +20,12 @@ module.exports = {
 
 		// 1) check for legacy project dir
 		if (project.legacy) {
-			console.error ('project has legacy configuration layout. you can migrate by running those commands:');
+			console.error (log.c.red ('project has legacy configuration layout. you can migrate by running those commands:'));
 			console.error ("\n\tcd "+project.root.path);
 			console.error ("\tmv etc .dataflows");
 			if (project.instance)
 				console.error ("\tmv var/instance .dataflows/");
+			console.error();
 		}
 		// 2) check for instance
 		if (!project.instance) {

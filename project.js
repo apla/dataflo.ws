@@ -2,6 +2,7 @@ var path = require ('path');
 var util = require ('util');
 
 var io = require ('./io/easy');
+var log = require ('./log');
 
 // var fsm = StateMachine.create({
 //   events: [
@@ -39,7 +40,7 @@ Project.prototype.prepare = function (cb) {
 	var self = this;
 	this.root.fileIO ('etc/project').stat(function (err, stats) {
 		if (!err && stats && stats.isFile()) {
-			console.warn ("in dataflo.ws@0.60.0 we have changed configuration layout. please run 'dataflows doctor'.");
+			console.warn ("in", log.dataflows ("@0.60.0"), "we have changed configuration layout. please run", log.path("dataflows doctor"));
 			self.configDir = 'etc';
 			self.varDir    = 'var';
 			self.legacy    = true;
@@ -55,11 +56,11 @@ Project.prototype.readInstance = function () {
 		// assume .dataflows dir always correct
 		if (err && self.varDir != '.dataflows') {
 			// console.error ("PROBABLY HARMFUL: can't access "+self.varDir+"/instance: "+err);
-			console.warn ('dataflo.ws instance not defined');
+			// console.warn (log.dataflows(), 'instance not defined');
 		} else {
 			var instance = (""+data).split (/\n/)[0];
 			self.instance = instance;
-			console.log ('instance is: ', instance);
+			console.log (log.dataflows(), 'instance is: ', instance);
 		}
 
 		self.emit ('instantiated');
@@ -73,7 +74,7 @@ Project.prototype.loadConfig = function () {
 	this.root.fileIO (path.join(this.configDir, 'project')).readFile (function (err, data) {
 		if (err) {
 			var message = "can't access "+self.configDir+"/project file. create one and define project id";
-			console.error (message);
+			console.error (log.dataflows(), log.c.red (message));
 			// process.kill ();
 			self.emit ('error', message);
 			return;
@@ -90,8 +91,8 @@ Project.prototype.loadConfig = function () {
 			try {
 				var config = JSON.parse (configData[0]);
 			} catch (e) {
-				var message ='project config cannot parsed';
-				console.error (message);
+				var message = 'project config cannot parsed';
+				console.error (log.c.red (message));
 				self.emit ('error', message);
 			}
 
@@ -101,7 +102,7 @@ Project.prototype.loadConfig = function () {
 				'parser ' + parser + ' unknown in '+self.configDir+'/project; '
 				+ 'we analyze parser using first string of file; '
 				+ 'you must put in first string comment with file format, like "// json"';
-			console.error (message);
+			console.error (log.c.red (message));
 			self.emit ('error', message);
 			// process.kill ();
 			return;
@@ -128,7 +129,7 @@ Project.prototype.loadConfig = function () {
 			self.root.fileIO (path.join(self.configDir, self.instance, 'fixup')).readFile (function (err, data) {
 				if (err) {
 					console.error (
-						"PROBABLY HARMFUL: can't access "+path.join(self.configDir, instance, 'fixup')+" file. "
+						"config fixup file unavailable ("+color(path.join(self.configDir, instance, 'fixup'), "blue")+")"
 						+ "create one and define local configuration fixup. "
 					);
 					self.emit ('ready');
@@ -162,7 +163,7 @@ Project.prototype.loadConfig = function () {
 					return;
 				}
 
-				console.log ('project ready');
+				// console.log ('project ready');
 
 				self.emit ('ready');
 			});
@@ -192,7 +193,7 @@ Project.prototype.getModule = function (type, name, optional) {
 			if (e.toString().indexOf(name + '\'') > 0 && e.code == "MODULE_NOT_FOUND") {
 				return false;
 			} else {
-				console.error ('requirement failed: ', e.toString(), " in \"" + self.root.relative (modPath) + '\"');
+				console.error ('requirement failed:', log.c.red (e.toString()), "in", log.path (self.root.relative (modPath)));
 				return true;
 			}
 		}
@@ -241,7 +242,7 @@ Project.prototype.loadIncludes = function (config, level, cb) {
 	}
 
 	function onError(err) {
-		console.log('[WARNING] Level:', level, 'is not correct.\nError:', err);
+		console.log('[WARNING] Level:', level, 'is not correct.\nError:', log.c.red (err));
 		cb(err, config);
 	}
 

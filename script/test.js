@@ -1,4 +1,5 @@
 var dataflows = require('dataflo.ws');
+var log       = require('dataflo.ws/log');
 
 module.exports = {
 	launchContext: function () {
@@ -36,7 +37,7 @@ module.exports = {
 			console.log('Completed: ' + casesResult.ok.length + ' of ' + cases.length );
 			console.log(
 				'Failed:    ' + casesResult.fail.length + ' of ' + cases.length
-				+ ': ' + casesResult.fail.join (', ')
+				+ ': ' + casesResult.fail.map (function (c) {return log.c.red (c)}).join (', ')
 			);
 			process.kill();
 		}
@@ -52,7 +53,7 @@ module.exports = {
 				failKey    = 'ok';
 			}
 
-			console.print ('Running test case ' + token + '; expected ' + successKey);
+			console.log ('Running test case ' + log.c.magenta (token) + '; expected ' + log.c.green (successKey));
 //			console.log (conf.templates.task);
 
 			var flow = processor.process(token, {
@@ -62,12 +63,12 @@ module.exports = {
 			});
 
 			flow.on('completed', function(flow) {
-				console.print ('Test case ' + token + ' ok');
+				console.log (log.c.green ('Test case', token, 'ok'));
 				casesResult[successKey].push (token);
 				onTestEnd(token);
 			});
 			flow.on('failed', function(flow) {
-				console.print ('Test case ' + token + ' failed');
+				console.log (log.c.red ('Test case', token, 'failed'));
 				casesResult[failKey].push (token);
 				onTestEnd(token);
 			});
