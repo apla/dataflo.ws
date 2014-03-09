@@ -2,12 +2,12 @@ var test     = require('utest');
 var assert   = require('assert');
 
 var common   = require ('../common');
-var workflow = require ('../workflow');
+var dataflow = require ('../flow');
 
 clearInterval (global.currentDateInterval);
 
-var checkTaskParams  = workflow.prototype.checkTaskParams;
-var taskRequirements = workflow.prototype.taskRequirements;
+var checkTaskParams  = dataflow.prototype.checkTaskParams;
+var taskRequirements = dataflow.prototype.taskRequirements;
 
 var data = {
 	boolExp: "{$data.bool}",
@@ -19,7 +19,6 @@ var data = {
 		emptyObj: "{$data.emptyObj}"
 	},
 	exception: {
-		stringExp2: "{$badString}",
 		nothing: "{$erlkjgnwlekrjgn}"
 	},
 	stringExp: "{$data.string}",
@@ -60,7 +59,6 @@ test('check task requirements', {
 			"checkFalse.emptyArr",
 			"checkFalse.emptyObj",
 
-			"exception.stringExp2",
 			"exception.nothing"
 		]);
 	}

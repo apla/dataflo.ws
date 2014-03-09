@@ -4,7 +4,7 @@ var assert   = require('assert');
 var util     = require ('util');
 
 var common   = require ('../common');
-var workflow = require ('../workflow');
+var flow = require ('../flow');
 
 clearInterval ($stash.currentDateInterval);
 
@@ -34,7 +34,7 @@ var ok = function (desc) {
 
 //process.on('uncaughtException', failure ('unhadled exception'));
 
-var workflows = [{
+var dataflows = [{
 	description: "task failed at constructor call",
 	config: {
 		tasks: [{
@@ -189,20 +189,20 @@ repeat.times (function () {
 		});
 	});
 
-	var independentWf = new workflow (
+	var independentDf = new flow (
 		util.extend (true, {}, independentConfig.config),
 		{request: independentConfig.request}
 	);
 
-	if (!independentWf.ready)
+	if (!independentDf.ready)
 		return independentConfig.failed ();
 
-	independentWf.on ('completed', independentConfig.completed);
+	independentDf.on ('completed', independentConfig.completed);
 
-	independentWf.on ('failed', independentConfig.failed);
+	independentDf.on ('failed', independentConfig.failed);
 
 	if (independentConfig.autoRun || independentConfig.autoRun == void 0)
-		independentWf.run();
+		independentDf.run();
 
 	var dependentConfig = {
 		description: "1000 dependent tasks",
@@ -230,38 +230,38 @@ repeat.times (function () {
 		});
 	});
 
-	var dependentWf = new workflow (
+	var dependentDf = new flow (
 		util.extend (true, {}, dependentConfig.config),
 		{request: dependentConfig.request}
 	);
 
-	if (!dependentWf.ready)
+	if (!dependentDf.ready)
 		return dependentConfig.failed ();
 
-	dependentWf.on ('completed', dependentConfig.completed);
+	dependentDf.on ('completed', dependentConfig.completed);
 
-	dependentWf.on ('failed', dependentConfig.failed);
+	dependentDf.on ('failed', dependentConfig.failed);
 
 	if (dependentConfig.autoRun || dependentConfig.autoRun == void 0)
-		dependentWf.run();
+		dependentDf.run();
 
 
-	workflows.map (function (item) {
+	dataflows.map (function (item) {
 
-		var wf = new workflow (
+		var df = new flow (
 			util.extend (true, {}, item.config),
 			{request: item.request}
 		);
 
-		if (!wf.ready)
+		if (!df.ready)
 			return item.failed ();
 
-		wf.on ('completed', item.completed);
+		df.on ('completed', item.completed);
 
-		wf.on ('failed', item.failed);
+		df.on ('failed', item.failed);
 
 		if (item.autoRun || item.autoRun == void 0)
-			wf.run();
+			df.run();
 
 	});
 

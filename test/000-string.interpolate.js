@@ -6,7 +6,6 @@ var common = require ('../common');
 var data = {
 	boolExp: "{$data.bool}",
 	stringExp: "{$data.string}",
-	stringExp2: "{$badString}",
 	stringExp3: "{$okString}",
 	numberExp: "{$data.number}",
 	inlineExp: "{$data.string}-{$data.number}",
