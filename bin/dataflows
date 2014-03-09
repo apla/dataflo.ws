@@ -83,7 +83,7 @@ project.on ('ready', function () {
 	launchScript(conf);
 });
 
-project.on ('error', function () {
+project.on ('error', function (err) {
 	if (project.config) {
 		// project emits error only if project config cannot be parsed
 
