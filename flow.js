@@ -124,14 +124,14 @@ function checkTaskParams (params, dict, prefix, marks) {
 }
 
 /**
- * @class workflow
+ * @class flow
  * @extends events.EventEmitter
  *
  * The heart of the framework. Parses task configurations, loads dependencies,
  * launches tasks, stores their result. When all tasks are completed,
  * notifies subscribers (inititators).
  *
- * @cfg {Object} config (required) Workflow configuration.
+ * @cfg {Object} config (required) dataflow configuration.
  * @cfg {String} config.$class (required) Class to instantiate
  * (alias of config.className).
  * @cfg {String} config.$function (required) Synchronous function to be run
@@ -139,9 +139,9 @@ function checkTaskParams (params, dict, prefix, marks) {
  * @cfg {String} config.$set Path to the property in which the produced data
  * will be stored.
  * @cfg {String} config.$method Method to be run after the class instantiation.
- * @cfg {Object} reqParam (required) Workflow parameters.
+ * @cfg {Object} reqParam (required) dataflow parameters.
  */
-var workflow = module.exports = function (config, reqParam) {
+var dataflow = module.exports = function (config, reqParam) {
 
 	var self = this;
 
@@ -150,13 +150,13 @@ var workflow = module.exports = function (config, reqParam) {
 
 	this.created = new Date().getTime();
 
-	// here we make sure workflow uid generated
+	// here we make sure dataflow uid generated
 	// TODO: check for cpu load
 	var salt = (Math.random () * 1e6).toFixed(0);
 	this.id      = this.id || (this.started ^ salt) % 1e6;
 	if (!this.idPrefix) this.idPrefix = '';
 
-	if (!this.stage) this.stage = 'workflow';
+	if (!this.stage) this.stage = 'dataflow';
 
 	//if (!this.stageMarkers[this.stage])
 	//	console.error ('there is no such stage marker: ' + this.stage);
@@ -407,7 +407,7 @@ var workflow = module.exports = function (config, reqParam) {
 
 };
 
-util.inherits (workflow, EventEmitter);
+util.inherits (dataflow, EventEmitter);
 
 function pad(n) {
 	return n < 10 ? '0' + n.toString(10) : n.toString(10);
@@ -435,7 +435,7 @@ function timestamp () {
 }
 
 
-util.extend (workflow.prototype, {
+util.extend (dataflow.prototype, {
 	checkTaskParams: checkTaskParams,
 	taskRequirements: taskRequirements,
 	failed: false,
@@ -443,7 +443,7 @@ util.extend (workflow.prototype, {
 	haveCompletedTasks: false,
 
 	/**
-	 * @method run Initiators call this method to launch the workflow.
+	 * @method run Initiators call this method to launch the dataflow.
 	 */
 	runDelayed: function () {
 		var self = this;
@@ -467,7 +467,7 @@ util.extend (workflow.prototype, {
 		self.isIdle = false;
 		self.haveCompletedTasks = false;
 
-//		self.log ('workflow run');
+//		self.log ('dataflow run');
 
 		this.taskStates = [0, 0, 0, 0, 0, 0, 0];
 
@@ -562,14 +562,14 @@ util.extend (workflow.prototype, {
 		}
 
 		if (this.failed) {
-			// workflow stopped and failed
+			// dataflow stopped and failed
 
 			self.emit ('failed', self);
 			var failedtasksCount = this.taskStates[taskStateNames.failed]
 			self.log (this.stage + ' failed in ' + (self.stopped - self.started) + 'ms; ' + failedtasksCount + ' ' + (failedtasksCount == 1 ? 'task': 'tasks') +' out of ' + self.tasks.length);
 
 		} else {
-			// workflow stopped and not failed
+			// dataflow stopped and not failed
 
 			self.emit ('completed', self);
 			self.log (this.stage + ' complete in ' + (self.stopped - self.started) + 'ms');
@@ -579,7 +579,7 @@ util.extend (workflow.prototype, {
 		self.isIdle = true;
 
 	},
-	stageMarker: {prepare: "()", workflow: "[]", presentation: "<>"},
+	stageMarker: {prepare: "()", dataflow: "[]", presentation: "<>"},
 	_log: function (level, msg) {
 //		if (this.quiet || process.quiet) return;
 		var toLog = [].slice.call (arguments);
@@ -704,6 +704,6 @@ util.extend (workflow.prototype, {
 });
 
 // legacy
-workflow.isEmpty = common.isEmpty;
+dataflow.isEmpty = common.isEmpty;
 
 });
