@@ -19,7 +19,7 @@ var EventEmitter = require ('events').EventEmitter,
  * ### Example
  *
 	{
-		workflows: [{
+		flows: [{
 			url: "/entity/suggest",
 
 			tasks: [{
@@ -56,7 +56,7 @@ var EventEmitter = require ('events').EventEmitter,
  * - `update`, updates records in the DB
  * - `remove`, removes records from the DB
  *
- * @cfg {String} filter (required) The name of the property of the workflow
+ * @cfg {String} filter (required) The name of the property of the dataflow
  * instance or the identifier of an object with filter fields for `select`,
  * `insert` or `update` methods (see {@link #method}). Filter can be mongo's
  * ObjectID, ObjectID array (in such case mongo requested with {$in: []})
@@ -371,7 +371,7 @@ util.extend (mongoRequestTask.prototype, {
 
 			var docsId = [];
 			self.data = self.data.map(function(item) {
-				
+
 				var clone = util.extend(true, {}, item);
 
 				if (self.timestamp) {
@@ -382,7 +382,7 @@ util.extend (mongoRequestTask.prototype, {
 				} else {
 					docsId.push(clone._id);
 				}
-				
+
 				return clone;
 
 			});
@@ -573,7 +573,7 @@ util.extend (mongoRequestTask.prototype, {
 				}
 				collection.insert (self.data, {safe: true}, function (err, docs) {
 
-					// TODO: check two parallels tasks: if one from its completed, then workflow must be completed (for exaple mongo & ldap tasks)
+					// TODO: check two parallels tasks: if one from its completed, then dataflow must be completed (for exaple mongo & ldap tasks)
 					if (this.verbose)
 						console.log ('collection.insert', docs, err);
 
@@ -620,9 +620,9 @@ util.extend (mongoRequestTask.prototype, {
  * @cfg {Array} options (upsert, multi, safe)
  *
  */
-	
+
 	update: function () {
-		
+
 		var self = this,
 			options = self.options || {},
 			idList,
@@ -630,19 +630,19 @@ util.extend (mongoRequestTask.prototype, {
 			success = 0,
 			failed = 0,
 			criteriaFields = self.criteriaFields || ["_id"];
-			
+
 		var callback = function (err) {
-			
+
 			if (idList.length > 1) { // many records
-				
+
 				total++;
-				
+
 				if (err) {
 					failed++
 				} else {
 					success++;
 				}
-				
+
 				if (total == idList.length) {
 					if (total == success) {
 						if (self.verbose) self.emit('log', 'Updated IDs', idList);
@@ -658,23 +658,23 @@ util.extend (mongoRequestTask.prototype, {
 						});
 					}
 				}
-			
+
 			} else { // single object
-				
+
 				if (err) {
 					self.failed(err);
 				} else {
-					
+
 					self.completed ({
 						_id: idList[0]
 					});
-					
+
 					if (0 == idList.length) {
 						self.empty();
 					}
 				}
 			}
-		
+
 		};
 
 		if (self.verbose)
@@ -683,7 +683,7 @@ util.extend (mongoRequestTask.prototype, {
 		self._openCollection (function (err, collection) {
 
 			// wrap single record to array
-			
+
 			if (self.data.constructor != Array) {
 				self.data = [self.data];
 			}
@@ -693,22 +693,22 @@ util.extend (mongoRequestTask.prototype, {
 				if (item._id || self.criteria || options.upsert) {
 
 					// clone before update
-					
+
 					var set = util.extend(true, {}, item);
 					delete set._id;
-					
+
 					// criteriaObj
 
 					var criteriaObj;
-					
+
 					if (!self.criteria) {
-						
+
 						// default by _id or by defined first level fields just
-						
+
 						criteriaObj = {};
-						
+
 						criteriaFields.forEach(function(fieldName) {
-						
+
 							if (fieldName == "_id") {
 								if (item.hasOwnProperty(fieldName))
 									criteriaObj[fieldName] = self._objectId(item[fieldName]);
@@ -716,13 +716,13 @@ util.extend (mongoRequestTask.prototype, {
 								if (set.hasOwnProperty(fieldName))
 									criteriaObj[fieldName] = set[fieldName];
 							}
-						
+
 						});
-						
+
 					} else {
 						criteriaObj = self.criteria;
 					}
-					
+
 					// newObj
 
 					var newObj;
@@ -748,7 +748,7 @@ util.extend (mongoRequestTask.prototype, {
 					} else {
 						newObj = (self.replace) ? (set) : ({$set: set});
 					}
-					
+
 					// set timestamp
 
 					if (self.timestamp) {
@@ -758,16 +758,16 @@ util.extend (mongoRequestTask.prototype, {
 					}
 
 					// safe
-					
+
 					options.safe = true;
 
 					// show input params
 					if (self.verbose)
 						console.log('collection.update ', criteriaObj, newObj, options);
-					
+
 					// do update
 					collection.update(criteriaObj, newObj, options, callback);
-					
+
 					// return Id for map operation
 					return item._id;
 
@@ -791,33 +791,33 @@ util.extend (mongoRequestTask.prototype, {
 		if (self.verbose) {
 			self.emit('log', 'remove called ', self.data);
 		}
-		
+
 		if (!Object.is('Array', self.data)) {
 			self.data = [self.data];
 		}
-		
+
 		ids = self.data.filter(function (item) {
 			return null != item._id;
 		});
-		
+
 		if (self.data.length != ids.length && ids.length == 0) {
-			
+
 			ids = self.data.filter(function (id) {
 				return null != id;
 			}). map(function (id) {
 				return self._objectId(id);
 			});
-			
+
 		} else {
-			
+
 			ids = ids.map(function (item) {
 				return self._objectId(item._id);
 			});
-			
+
 		}
 
 		self._openCollection(function (err, collection) {
-			
+
 			if (self.verbose) {
 				console.log('remove by filter', {
 					_id: { $in: ids }
@@ -845,7 +845,7 @@ util.extend (mongoRequestTask.prototype, {
 		if (self.verbose) {
 			self.emit('log', 'removeAll');
 		}
-		
+
 		self._openCollection(function (err, collection) {
 			collection.remove({
 			}, self.options, function (err, records) {
@@ -989,13 +989,13 @@ util.extend (mongoRequestTask.prototype, {
  */
 
 	group: function () {
-		
+
 		var self = this;
 
 		self._openColOrFail(function (collection) {
-			
+
 			collection.group(self.keys, self.condition, self.initial, self.reduce, self._onResult.bind(self));
-			
+
 		});
 	},
 

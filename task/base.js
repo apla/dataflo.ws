@@ -42,15 +42,15 @@ for (var stateNum = 0; stateNum < taskStateList.length; stateNum++) {
  * should inherite from.
  *
  * The base `task` class provides methods to control the task execution
- * externally. These methods are called by the workflow.
+ * externally. These methods are called by the dataflow.
  * They cycle through a number of states ({@link #stateNames})
  * and emit events.
  *
  * ### Example
  *
  * A sequence of task configs
- * within the *RIA.Workflow* concept. `task` objects are instantiated
- * by `workflow` internally.
+ * within the *dataflo.ws* concept. `task` objects are instantiated
+ * by `dataflow` internally.
  *
  * @cfg {String} className (required) The name of a module-exported class
  * to be instantiated as an asynchronous task.
@@ -72,7 +72,7 @@ for (var stateNum = 0; stateNum < taskStateList.length; stateNum++) {
  * @cfg {Number} [timeout=1] The number of seconds between retries
  * to run the task.
  *
- * @cfg {String} produce The name of the workflow data field to receive
+ * @cfg {String} produce The name of the dataflow data field to receive
  * the result of the task.
  *
  * @cfg {Function|String|String[]} require Lists requirements to check.
@@ -211,7 +211,7 @@ util.extend (task.prototype, taskStateMethods, {
 	/**
 	 * @method completed
 	 * Publishes {@link #event-complete} with the result object
-	 * that will go into the {@link #produce} field of the workflow.
+	 * that will go into the {@link #produce} field of the dataflow.
 	 *
 	 * @param {Object} result The product of the task.
 	 */
@@ -416,7 +416,7 @@ util.extend (task.prototype, taskStateMethods, {
 	 *
 	 * Sets the status to `failed`.
 	 *
-	 * Sidenote: when a task fails the whole workflow, that it belongs to, fails.
+	 * Sidenote: when a task fails the whole dataflow, that it belongs to, fails.
 	 *
 	 * @return {Boolean} Always true.
 	 * @param {Error} Error object.

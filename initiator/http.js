@@ -1,7 +1,7 @@
 var EventEmitter = require ('events').EventEmitter,
 	http         = require ('http'),
 	util         = require ('util'),
-	workflow     = require ('../workflow'),
+	flow         = require ('../flow'),
 	common       = require('../common'),
 	url          = require ('url'),
 	path         = require ('path'),
@@ -17,7 +17,7 @@ try {
  * @class initiator.httpdi
  * @extends events.EventEmitter
  *
- * Initiates HTTP server-related workflows.
+ * Initiates HTTP server-related dataflows.
  */
 var httpdi = module.exports = function httpdIConstructor (config) {
 	// we need to launch httpd
@@ -30,8 +30,8 @@ var httpdi = module.exports = function httpdIConstructor (config) {
 	else
 		this.port  = config.port;
 
-	this.workflows = config.workflows;
-	this.static    = config.static || {};
+	this.flows  = config.workflows || config.dataflows || config.flows;
+	this.static = config.static || {};
 
 	// - change static root by path
 	this.static.root = project.root.fileIO(this.static.root || 'htdocs');
@@ -72,78 +72,78 @@ httpdi.prototype.ready = function () {
 	this.emit ('ready', this.server);
 }
 
-httpdi.prototype.runPrepare = function (wf, request, response) {
+httpdi.prototype.runPrepare = function (df, request, response) {
 
 	var self = this;
 
-	var prepareCfg = wf.prepare,
+	var prepareCfg = df.prepare,
 		prepare    = this.prepare;
 
 	if (prepare) {
 
-		var wfChain = [];
+		var dfChain = [];
 
 		// create chain of wfs
 
 		prepareCfg.forEach(function(p, index, arr) {
 
-			var innerWfConfig = prepare[p];
+			var innerDfConfig = prepare[p];
 
-			var innerWf = new workflow(innerWfConfig, {
+			var innerDf = new flow(innerDfConfig, {
 				request: request,
 				response: response,
 				stage: 'prepare'}
 			);
 
-			wfChain.push(innerWf);
+			dfChain.push(innerDf);
 
 		});
 
-		// push main wf to chain
+		// push main df to chain
 
-		wfChain.push(wf)
+		dfChain.push(df)
 
 		// subscribe they
 
-		for (var i = 0; i < wfChain.length-1; i++) {
+		for (var i = 0; i < dfChain.length-1; i++) {
 
-			var currentWf = wfChain[i];
-			currentWf.nextWf = wfChain[i+1];
+			var currentDf = dfChain[i];
+			currentDf.nextDf = dfChain[i+1];
 
-			currentWf.on('completed', function(cWF) {
-				setTimeout(cWF.nextWf.run.bind (cWF.nextWf), 0);
+			currentDf.on('completed', function(cDF) {
+				setTimeout(cDF.nextDf.run.bind (cDF.nextDf), 0);
 			});
 
-			currentWf.on('failed', function(cWF) {
-				var presenter = self.createPresenter(cWF, 'failed');
+			currentDf.on('failed', function(cDF) {
+				var presenter = self.createPresenter(cDF, 'failed');
 				if (presenter)
 					presenter.run ();
 			})
 
 		}
 
-		wfChain[0].run();
+		dfChain[0].run();
 
 	} else {
 
-		throw "Config doesn't contain such prepare type: " + wf.prepare;
+		throw "Config doesn't contain such prepare type: " + df.prepare;
 
 	}
 }
 
 
-httpdi.prototype.createPresenter = function (wf, request, response, state) {
+httpdi.prototype.createPresenter = function (df, request, response, state) {
 	var self = this;
 	// presenter can be:
-	// {completed: ..., failed: ..., failedRequire: ...} — succeeded or failed tasks in workflow or failed require step
+	// {completed: ..., failed: ..., failedRequire: ...} — succeeded or failed tasks in dataflow or failed require step
 	// "template.name" — template file for presenter
 	// {"type": "json"} — presenter config
-	// TODO: [{...}, {...}] — presentation workflow
+	// TODO: [{...}, {...}] — presentation dataflow
 
-	if (!wf.presenter) return;
+	if (!df.presenter) return;
 	// TODO: emit SOMETHING
 
-	var presenter = wf.presenter;
+	var presenter = df.presenter;
 
 	//console.log ('running presenter on state: ', state, presenter[state]);
 
@@ -189,30 +189,30 @@ httpdi.prototype.createPresenter = function (wf, request, response, state) {
 	}
 
 	var reqParams = util.extend(true, {
-		error: wf.error,
+		error: df.error,
 		request: request,
 		response: response
-	}, wf.data);
+	}, df.data);
 
-	var presenterWf = new workflow ({
-		id:    wf.id,
+	var presenterDf = new flow ({
+		id:    df.id,
 		tasks: tasks,
 		stage: 'presentation'
 	}, reqParams);
 
-	presenterWf.on ('completed', function () {
+	presenterDf.on ('completed', function () {
 		//self.log ('presenter done');
 	});
 
-	presenterWf.on ('failed', function () {
-		presenterWf.log ('Presenter failed: ' + request.method + ' to ' + request.url.pathname);
-		self.createWorkflowByCode(500, request, response) || response.end();
+	presenterDf.on ('failed', function () {
+		presenterDf.log ('Presenter failed: ' + request.method + ' to ' + request.url.pathname);
+		self.createFlowByCode(500, request, response) || response.end();
 	});
 
-	return presenterWf;
+	return presenterDf;
 }
 
-httpdi.prototype.createWorkflow = function (cfg, req, res) {
+httpdi.prototype.createFlow = function (cfg, req, res) {
 	var self = this;
 
 	// task MUST contain tasks or presenter
@@ -221,62 +221,62 @@ httpdi.prototype.createWorkflow = function (cfg, req, res) {
 
 	console.log('httpdi match: ' + req.method + ' to ' + req.url.pathname);
 
-	var wf = new workflow(
+	var df = new flow(
 		util.extend (true, {}, cfg),
 		{ request: req, response: res }
 	);
 
-	wf.on('completed', function (wf) {
-		var presenter = self.createPresenter(wf, req, res, 'completed');
+	df.on('completed', function (df) {
+		var presenter = self.createPresenter(df, req, res, 'completed');
 		if (presenter)
 			presenter.run ();
 	});
 
-	wf.on('failed', function (wf) {
+	df.on('failed', function (df) {
 
-		var presenter = self.createPresenter(wf, req, res, 'failed');
+		var presenter = self.createPresenter(df, req, res, 'failed');
 		if (presenter) {
 			presenter.run ();
 		} else {
-			self.createWorkflowByCode(500, req, res);
+			self.createFlowByCode(500, req, res);
 		}
 
 	});
 
-	self.emit('detected', req, res, wf);
+	self.emit('detected', req, res, df);
 
 	if (cfg.prepare) {
-		self.runPrepare(wf, req, res);
+		self.runPrepare(df, req, res);
 	} else {
-		wf.run();
+		df.run();
 	}
 
-	return wf;
+	return df;
 }
 
-httpdi.prototype.createWorkflowByCode = function (code, req, res) {
+httpdi.prototype.createFlowByCode = function (code, req, res) {
 	res.statusCode = code;
-	// find a workflow w/ presenter by HTTP response code
-	if (!this.workflows._codeWorkflows) {
-		this.workflows._codeWorkflows = {};
+	// find a flow w/ presenter by HTTP response code
+	if (!this.flows._codeFlows) {
+		this.flows._codeFlows = {};
 	}
-	if (!(res.statusCode in this.workflows._codeWorkflows)) {
-		this.workflows._codeWorkflows[
+	if (!(res.statusCode in this.flows._codeFlows)) {
+		this.flows._codeFlows[
 			res.statusCode
-		] = this.workflows.filter(function (wf) {
-			return wf.code == res.statusCode;
+		] = this.flows.filter(function (df) {
+			return df.code == res.statusCode;
 		})[0];
 	}
-	var codeWf = this.workflows._codeWorkflows[res.statusCode];
-	if (codeWf) {
-		if (!codeWf.tasks) { codeWf.tasks = []; }
-		this.createWorkflow(codeWf, req, res);
+	var codeDf = this.flows._codeFlows[res.statusCode];
+	if (codeDf) {
+		if (!codeDf.tasks) { codeDf.tasks = []; }
+		this.createFlow(codeDf, req, res);
 		return true;
 	}
 	return false;
 };
 
-httpdi.prototype.initWorkflow = function (wfConfig, req) {
+httpdi.prototype.initFlow = function (wfConfig, req) {
 };
 
 // hierarchical router
@@ -299,7 +299,7 @@ httpdi.prototype.hierarchical = function (req, res) {
 
 	if (config) {
 		req.capture = capture;
-		return this.createWorkflow(config, req, res);
+		return this.createFlow(config, req, res);
 	}
 	return null;
 };
@@ -327,7 +327,7 @@ httpdi.prototype.hierarchical.walkList = function (
 httpdi.prototype.hierarchical.findByPath = function (
 	tree, pathParts, level, capture
 ) {
-	var list = tree.workflows;
+	var list = tree.workflows || tree.dataflows || tree.flows;
 	var checkedLevel = level;
 	var branch = null;
 
@@ -402,11 +402,11 @@ httpdi.prototype.listen = function () {
 		req.pause ();
 		// console.log ('serving: ' + req.method + ' ' + req.url + ' for ', req.connection.remoteAddress + ':' + req.connection.remotePort);
 
-		// here we need to find matching workflows
+		// here we need to find matching flows
 		// for received request
 
 		req.url = url.parse (req.url, true);
-		// use for workflow match
+		// use for flow match
 		req[req.method] = true;
 
 		// NOTE: we don't want to serve static files using nodejs.
@@ -529,16 +529,16 @@ httpdi.prototype.listen = function () {
 
 				// TODO: factor this out
 				// - - - - -
-				var wf = self.router (req, res);
+				var df = self.router (req, res);
 
-				if (wf && !wf.ready) {
-					console.error ("workflow not ready and cannot be started");
+				if (df && !df.ready) {
+					console.error ("flow not ready and cannot be started");
 				}
 
-				if (!wf) {
+				if (!df) {
 					console.log ('httpdi not detected: ' + req.method + ' to ' + req.url.pathname);
 					self.emit ("unknown", req, res);
-					self.createWorkflowByCode(404, req, res) || res.end();
+					self.createFlowByCode(404, req, res) || res.end();
 				}
 				// - - - - - end of router creation
 			});
@@ -546,16 +546,16 @@ httpdi.prototype.listen = function () {
 		} else {
 			// TODO: factor this out
 			// - - - - -
-			var wf = self.router (req, res);
+			var df = self.router (req, res);
 
-			if (wf && !wf.ready) {
-				console.error ("workflow not ready and cannot be started");
+			if (df && !df.ready) {
+				console.error ("dataflow not ready and cannot be started");
 			}
 
-			if (!wf) {
+			if (!df) {
 				console.log ('httpdi not detected: ' + req.method + ' to ' + req.url.pathname);
 				self.emit ("unknown", req, res);
-				self.createWorkflowByCode(404, req, res) || res.end();
+				self.createFlowByCode(404, req, res) || res.end();
 			}
 			// - - - - - end of router creation
 		}

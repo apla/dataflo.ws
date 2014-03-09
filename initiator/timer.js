@@ -1,6 +1,6 @@
 var EventEmitter = require ('events').EventEmitter,
 	util         = require ('util'),
-	workflow     = require ('../workflow');
+	flow         = require ('../flow');
 
 var timeri = module.exports = function (config) {
 	var self = this;
@@ -10,8 +10,8 @@ var timeri = module.exports = function (config) {
 	// 2. once after timeout, in milliseconds (timeout: 2000)
 	// 3. using interval, in milliseconds (every: 1000)
 
-	this.workflows = config.workflows;
-	
+	this.flows = config.workflows || config.dataflows || config.flows;
+
 	this.ready ();
 }
 
@@ -21,70 +21,70 @@ timeri.prototype.ready = function () {
 
 	var self = this;
 
-	self.workflows.map(function (workflowParams) {
-		
-		var wfCycle = {};
-		
-		wfCycle.run = function (rerun) {
-			
-			var wf = new workflow (
-				util.extend (true, {}, workflowParams),
+	self.flows.map(function (flowParams) {
+
+		var dfCycle = {};
+
+		dfCycle.run = function (rerun) {
+
+			var wf = new flow (
+				util.extend (true, {}, flowParams),
 				{
 					timestamp: Date.now()
 				}
 			);
-			
+
 			if (rerun) {
-			
+
 				wf.on ('completed', function () {
-						wfCycle.end();
+						dfCycle.end();
 				});
-					
+
 				wf.on ('failed', function () {
-						wfCycle.end();
+						dfCycle.end();
 				});
-			
+
 			}
 
 			wf.run ();
 
 		};
-		
-		wfCycle.end = function() {
-			
+
+		dfCycle.end = function() {
+
 			setTimeout(function() {
-				wfCycle.run(true);
-			}, workflowParams.interval);
-			
+				dfCycle.run(true);
+			}, flowParams.interval);
+
 		};
 
-		if (workflowParams.interval) {
+		if (flowParams.interval) {
 
-			if (workflowParams.startRun) {
-				
-				if (workflowParams.delay) {
-					
+			if (flowParams.startRun) {
+
+				if (flowParams.delay) {
+
 					setTimeout (function() {
-						wfCycle.run(true);
-					}, workflowParams.delay);
-					
+						dfCycle.run(true);
+					}, flowParams.delay);
+
 				} else {
-				
-					wfCycle.run(true);
-					
+
+					dfCycle.run(true);
+
 				}
-				
+
 			} else {
-				wfCycle.end();
+				dfCycle.end();
 			}
 
-		} else if (workflowParams.timeout) {
+		} else if (flowParams.timeout) {
 
 			setTimeout (function() {
-				
-				wfCycle.run(false);
-				
-			}, workflowParams.timeout);
+
+				dfCycle.run(false);
+
+			}, flowParams.timeout);
 
 		}
 	});

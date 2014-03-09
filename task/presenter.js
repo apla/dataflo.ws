@@ -265,7 +265,7 @@ util.extend (presenterTask.prototype, {
 		 * @cfg {http.ClientResponse} response (required) The response object.
 		 *
 		 * This task doesn't populate the {@link #produce}
-		 * field of the workflow. Instead, it sends the result via HTTP.
+		 * field of the dataflow. Instead, it sends the result via HTTP.
 		 */
 
 		/**

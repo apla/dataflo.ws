@@ -8,12 +8,12 @@ define (function (require, exports, module) {
 
 var EventEmitter = require ('events').EventEmitter,
 	util         = require ('util'),
-	workflow     = require ('../workflow');
+	flow         = require ('../flow');
 
 var callbacki = module.exports = function (config) {
 	var self = this;
 
-	this.flows = config.workflows || config.flows;
+	this.flows = config.workflows || config.dataflows || config.flows;
 }
 
 util.inherits (callbacki, EventEmitter);
@@ -24,11 +24,11 @@ util.extend (callbacki.prototype, {
 
 	},
 
-	process: function (token, wfRequire) {
+	process: function (token, dfRequire) {
 
 		var self = this;
 
-		var wfConf;
+		var dfConf;
 
 		if (self.flows.constructor === Array) {
 			self.flows.map (function (item) {
@@ -36,33 +36,33 @@ util.extend (callbacki.prototype, {
 				var match = (token == item.token);
 
 				if (match) { //exact match
-					wfConf = item;
+					dfConf = item;
 				}
 			});
 		} else { // assume object
-			wfConf = self.flows[token];
+			dfConf = self.flows[token];
 		}
-		
-		if (!wfConf) {
-			self.emit ("unknown", wfRequire);
+
+		if (!dfConf) {
+			self.emit ("unknown", dfRequire);
 			return;
 		}
 
-		var wf = new workflow (
-			util.extend (true, {}, wfConf),
-			wfRequire
+		var df = new flow (
+			util.extend (true, {}, dfConf),
+			dfRequire
 		);
 
-		self.emit ("detected", wfRequire, wf);
-		if (wfConf.autoRun || wfConf.autoRun == void 0 || wfRequire.autoRun || wfRequire.autoRun == void 0)
-			wf.run ();
+		self.emit ("detected", dfRequire, df);
+		if (dfConf.autoRun || dfConf.autoRun == void 0 || dfRequire.autoRun || dfRequire.autoRun == void 0)
+			df.run ();
 
-		if (!wf) {
-			self.emit ("unknown", wfRequire);
+		if (!df) {
+			self.emit ("unknown", dfRequire);
 			return;
 		}
 
-		return wf;
+		return df;
 	}
 });
 

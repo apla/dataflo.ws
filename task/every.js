@@ -6,10 +6,10 @@ if (typeof define === "undefined")
 
 define (function (require, exports, module) {
 
-var util	 = require('util');
-var common	 = require('../common');
-var workflow = require('../workflow');
-var task	 = require('./base');
+var util   = require('util');
+var common = require('../common');
+var flow   = require('../flow');
+var task   = require('./base');
 
 var EveryTask = function (cfg) {
 	this.init(cfg);
@@ -48,7 +48,7 @@ util.extend(EveryTask.prototype, {
 		return hasProp ? val : undefined;
 	},
 
-	onWorkflowResult: function () {
+	onFlowResult: function () {
 		this.count += 1;
 
 		// TODO: failed dataflows and completed ones must be separated
@@ -94,12 +94,12 @@ util.extend(EveryTask.prototype, {
 			}
 		}
 
-		this.onWorkflowResult();
+		this.onFlowResult();
 	},
 
 	_onFailed: function (wf) {
 		this.subtaskFail = true;
-		this.onWorkflowResult();
+		this.onFlowResult();
 	},
 
 	unquote: function unquote(source, dest, origKey) {
@@ -156,15 +156,15 @@ util.extend(EveryTask.prototype, {
 			var dict = util.extend (true, {}, self.getDict());
 			dict.every = every;
 
-			var wf = new workflow({
+			var df = new flow({
 				tasks: everyTasks.$tasks,
 				idPrefix: self.flowId + '>'
 			}, dict);
 
-			wf.on('completed', self._onCompleted.bind(self));
-			wf.on('failed', self._onFailed.bind(self));
+			df.on('completed', self._onCompleted.bind(self));
+			df.on('failed', self._onFailed.bind(self));
 
-			wf.run();
+			df.run();
 		});
 	}
 });

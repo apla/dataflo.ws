@@ -1,15 +1,18 @@
 var util = require('util');
 var path = require('path');
-var fs  = require('fs');
-var common = require('dataflo.ws/common');
-var Workflow = require('dataflo.ws/workflow');
+var fs   = require('fs');
+
+var common = require('../common');
+var flow   = require('../flow');
 
 var fsWatchI = module.exports = function (config) {
-	this.config = util.extend({}, fsWatchI.defaultConfig);
+	this.config = util.extend({}, this.defaultConfig);
 
 	if (config) {
 		util.extend(this.config, config);
 	}
+
+	this.flows = config.workflows || config.dataflows || config.flows;
 
 	this.listen();
 };
@@ -22,8 +25,8 @@ fsWatchI.prototype.listen = function () {
 	var iConfig = this.config;
 	var rootPath = common.getProject().root.path;
 
-	iConfig.workflows.forEach(function (cfg) {
-		var wf = new Workflow(cfg);
+	this.flows.forEach(function (cfg) {
+		var df = new flow (cfg);
 		var watchPath = cfg.path || cfg.dir || cfg.file;
 		var absPath, displayPath;
 
@@ -36,16 +39,16 @@ fsWatchI.prototype.listen = function () {
 		}
 
 		fs.watch(absPath, function (event, filename) {
-			wf.data.event = event;       // "rename" or "change"
-			wf.data.filename = filename; // limited number of OSes support it
+			df.data.event = event;       // "rename" or "change"
+			df.data.filename = filename; // limited number of OSes support it
 
 			// all together now
-			wf.data.fsEvent = {
+			df.data.fsEvent = {
 				event: event,
 				filename: filename
 			};
 
-			wf.run();
+			df.run();
 
 			if (iConfig.verbose || cfg.verbose) {
 				console.log(

@@ -1,14 +1,14 @@
 var EventEmitter = require ('events').EventEmitter,
 	SocketIo     = require('socket.io'),
 	util         = require ('util'),
-	workflow     = require ('../workflow'),
+	flow         = require ('../flow'),
 	fs 			 = require ('fs');
 
 /**
  * @class initiator.socket
  * @extends events.EventEmitter
  *
- * Initiates WebSocket server-related workflows.
+ * Initiates WebSocket server-related dataflows.
  */
 var socket = module.exports = function (config) {
 	// we need to launch socket.io
@@ -30,8 +30,8 @@ var socket = module.exports = function (config) {
 		this.opts = {};
 	}
 
-	self.workflows = config.workflows;
-	self.timer = config.timer;
+	this.flows  = config.workflows || config.dataflows || config.flows;
+	self.timer  = config.timer;
 	self.router = config.router;
 
 	// router is function in main module or initiator method
@@ -120,12 +120,12 @@ util.extend (socket.prototype, {
 	defaultRouter: function (query, socket) {
 
 		var self = this,
-			wf,
+			df,
 			route = query.route;
 
-		if (self.workflows.constructor == Array) {
+		if (self.flows.constructor == Array) {
 
-			self.workflows.every (function (item) {
+			self.flows.every (function (item) {
 
 				var match = route.match(item.route);
 
@@ -133,7 +133,7 @@ util.extend (socket.prototype, {
 
 					if (self.log) console.log ('socket match to ' + route);
 
-					wf = new workflow (
+					df = new flow (
 						util.extend (true, {}, item),
 						{
 							query: query,
@@ -141,17 +141,17 @@ util.extend (socket.prototype, {
 						}
 					);
 
-					wf.on ('completed', function (wf) {
-						self.runPresenter (wf, 'completed', socket);
+					df.on ('completed', function (df) {
+						self.runPresenter (df, 'completed', socket);
 					});
 
-					wf.on ('failed', function (wf) {
-						self.runPresenter (wf, 'failed', socket);
+					df.on ('failed', function (df) {
+						self.runPresenter (df, 'failed', socket);
 					});
 
 					self.emit ("detected", query, socket);
 
-					if (wf.ready) wf.run();
+					if (df.ready) df.run();
 
 					return false;
 				}
@@ -160,31 +160,31 @@ util.extend (socket.prototype, {
 
 			});
 
-			if (!wf) {
+			if (!df) {
 				self.emit ("unknown", query, socket);
 			}
 		}
 
-		return wf;
+		return df;
 	},
 
-	runPresenter: function (wf, state, socket) {
+	runPresenter: function (df, state, socket) {
 
 		var self = this;
 
-		if (!wf.presenter) return;
+		if (!df.presenter) return;
 
-		var presenter = wf.presenter,
+		var presenter = df.presenter,
 			header,
 			vars,
 			err;
 
 		try {
 
-			header = (presenter.header.interpolate(wf, false, true).length == 0) ?
-					presenter.header : presenter.header.interpolate(wf);
+			header = (presenter.header.interpolate(df, false, true).length == 0) ?
+					presenter.header : presenter.header.interpolate(df);
 
-			vars = presenter.vars.interpolate(wf);
+			vars = presenter.vars.interpolate(df);
 
 		} catch (e) {
 			err = {error: 'No message'};
