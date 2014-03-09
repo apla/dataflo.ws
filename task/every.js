@@ -59,7 +59,7 @@ util.extend(EveryTask.prototype, {
 		// 	return;
 		// }
 
-		if (this.count >= this.$every.length) {
+		if (this.count >= Object.keys (this.$every).length) {
 			if (this.$collect || this.$collectArray) {
 				if (this.results.length) {
 					this.completed(this.results);
@@ -78,15 +78,15 @@ util.extend(EveryTask.prototype, {
 		}
 	},
 
-	_onCompleted: function (wf) {
+	_onCompleted: function (df) {
 		if (this.$collect || this.$collectArray) {
 			var propertyName = this.$collect || this.$collectArray;
-			var result = this.getProperty(wf.data, propertyName);
+			var result = this.getProperty(df.data, propertyName);
 			if (undefined !== result) {
 				this.results.push(result);
 			}
 		} else if (this.$collectObject) {
-			var result = this.getProperty(wf.data, this.$collectObject);
+			var result = this.getProperty(df.data, this.$collectObject);
 			if (undefined !== result) {
 				for (var objectField in result) {
 					this.results[objectField] = result[objectField];
@@ -97,7 +97,7 @@ util.extend(EveryTask.prototype, {
 		this.onFlowResult();
 	},
 
-	_onFailed: function (wf) {
+	_onFailed: function (df) {
 		this.subtaskFail = true;
 		this.onFlowResult();
 	},
@@ -146,11 +146,14 @@ util.extend(EveryTask.prototype, {
 		var everyTasks = util.extend (true, {}, this.originalConfig);
 		this.unquote(everyTasks, everyTasks, '$tasks');
 
-		this.$every.forEach(function (item, index, array) {
+		// works for arrays and objects
+		var keys = Object.keys (this.$every);
+
+		keys.forEach(function (item) {
 			var every = {
-				item:  item,
-				index: index,
-				array: array
+				item:  self.$every[item],
+				index: item,
+				data:  self.$every
 			};
 			// dict the same between every, so we need to host a local copy
 			var dict = util.extend (true, {}, self.getDict());

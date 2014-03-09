@@ -72,6 +72,24 @@
 						}]
 					}]
 				},
+				"test:ok:03-every-object": {
+					"tasks": [{
+						"$every": {"a": "a", "b": "b", "c": "c"},
+						"$tasks": [{
+							"$function": "throwUnlessEqual",
+							"$args": [
+								"[*every.index]",
+								"[*every.item]"
+							],
+							"$set": "numbers"
+						}],
+						"$collect": "numbers",
+						"$set": "numbers"
+					}, {
+						"$function": "console.log",
+						"$args": ["{$numbers}"]
+					}]
+				},
 				"test:ok:04-template-merge": {
 					"tasks": [{
 						"$template": "jsonParseAndMerge",
