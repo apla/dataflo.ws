@@ -30,11 +30,11 @@ util.extend (cookieParser.prototype, {
 		self.failed('use method [parse|render|session]');
 
 	},
-	
+
 	parse: function () {
 
 		var self = this;
-		
+
 		var cookies = self.headers.cookie ? self.headers.cookie : null;
 		var cookiesObj = {length:0};
 
@@ -67,7 +67,7 @@ util.extend (cookieParser.prototype, {
 
 		self.completed (cookies);
 	},
-	
+
 	serializeCookie: function(cookie) {
 
 		var pairs = [cookie.name + '=' + encodeURIComponent(cookie.value)];
@@ -96,7 +96,7 @@ util.extend (cookieParser.prototype, {
 
 		return pairs.join('; ');
 	},
-	
+
 	session: function () {
 
 		var self = this;
@@ -124,7 +124,7 @@ util.extend (cookieParser.prototype, {
 		var newCookie = {};
 
 		for (var key in cookieTpl) {
-			newCookie[key] = cookieTpl[key];
+			newCookie[key] = cookieTpl[key] || defaultCookieTpl[key];
 		}
 
 		newCookie.value = value;
@@ -141,9 +141,9 @@ util.extend (cookieParser.prototype, {
 			port = self.request.connection.remotePort,
 			date = self.request.connection._idleStart;
 			timestamp = (date.constructor == Date) ? date.getTime() : date;
-		
+
 		timestamp = timestamp.toString(16);
-		
+
 		var rnd = (~~(10e+6*Math.random())).toString(16);
 
 		var str =  ip + ':' + port + '.' + timestamp + '.' + rnd;
