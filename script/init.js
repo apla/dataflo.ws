@@ -3,6 +3,17 @@ var common    = require('dataflo.ws/common');
 var log       = require('dataflo.ws/log');
 var minimist  = require('minimist');
 
+var tasks = [{
+	"$class": "remoteResource",
+	"method": "toBuffer",
+	"timeout": 10000,
+	"retries": 100,
+	"url": "{$xmlUrl}",
+	"$set": "resourse"
+}, {
+
+}];
+
 module.exports = {
 	launchContext: function () {
 		return {
@@ -10,6 +21,8 @@ module.exports = {
 		};
 	},
 	launch: function (conf) {
+
+		GET /gists/:id
 
 		if (!conf) {
 			console.log ('no dataflo.ws project found within current dir. please run `dataflows init` within project dir');
