@@ -89,9 +89,20 @@ httpdi.prototype.runPrepare = function (df, request, response) {
 
 		// create chain of wfs
 
+		var prepareFailure = false;
+
 		prepareCfg.forEach(function(p, index, arr) {
 
 			var innerDfConfig = prepare[p];
+
+			if (!innerDfConfig || !innerDfConfig.tasks) {
+				console.error (log.c.red('request canceled:'), 'no prepare task named "'+p+'"');
+				prepareFailure = true;
+				var presenter = self.createPresenter({}, 'failed');
+				if (presenter)
+					presenter.run ();
+				return;
+			}
 
 			var innerDf = new flow(innerDfConfig, {
 				request: request,
@@ -102,6 +113,10 @@ httpdi.prototype.runPrepare = function (df, request, response) {
 			dfChain.push(innerDf);
 
 		});
+
+		if (prepareFailure) {
+			return;
+		}
 
 		// push main df to chain
 
