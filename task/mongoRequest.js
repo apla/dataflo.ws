@@ -170,6 +170,9 @@ util.extend (mongoRequestTask.prototype, {
 			connOptions['journal'] = true;
 
 		// create connector
+		if (this.verbose) {
+			console.log ("new mongo connector:", connectorConfig);
+		}
 
 		var connector = new mongo.Db (
 			connectorConfig.database,
