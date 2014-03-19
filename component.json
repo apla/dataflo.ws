@@ -1,0 +1,24 @@
+{
+  "name": "dataflo.ws",
+  "description": "Zero-code JSON config-based dataflow engine for Node, PhoneGap and browser.",
+  "version": "0.61.0",
+  "keywords": [
+    "flow-based-programming",
+    "workflow",
+    "dataflow"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/apla/dataflo.ws.git"
+  },
+  "homepage": "https://github.com/apla/dataflo.ws",
+  "author": "https://github.com/apla/",
+  "scripts": [
+    "flow.js", "common.js", "log.js",
+    "initiator/callback.js", "initiator/timer.js",
+    "io/easy.js",
+    "task/base.js", "task/every.js"
+  ],
+  "license": "GPLv3",
+  "readmeFilename": "README.md"
+}
