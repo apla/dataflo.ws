@@ -77,6 +77,28 @@ io.prototype.scanTree = function (cb) {
 	});
 }
 
+io.prototype.findUp = function (fileName, cb, errCb) {
+	var self = this;
+
+	if (!cb || cb.constructor != Function)
+		return;
+
+	var fileIO = this.fileIO (fileName);
+	fileIO.stat (function (err, stats) {
+		if (!err) {
+			var result = cb (this);
+			if (result)
+				return;
+		}
+		if (self.parent().path == self.path) {
+			errCb ();
+			return;
+		}
+
+		self.parent().findUp(fileName, cb);
+	});
+}
+
 io.prototype.scanSubTree = function (err, stats, cb) {
 	var scanFurther = 0;
 	if (cb)

@@ -26,7 +26,7 @@ var log = {};
 log.c = log.color = color;
 
 log.dataflows = log.c.yellow.bind (log.c, 'dataflows');
-log.path   = log.c.blue;
-log.errMsg = log.c.red;
+log.path   = log.c.cyan;
+log.errMsg = color.bind (color, 'red+white_bg');
 
 module.exports = log;

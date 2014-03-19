@@ -15,25 +15,22 @@ var log = require ('./log');
 // alert(fsm.current); // "green"
 
 var Project = function (rootPath) {
-	var rootPath = rootPath || process.env['PROJECT_ROOT'] || process.cwd();
-	var projectRoot = new io(rootPath);
-
-	this.root = projectRoot;
-	var self  = this;
+	this.root = new io (rootPath || process.env['PROJECT_ROOT'] || process.cwd());
 
 	this.configDir = '.dataflows';
 	this.varDir    = '.dataflows';
-
-	// common.waitAll ([
-	// 	[this, 'legacy-checked'], // check legacy config
-	// 	[this, 'config-checked'], // check current config
-	// ], this.readInstance.bind(this));
 
 	this.on ('legacy-checked', this.checkConfig.bind(this));
 	this.on ('config-checked', this.readInstance.bind(this));
 	this.on ('instantiated', this.loadConfig.bind(this));
 
 	this.checkLegacy ();
+
+	// common.waitAll ([
+	// 	[this, 'legacy-checked'], // check legacy config
+	// 	[this, 'config-checked'], // check current config
+	// ], this.readInstance.bind(this));
+
 };
 
 module.exports = Project;
@@ -46,7 +43,7 @@ Project.prototype.checkLegacy = function (cb) {
 	var self = this;
 	this.root.fileIO ('etc/project').stat(function (err, stats) {
 		if (!err && stats && stats.isFile()) {
-			console.error (log.c.red ('project has legacy configuration layout. you can migrate by running those commands:'));
+			console.error (log.errMsg ('project has legacy configuration layout. you can migrate by running those commands:'));
 			console.error ("\n\tcd "+project.root.path);
 			console.error ("\tmv etc .dataflows");
 
@@ -65,18 +62,24 @@ Project.prototype.checkConfig = function (cb) {
 		self.emit ('config-checked');
 		return;
 	}
-	this.root.fileIO ('.dataflows').stat(function (err, stats) {
-		if (!err && stats && stats.isDirectory ()) {
-			self.emit ('config-checked');
-		} else {
-			console.error (
-				'no', log.dataflows(),
-				'project config found. please run',
-				log.path ('dataflows help'), 'or', log.path ('dataflows init')
-			);
-		}
 
-	})
+	// search for config root
+	var guessedRoot = this.root;
+	guessedRoot.findUp (this.configDir, function (foundConfigDir) {
+		var detectedRoot = foundConfigDir.parent()
+		if (self.root.path != detectedRoot.path)
+			console.log (log.dataflows (), 'using', log.path (detectedRoot.path), 'as project root');
+		self.root = detectedRoot;
+		self.emit ('config-checked');
+		return true;
+	}, function () {
+		console.error (
+			'no', log.dataflows(),
+			'project config found. please run',
+			log.path ('dataflows help'), 'or', log.path ('dataflows init')
+		);
+	});
+
 }
 
 
@@ -94,7 +97,7 @@ Project.prototype.readInstance = function () {
 			self.instance = instance == "undefined" ? null : instance;
 			args = [log.dataflows(), 'instance is:', instance];
 			if (err) {
-				args.push ('(' + log.c.red (err) + ')');
+				args.push ('(' + log.errMsg (err) + ')');
 			} else if (self.legacy) {
 				console.error ("\tmv var/instance .dataflows/");
 			}
@@ -113,7 +116,7 @@ Project.prototype.loadConfig = function () {
 	this.root.fileIO (path.join(this.configDir, 'project')).readFile (function (err, data) {
 		if (err) {
 			var message = "can't access "+self.configDir+"/project file. create one and define project id";
-			console.error (log.dataflows(), log.c.red (message));
+			console.error (log.dataflows(), log.errMsg (message));
 			// process.kill ();
 			self.emit ('error', message);
 			return;
@@ -131,7 +134,7 @@ Project.prototype.loadConfig = function () {
 				var config = JSON.parse (configData[0]);
 			} catch (e) {
 				var message = 'project config cannot parsed:';
-				console.error (message, log.c.red (e));
+				console.error (message, log.errMsg (e));
 				self.emit ('error', message + ' ' + e.toString());
 				process.kill ();
 			}
@@ -142,7 +145,7 @@ Project.prototype.loadConfig = function () {
 				'parser ' + parser + ' unknown in '+self.configDir+'/project; '
 				+ 'we analyze parser using first string of file; '
 				+ 'you must put in first string comment with file format, like "// json"';
-			console.error (log.c.red (message));
+			console.error (log.errMsg (message));
 			self.emit ('error', message);
 			// process.kill ();
 			return;
@@ -233,7 +236,7 @@ Project.prototype.getModule = function (type, name, optional) {
 			if (e.toString().indexOf(name + '\'') > 0 && e.code == "MODULE_NOT_FOUND") {
 				return false;
 			} else {
-				console.error ('requirement failed:', log.c.red (e.toString()), "in", log.path (self.root.relative (modPath)));
+				console.error ('requirement failed:', log.errMsg (e.toString()), "in", log.path (self.root.relative (modPath)));
 				return true;
 			}
 		}
@@ -282,7 +285,7 @@ Project.prototype.loadIncludes = function (config, level, cb) {
 	}
 
 	function onError(err) {
-		console.log('[WARNING] Level:', level, 'is not correct.\nError:', log.c.red (err));
+		console.log('[WARNING] Level:', level, 'is not correct.\nError:', log.errMsg (err));
 		cb(err, config);
 	}
 
