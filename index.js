@@ -23,16 +23,20 @@ var instanceTypes = [ 'initiator', 'task' ];
 
 // - - -
 
+// TODO: add requirejs loading
+
 function registryLookup (instanceType, instanceName) {
 	var instanceClass = registry[instanceType] &&
 		registry[instanceType][instanceName];
-	
+
 	if (!instanceClass) {
 		if ($isClientSide) {
 			console.error (
 				'you need to run dataflows.register ("'
 				+instanceType+'", "'+instanceName
-				+'", instance) before using this task');
+				+'", instance) before using this task'
+			);
+			return;
 		}
 
 

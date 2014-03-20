@@ -44,7 +44,7 @@ Project.prototype.checkLegacy = function (cb) {
 	this.root.fileIO ('etc/project').stat(function (err, stats) {
 		if (!err && stats && stats.isFile()) {
 			console.error (log.errMsg ('project has legacy configuration layout. you can migrate by running those commands:'));
-			console.error ("\n\tcd "+project.root.path);
+			console.error ("\n\tcd "+self.root.path);
 			console.error ("\tmv etc .dataflows");
 
 			// console.warn ("in", log.dataflows ("@0.60.0"), "we have changed configuration layout. please run", log.path("dataflows doctor"));
