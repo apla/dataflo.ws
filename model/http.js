@@ -1,31 +1,22 @@
 var util			= require ('util'),
 	fs				= require ('fs'),
 	urlUtils		= require ('url'),
+	querystring     = require ('querystring'),
 	httpManager     = require ('./http/model-manager');
 
-var HTTPClient;
+var HTTPClient, HTTPSClient, followRedirects;
 
 try {
-	HTTPClient = require('follow-redirects').http;
+	followRedirects = require('follow-redirects');
+	HTTPClient  = followRedirects.http;
+	HTTPSClient = followRedirects.https;
 } catch (e) {
 	console.warn(
-		'Falling back to standard HTTP client.',
-		'If you wnat to follow redirects,',
+		'Falling back to standard HTTP(S) client.',
+		'If you want to follow redirects,',
 		'install "follow-redirects" module.'
 	);
-	HTTPClient = require('http');
-}
-
-var HTTPSClient;
-
-try {
-	HTTPSClient = require('follow-redirects').https;
-} catch (e) {
-	console.warn(
-		'Falling back to standard HTTPS client.',
-		'If you wnat to follow redirects,',
-		'install "follow-redirects" module.'
-	);
+	HTTPClient  = require('http');
 	HTTPSClient = require('https');
 }
 
@@ -70,9 +61,13 @@ var httpModel = module.exports = function (modelBase, optionalUrlParams) {
 			new Buffer(self.params.auth).toString('base64');
 	}
 
-	if (this.params.body) {
-		this.params.method = 'POST';
-		this.postBody = this.params.body;
+	if (this.params.bodyData) {
+		this.handleBodyData ();
+		var method = this.params.method;
+		this.params.method = (method && method.match (/POST|PUT/)) ? method : 'POST';
+		this.bodyData = this.params.body;
+
+		console.log ('!!!!!!!!!!!!!!!!!!', this.bodyData);
 
 		if (
 			!this.params.headers ||
@@ -81,7 +76,9 @@ var httpModel = module.exports = function (modelBase, optionalUrlParams) {
 		) {
 			console.error ('content type/length undefined');
 		}
-		delete this.params.body;
+		// TODO: stop request
+		delete this.params.bodyData;
+
 	}
 	if (this.params.headers) {
 		try {
@@ -92,6 +89,52 @@ var httpModel = module.exports = function (modelBase, optionalUrlParams) {
 		}
 	}
 };
+
+httpModel.prototype.handleBodyData = function () {
+
+	var bodyData = this.params.bodyData;
+
+	var contentType = this.params.headers['content-type'],
+		postType    = Object.typeOf (bodyData);
+
+	// default object encoding form-urlencoded
+	if (!contentType && postType == 'Object') {
+		contentType = this.params.headers['content-type']   = 'application/x-www-form-urlencoded';
+	} else if (!contentType) {
+		contentType = 'undefined';
+	}
+
+	switch (contentType) {
+	case 'application/x-www-form-urlencoded':
+		this.params.body = querystring.stringify (bodyData);
+		this.params.headers['content-length'] = this.params.body.length;
+		break;
+	case 'application/json':
+		this.params.body = JSON.stringify (bodyData);
+		this.params.headers['content-length'] = this.params.body.length;
+		break;
+	case 'multipart/mixed':
+	case 'multipart/alternate':
+		this.emitError ('multipart not yet implemented');
+		return;
+		break;
+	case 'undefined':
+		this.emitError ('you must define content type when submitting plain string as post data parameter');
+		return;
+		break;
+	default:
+		if (!this.params.headers['content-length']) {
+			if (postType == 'String' || postType == 'Buffer') {
+				this.params.headers['content-length'] = bodyData.length;
+			} else {
+				this.emitError ('you must define content-length when submitting plain string as post data parameter');
+				return;
+			}
+		}
+		break;
+	}
+
+}
 
 util.extend (httpModel.prototype, {
 	DefaultParams: {
@@ -165,22 +208,26 @@ util.extend (httpModel.prototype, {
 		// add default params if missing
 		util.shallowMerge(params, this.DefaultParams);
 
+		params.successCodes = configUrlObj.successCodes;
+
+		console.log (configUrlObj.bodyData);
+
+		params.bodyData = configUrlObj.bodyData;
+
 		// Reformat the merged URL object's compound parts.
 		// Don't reorder the lines below.
 		params.search = urlUtils.format({
 			query: params.query
 		});
+
 		params.path = urlUtils.format({
 			pathname: params.pathname,
 			search: params.search
 		});
-		params.host = urlUtils.format({
-			hostname: params.hostname,
-			port: params.port
-		});
-		params.href = urlUtils.format(params);
 
-		params.port = (this.params.protocol == 'https:') ? 443 : 80;
+		params.href = params.href || urlUtils.format(params);
+
+		params.port = params.port || ((this.params.protocol == 'https:') ? 443 : 80);
 
 		return params;
 	},
@@ -200,10 +247,33 @@ util.extend (httpModel.prototype, {
 		global.httpModelManager.add(this, {
 			url: this.params,
 			headers: this.headers,
-			postBody: this.postBody
+			bodyData: this.bodyData
 		});
 
 		return this.progress;
+	},
+	/**
+	 * http model needs to return response headers and status code
+	 * @param {Object} result result fields
+	 */
+	addResultFields: function (result) {
+		result.code    = this.res.statusCode;
+		result.headers = (this.res.headers) ? this.res.headers : {};
+	},
+	isSuccessResponse: function check () {
+		var statusCode = this.res.statusCode;
+		if (this.params.successCodes) {
+			// format: 2xx,3xx
+			var check = new RegExp (this.params.successCodes.replace (/x/g, "\\d").replace (/,/g, "|"));
+			if ((""+statusCode).match (check)){
+				return true;
+			} else {
+				return false;
+			}
+		} else if (statusCode == 200) {
+			return true
+		}
+		return false;
 	},
 
 	run: function () {
@@ -215,10 +285,13 @@ util.extend (httpModel.prototype, {
 
 			self.res = res;
 
-			if (res.statusCode != 200) {
-				self.modelBase.emit ('error', new Error('statusCode = ' + res.statusCode));
-				return;
-			}
+			// if (res.statusCode != 200) {
+			// 	self.modelBase.emit (
+			// 		'error',
+			// 		new Error('statusCode = ' + res.statusCode)
+			// 	);
+			// 	return;
+			// }
 
 			util.extend (self.progress, {
 				bytesTotal: res.headers['content-length'],
@@ -257,8 +330,9 @@ util.extend (httpModel.prototype, {
 			}
 		}
 
-		if (self.postBody) {
-			req.write(self.postBody);
+		if (self.bodyData) {
+			console.log ('%%%%%%%%%%%%%%%%%%%%%%%%%%%%', self.bodyData);
+			req.write(self.bodyData);
 		}
 
 

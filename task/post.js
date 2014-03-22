@@ -21,8 +21,10 @@ util.extend (postTask.prototype, {
 
 		var self = this;
 
-		if (self.request.method != 'POST' && self.request.method != 'PUT')
+		if (self.request.method != 'POST' && self.request.method != 'PUT') {
+			self.emit ('log', 'http method is', self.request.method);
 			return self.skipped ();
+		}
 
 		var contentType = self.request.headers['content-type'];
 		var multipartRe = /multipart|boundary=(?:"([^"]+)"|([^;]+))/i;

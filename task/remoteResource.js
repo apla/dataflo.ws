@@ -1,7 +1,6 @@
 var crypto       = require ('crypto'),
 	util         = require ('util'),
 	urlUtil      = require ('url'),
-	querystring  = require ('querystring'),
 	task         = require ('./base'),
 	path         = require('path'),
 	urlModel     = require ('../model/from-url');
@@ -47,8 +46,7 @@ util.extend (cacheTask.prototype, {
 	}
 });
 
-util.extend (cacheTask.prototype, {
-	initModel: function () {
+cacheTask.prototype.initModel = function () {
 		var self = this;
 
 		if (Object.is('String', self.url)) {
@@ -62,61 +60,24 @@ util.extend (cacheTask.prototype, {
 
 		self.url.headers = self.headers || {};
 
-		if (self.post) {
-			var contentType = self.url.headers['content-type'],
-				postType = Object.typeOf(self.post);
-
-			// default object encoding form-urlencoded
-			if (!contentType && postType == 'Object') {
-				contentType = self.url.headers['content-type']   = 'application/x-www-form-urlencoded';
-			} else if (!contentType) {
-				contentType = 'undefined';
-			}
-
-			switch (contentType) {
-			case 'application/x-www-form-urlencoded':
-				self.url.body = querystring.stringify (self.post);
-				self.url.headers['content-length'] = self.url.body.length;
-				break;
-			case 'application/json':
-				self.url.body = JSON.stringify (self.post);
-				self.url.headers['content-length'] = self.url.body.length;
-				break;
-			case 'multipart/mixed':
-			case 'multipart/alternate':
-				self.emitError ('multipart not yet implemented');
-				return;
-				break;
-			case 'undefined':
-				self.emitError ('you must define content type when submitting plain string as post data parameter');
-				return;
-				break;
-			default:
-				if (!self.url.headers['content-length']) {
-					if (postType == 'String' || postType == 'Buffer') {
-						self.url.headers['content-length'] = self.post.length;
-					} else {
-						self.emitError ('you must define content-length when submitting plain string as post data parameter');
-						return;
-					}
-				}
-				break;
-			}
-		}
-
-		self.model = new urlModel(self.url, self);
+		self.model = new urlModel (self.url, self);
 		self.url = self.model.url;
 
 		self.model.on ('data', function (chunks) {
 			self.activityCheck ('model.fetch data');
 		});
 
-		self.model.on ('error', function (e) {
-			// console.log("%%%%%%%%%%cache failed");
-			self.emitError(e);
+		// self.model.on ('error', function (e, data) {
+		// 	// console.log("%%%%%%%%%%cache failed");
+		// 	self.emitError(e, data);
+		// });
+		self.model.on ('error', function () {
+			self.clearOperationTimeout();
+			self.finishWith ({}, 'failed');
 		});
-	},
-	isSameUrlLoading : function () {
+
+	};
+cacheTask.prototype.isSameUrlLoading = function () {
 		var self = this;
 		// TODO: another task can download url contents to buffer/file and vice versa
 		// other task is caching requested url
@@ -131,27 +92,33 @@ util.extend (cacheTask.prototype, {
 				// TODO: check for file state. it is actually closed?
 				self.completed (data);
 			});
-			anotherTask.on ('error', function (e) {
-				self.emitError(e);
+			anotherTask.on ('error', function (e, data) {
+				self.emitError(e, data);
 			});
 			return true;
 		} else {
 			project.caching[self.cacheFilePath] = self;
 		}
 		return false;
-	},
-	/**
-	 * @method toBuffer
-	 * Downloads a given URL into a memory buffer.
-	 *
-	 * @cfg {String} url (required) A URL to download from.
-	 * @cfg {Number} [retries=0] The number of times to retry to run the task.
-	 * @cfg {Number} [timeout=10000] Timeout for downloading of each file
-	 * (in milliseconds)
-	 */
-	toBuffer: function () {
+	};
+/**
+ * @method toBuffer
+ * Downloads a given URL into a memory buffer.
+ *
+ * @cfg {String} url (required) A URL to download from.
+ * @cfg {Number} [retries=0] The number of times to retry to run the task.
+ * @cfg {Number} [timeout=10000] Timeout for downloading of each file
+ * (in milliseconds)
+ * @cfg {String} [successCodes="200"] (HTTP only) Success status codes (example: "2xx,4xx")
+ * otherwise task will fail
+ * @cfg {String|Object} postData (HTTP only) POST body, can be string (raw POST data)
+ * or object (urlencoded query)
+ * @cfg {String} headers (HTTP only) HTTP headers for request
+ * @cfg {String} auth (HTTP only) basic auth
+ */
+cacheTask.prototype.toBuffer = function () {
 		var self = this;
-		
+
 		self.download = {};
 
 		self.activityCheck ('task run');
@@ -172,43 +139,51 @@ util.extend (cacheTask.prototype, {
 				// self.res.cacheFilePath = self.cacheFilePath
 				// self.completed (self.res);
 				self.finishWith ({
-					code: self.model.dataSource.res.statusCode,
 					data: self.download.data
 				});
 			});
 
+			// model error handling at @method initModel
 		}
 
-		self.emit ('log', 'start caching from ' + self.url.href + ' to memory buffer');
+		self.emit ('log', 'start loading from ' + self.url.href + ' to memory buffer');
 
 		self.activityCheck ('model.fetch start');
 		self.model.fetch ({to: self.download});
-	},
+	};
 
-	finishWith: function (result, headers) {
+cacheTask.prototype.finishWith = function (result, method) {
 		var self = this;
-		if (!headers) {
-			headers = (self.model &&
-			self.model.dataSource &&
-			self.model.dataSource.res &&
-			self.model.dataSource.res.headers) ?
-			self.model.dataSource.res.headers : {};
+		var model = self.model,
+			ds;
+
+		if (model)
+			ds = self.model.dataSource;
+		if (ds && ds.addResultFields) {
+			ds.addResultFields (result);
 		}
 
-		result.headers = headers;
-
-		self.completed (result);
-	},
-	/**
-	 * @method run
-	 * Downloads a given URL into a uniquely named file.
-	 *
-	 * @cfg {String} url (required) A URL to download from.
-	 * @cfg {Number} [retries=0] The number of times to retry to run the task.
-	 * @cfg {Number} [timeout=10000] Timeout for downloading of each file
-	 * (in milliseconds)
-	 */
-	run: function () {
+		method = method || 'completed';
+		if (ds && ds.isSuccessResponse && !ds.isSuccessResponse ())
+			method = 'failed';
+		self[method] (result);
+	};
+/**
+ * @method toFile
+ * Downloads a given URL into a uniquely named file.
+ *
+ * @cfg {String} url (required) A URL to download from.
+ * @cfg {Number} [retries=0] The number of times to retry to run the task.
+ * @cfg {Number} [timeout=10000] Timeout for downloading of each file
+ * (in milliseconds)
+ * @cfg {String} [successCodes="200"] Success HTTP status codes (example: "2xx,4xx")
+ * otherwise task will fail
+ * @cfg {String|Object} postData (HTTP only) POST body, can be string (raw POST data)
+ * or object (urlencoded query)
+ * @cfg {String} headers (HTTP only) HTTP headers for request
+ * @cfg {String} auth (HTTP only) basic auth
+ */
+cacheTask.prototype.toFile = function () {
 		var self = this;
 
 		self.activityCheck ('task run');
@@ -231,10 +206,12 @@ util.extend (cacheTask.prototype, {
 					delete project.caching[self.cacheFilePath];
 					// self.res.cacheFilePath = self.cacheFilePath
 					// self.completed (self.res);
-					self.finishWith ({fileName: self.cacheFileName, filePath: self.cacheFilePath});
+					self.finishWith ({
+						fileName: self.cacheFileName,
+						filePath: self.cacheFilePath
+					});
 				});
 			});
-
 		}
 
 		this.generateCacheFileName ();
@@ -250,7 +227,10 @@ util.extend (cacheTask.prototype, {
 
 				self.emit ('log', 'file already downloaded from ' + self.url.href + ' to ' + self.cacheFilePath);
 				delete project.caching[self.cacheFilePath];
-				self.finishWith({fileName: self.cacheFileName, filePath: self.cacheFilePath});
+				self.finishWith({
+					fileName: self.cacheFileName,
+					filePath: self.cacheFilePath
+				});
 
 				return;
 			}
@@ -270,16 +250,15 @@ util.extend (cacheTask.prototype, {
 			self.activityCheck ('model.fetch start');
 			self.model.fetch ({to: writeStream});
 		});
-	},
+	};
 
-	emitError: function (e) {
+cacheTask.prototype.run = cacheTask.prototype.toFile;
+
+cacheTask.prototype.emitError = function (e, data) {
 		if (e) {
-			this.state = 5;
-			this.emit('error', e);
-			this.cancel();
+			this.finishWith (data || e, 'failed');
 			return true;
 		} else {
 			return false;
 		}
 	}
-});
