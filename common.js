@@ -90,6 +90,8 @@ if (!util.inherits) {
 			configurable: true
 		}});
 	};
+	// http://stackoverflow.com/questions/13201775/looking-for-a-javascript-implementation-of-nodes-util-inherits
+	// B.prototype = Object.create(A.prototype);  B.prototype.constructor = B;
 }
 
 if (!util.extend) {

@@ -19,17 +19,17 @@ var model = module.exports = function (url, optionalParams) {
 	} else {
 		this.url = url;
 	}
-	
+
 	// convert:
 	// 		http: -> http
 	// 		https: -> http
 	// 		ftp: -> ftp
 	// 		sftp: -> ftp
 	this.modelName = this.url.protocol.replace(/(^s|:$|s:$)/g, '');
-	
+
 	// console.log (this.modelName);
 	var requiredModel = require ('./'+this.modelName);
-	this.dataSource = new  requiredModel (this, optionalParams);
+	this.dataSource = new requiredModel (this, optionalParams);
 
 	// fetch method
 

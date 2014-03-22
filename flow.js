@@ -11,7 +11,8 @@ var EventEmitter = require ('events').EventEmitter,
 	util         = require ('util'),
 	dataflows    = require ('./index'),
 	common       = require ('./common'),
-	taskClass    = require ('./task/base');
+	taskClass    = require ('./task/base'),
+	log          = require ('./log');
 
 var $global = common.$global;
 
@@ -566,7 +567,7 @@ util.extend (dataflow.prototype, {
 
 			self.emit ('failed', self);
 			var failedtasksCount = this.taskStates[taskStateNames.failed]
-			self.log (this.stage + ' failed in ' + (self.stopped - self.started) + 'ms; ' + failedtasksCount + ' ' + (failedtasksCount == 1 ? 'task': 'tasks') +' out of ' + self.tasks.length);
+			self.log (this.stage + ' failed in ' + (self.stopped - self.started) + 'ms; failed ' + failedtasksCount + ' ' + (failedtasksCount == 1 ? 'task': 'tasks') +' out of ' + self.tasks.length);
 
 		} else {
 			// dataflow stopped and not failed
@@ -615,24 +616,17 @@ util.extend (dataflow.prototype, {
 			}
 		}
 
-		var red   = $isServerSide ? '\x1B[0;31m' : '';
-		var clear = $isServerSide ? '\x1B[0m' : '';
-
 		this._log (
 			'error',
 			task.logTitle,
 			'(' + task.state + ') ',
-			red + msg, options || '', clear,
+			log.errMsg (util.inspect (msg), util.inspect (options || '')),
 			lastFrame
 		);
 	},
 	logError: function (task, msg, options) {
 		// TODO: fix by using console.error
-		if ($isServerSide) {
-			this._log('error', " \x1B[0;31m" + msg, options || '', "\x1B[0m");
-			return;
-		}
-		this._log('error', msg, options || '');
+		this._log('error', log.errMsg (util.inspect (msg), util.inspect (options || '')));
 	},
 	addEventListenersToTask: function (task) {
 		var self = this;

@@ -96,6 +96,64 @@ util.inherits (task, EventEmitter);
 
 util.extend (task.prototype, taskStateMethods, {
 
+	_launch: function () {
+		//this.emit ('log', 'RUN RETRIES : ' + this.retries);
+
+		if (this.state != 1) return;
+
+		this.state = 2;
+
+		var method = this[this.method || 'run'];
+		if (!method) {
+			this.state = 5;
+			this.emit ('error', 'no method named "' + (this.method || 'run') + "\" in current task's class");
+
+			return;
+		}
+		method.call (this);
+	},
+
+	/**
+	 * @method _cancel
+	 * Cancels the running task. The task is registered as attempted
+	 * to run.
+	 *
+	 * Switches the task's state from `running` to `idle`.
+	 *
+	 * If the {@link #retries} limit allows, attempt to run the task
+	 * after a delay ({@link #timeout}).
+	 *
+	 * Publishes {@link #event-cancel}.
+	 */
+	_cancel: function (value) {
+
+		this.attempts ++;
+
+		if (this.state == 2) return;
+
+		this.state = 5;
+
+		if (this.cancel) this.cancel.apply (arguments);
+
+		this.clearOperationTimeout();
+
+		//this.emit ('log', 'CANCEL RETRIES : ' + this.retries);
+
+		if (this.attempts - this.retries - 1 < 0) {
+
+			this.state = 1;
+
+			setTimeout (this.run.bind(this), this.timeout.seconds());
+		}
+
+		/**
+		 * @event cancel
+		 * Published on task cancel.
+		 */
+		this.emit ('cancel', value);
+
+	},
+
 	init: function (config) {
 
 		this.require      = config.require || null;
@@ -144,68 +202,6 @@ util.extend (task.prototype, taskStateMethods, {
 		var state = this.checkState ();
 //		console.log (this.url, 'state is', stateList[state], ' (' + state + ')', (state == 0 ? (this.require instanceof Array ? this.require.join (', ') : this.require) : ''));
 
-		this._launch = function () {
-			//this.emit ('log', 'RUN RETRIES : ' + this.retries);
-
-			if (this.state != 1) return;
-
-			this.state = 2;
-
-			var method = this[this.method || 'run'];
-			if (!method) {
-				this.state = 5;
-				this.emit ('error', 'no method named "' + (this.method || 'run') + "\" in current task's class");
-
-				return;
-			}
-			method.call (this);
-		}
-
-		var oldCancel = this.cancel;
-
-		/**
-		 * @method cancel
-		 * Cancels the running task. The task is registered as attempted
-		 * to run.
-		 *
-		 * Switches the task's state from `running` to `idle`.
-		 *
-		 * If the {@link #retries} limit allows, attempt to run the task
-		 * after a delay ({@link #timeout}).
-		 *
-		 * Publishes {@link #event-cancel}.
-		 */
-		this.cancel = function () {
-
-			this.attempts ++;
-
-			if (this.state == 2) return;
-
-			this.state = 5;
-
-			if (oldCancel) oldCancel.call (this);
-
-			self.clearOperationTimeout();
-
-			//this.emit ('log', 'CANCEL RETRIES : ' + this.retries);
-
-			if (this.attempts - this.retries - 1 < 0) {
-
-				this.state = 1;
-
-				setTimeout(function () {
-					self.run();
-				}, this.timeout.seconds());
-			}
-
-			/**
-			 * @event cancel
-			 * Published on task cancel.
-			 */
-			this.emit ('cancel');
-
-		}
-
 	},
 
 	/**
@@ -243,7 +239,7 @@ util.extend (task.prototype, taskStateMethods, {
 		}
 
         //@behrad set $empty on completion of all task types
-        if( common.isEmpty( result ) ) {
+        if (common.isEmpty (result)) {
             this.empty();
         }
 
@@ -362,6 +358,7 @@ util.extend (task.prototype, taskStateMethods, {
 	/**
 	 * @private
 	 */
+	// WTF??? MODEL???
 	activityCheck: function (place, breakOnly) {
 
 		if (place!=="model.fetch data") {
@@ -383,7 +380,7 @@ util.extend (task.prototype, taskStateMethods, {
 					'log', 'timeout is over for ' + place + ' operation'
 				);
 				self.model.stop();
-				self.cancel();
+				self._cancel();
 
 			}, self.timeout.seconds());
 		}

@@ -208,7 +208,7 @@ util.extend (httpModel.prototype, {
 
 	run: function () {
 		var self = this;
-		
+
 		var Client = (this.params.protocol == 'https:') ? HTTPSClient : HTTPClient;
 
 		var req = self.req = Client.request(this.params, function (res) {
