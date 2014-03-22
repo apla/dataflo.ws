@@ -419,7 +419,7 @@ util.extend (task.prototype, taskStateMethods, {
 	 * @param {Error} Error object.
 
 	 */
-	failed: function (e) {
+	failed: function (e, data) {
 		var prevState = this.state;
 		this.state = 5;
 
@@ -431,9 +431,9 @@ util.extend (task.prototype, taskStateMethods, {
 		this.emit('error', e);
 		// if task failed at scarce state
 		if (prevState)
-			this.cancel()
+			this._cancel (data || e)
 		else
-			this.emit ('cancel');
+			this.emit ('cancel', data || e);
 		return true;
 	}
 

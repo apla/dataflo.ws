@@ -660,10 +660,14 @@ util.extend (dataflow.prototype, {
 
 		});
 
-		task.on ('cancel', function () {
+		task.on ('cancel', function (failedValue) {
 
 			if (task.retries !== null)
 				self.logTaskError (task, 'canceled, retries = ' + task.retries);
+
+			if (!task.retries && task.$setOnFail) {
+				common.pathToVal(self.data, task.$setOnFail, failedValue || true);
+			}
 			self.failed = true;
 
 			if (self.isIdle)
@@ -689,8 +693,8 @@ util.extend (dataflow.prototype, {
 		});
 
 		task.on('empty', function (t) {
-			if (t.$empty) {
-				common.pathToVal(self.data, t.$empty, true);
+			if (t.$empty || t.$setOnEmpty) {
+				common.pathToVal(self.data, t.$empty || t.$setOnEmpty, true);
 			}
 		});
 
