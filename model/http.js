@@ -67,8 +67,6 @@ var httpModel = module.exports = function (modelBase, optionalUrlParams) {
 		this.params.method = (method && method.match (/POST|PUT/)) ? method : 'POST';
 		this.bodyData = this.params.body;
 
-		console.log ('!!!!!!!!!!!!!!!!!!', this.bodyData);
-
 		if (
 			!this.params.headers ||
 			!this.params.headers['content-length'] ||
@@ -210,8 +208,6 @@ util.extend (httpModel.prototype, {
 
 		params.successCodes = configUrlObj.successCodes;
 
-		console.log (configUrlObj.bodyData);
-
 		params.bodyData = configUrlObj.bodyData;
 
 		// Reformat the merged URL object's compound parts.
@@ -331,7 +327,6 @@ util.extend (httpModel.prototype, {
 		}
 
 		if (self.bodyData) {
-			console.log ('%%%%%%%%%%%%%%%%%%%%%%%%%%%%', self.bodyData);
 			req.write(self.bodyData);
 		}
 
