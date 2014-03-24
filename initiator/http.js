@@ -32,11 +32,14 @@ var httpdi = module.exports = function httpdIConstructor (config) {
 		this.port  = config.port;
 
 	this.flows  = config.workflows || config.dataflows || config.flows;
-	this.static = config.static || {};
 
-	// - change static root by path
-	this.static.root = project.root.fileIO(this.static.root || 'htdocs');
-	this.static.headers = this.static.headers || {};
+	// I don't want to serve static files by default
+	if (config.static) {
+		this.static = config.static == true ? {} : config.static;
+		// - change static root by path
+		this.static.root = project.root.fileIO(this.static.root || 'www');
+		this.static.headers = this.static.headers || {};
+	}
 
 	// - - - prepare configs
 	this.prepare = config.prepare;
@@ -98,7 +101,7 @@ httpdi.prototype.runPrepare = function (df, request, response) {
 			if (!innerDfConfig || !innerDfConfig.tasks) {
 				console.error (log.c.red('request canceled:'), 'no prepare task named "'+p+'"');
 				prepareFailure = true;
-				var presenter = self.createPresenter({}, 'failed');
+				var presenter = self.createPresenter({}, request, response, 'failed');
 				if (presenter)
 					presenter.run ();
 				return;
@@ -134,7 +137,7 @@ httpdi.prototype.runPrepare = function (df, request, response) {
 			});
 
 			currentDf.on('failed', function(cDF) {
-				var presenter = self.createPresenter(cDF, 'failed');
+				var presenter = self.createPresenter(cDF, request, response, 'failed');
 				if (presenter)
 					presenter.run ();
 			})
@@ -159,7 +162,10 @@ httpdi.prototype.createPresenter = function (df, request, response, state) {
 	// {"type": "json"} — presenter config
 	// TODO: [{...}, {...}] — presentation dataflow
 
-	if (!df.presenter) return;
+	if (!df.presenter) {
+		this.finishRequest (response);
+		return
+	};
 	// TODO: emit SOMETHING
 
 	var presenter = df.presenter;
@@ -221,24 +227,40 @@ httpdi.prototype.createPresenter = function (df, request, response, state) {
 
 	presenterDf.on ('completed', function () {
 		//self.log ('presenter done');
+		self.finishRequest (response);
 	});
 
 	presenterDf.on ('failed', function () {
 		presenterDf.log ('Presenter failed: ' + request.method + ' to ' + request.url.pathname);
-		self.createFlowByCode(500, request, response) || response.end();
+		var df500 = self.createFlowByCode(500, request, response);
+		if (df500) {
+			df500.on ('completed', self.finishRequest.bind (self, response));
+			df500.on ('failed',    self.finishRequest.bind (self, response));
+		} else {
+			self.finishRequest (response);
+		}
 	});
 
 	return presenterDf;
 }
 
+httpdi.prototype.finishRequest = function (res) {
+	if (!res.finished)
+		res.end ();
+}
+
 httpdi.prototype.createFlow = function (cfg, req, res) {
 	var self = this;
+
+	if (cfg.static) {
+		return false;
+	}
 
 	// task MUST contain tasks or presenter
 	if (!cfg.tasks && !cfg.presenter)
 		return;
 
-	console.log('httpdi match: ' + req.method + ' to ' + req.url.pathname);
+	console.log ('dataflow', req.method, req.url.pathname);
 
 	var df = new flow(
 		util.extend (true, {}, cfg),
@@ -247,8 +269,9 @@ httpdi.prototype.createFlow = function (cfg, req, res) {
 
 	df.on('completed', function (df) {
 		var presenter = self.createPresenter(df, req, res, 'completed');
-		if (presenter)
+		if (presenter) {
 			presenter.run ();
+		}
 	});
 
 	df.on('failed', function (df) {
@@ -256,8 +279,6 @@ httpdi.prototype.createFlow = function (cfg, req, res) {
 		var presenter = self.createPresenter(df, req, res, 'failed');
 		if (presenter) {
 			presenter.run ();
-		} else {
-			self.createFlowByCode(500, req, res);
 		}
 
 	});
@@ -286,12 +307,18 @@ httpdi.prototype.createFlowByCode = function (code, req, res) {
 			return df.code == res.statusCode;
 		})[0];
 	}
-	var codeDf = this.flows._codeFlows[res.statusCode];
-	if (codeDf) {
-		if (!codeDf.tasks) { codeDf.tasks = []; }
-		this.createFlow(codeDf, req, res);
-		return true;
+	var codeDfConfig = this.flows._codeFlows[res.statusCode];
+	if (codeDfConfig) {
+		if (!codeDfConfig.tasks) { codeDfConfig.tasks = []; }
+		var df = this.createFlow(codeDfConfig, req, res);
+		if (df) {
+			df.on ('completed', this.finishRequest.bind (this, res));
+			df.on ('failed',    this.finishRequest.bind (this, res));
+			return true;
+		}
 	}
+
+	this.finishRequest (res);
 	return false;
 };
 
@@ -323,8 +350,6 @@ httpdi.prototype.hierarchical = function (req, res) {
 	return null;
 };
 
-httpdi.prototype.defaultRouter = httpdi.prototype.hierarchical;
-
 httpdi.prototype.hierarchical.walkList = function (
 	list, pathParts, level, callback
 ) {
@@ -354,7 +379,7 @@ httpdi.prototype.hierarchical.findByPath = function (
 	this.walkList(
 		list, pathParts, level,
 		function (tree, pathFragment, index) {
-			//console.print('PATH', tree.path, 'FRAGMENT', pathFragment);
+			// console.print('PATH', tree.path, 'FRAGMENT', pathFragment);
 			if (tree.path == pathFragment) {
 				checkedLevel = index;
 				branch = tree;
@@ -368,7 +393,7 @@ httpdi.prototype.hierarchical.findByPath = function (
 	!branch && this.walkList(
 		list, pathParts, level,
 		function (tree, pathFragment, index) {
-			//console.print('PATTERN', tree.pattern, 'FRAGMENT', pathFragment);
+			// console.print('PATTERN', tree.pattern, 'FRAGMENT', pathFragment);
 			var match = tree.pattern && pathFragment.match(tree.pattern);
 			if (match) {
 				checkedLevel = index;
@@ -380,7 +405,7 @@ httpdi.prototype.hierarchical.findByPath = function (
 		}
 	);
 
-	if (checkedLevel >= pathParts.length - 1) {
+	if ((branch && branch.static && checkedLevel >= 0) || checkedLevel >= pathParts.length - 1) {
 		return branch;
 	} else {
 		return branch && this.findByPath(
@@ -388,6 +413,8 @@ httpdi.prototype.hierarchical.findByPath = function (
 		);
 	}
 };
+
+httpdi.prototype.defaultRouter = httpdi.prototype.hierarchical;
 
 httpdi.prototype.httpDate = function (date) {
 	date = date || new Date ();
@@ -413,6 +440,151 @@ httpdi.prototype.httpDate = function (date) {
 	});
 }
 
+httpdi.prototype.findHandler = function (req, res) {
+	var df = this.router (req, res);
+
+	if (df && !df.ready) {
+		console.error ("flow not ready and cannot be started");
+	}
+
+	if (!df) {
+		// console.log ('httpdi not detected: ' + req.method + ' to ' + req.url.pathname);
+		this.emit ("unknown", req, res);
+
+		// NOTE: we don't want to serve static files using nodejs.
+		// NOTE: but for rapid development this is acceptable.
+		// NOTE: you MUST write static: false for production
+		if (this.static) {
+			this.handleStatic (req, res);
+		} else {
+			this.createFlowByCode (404, req, res) || res.end();
+		}
+
+	}
+
+}
+
+httpdi.prototype.handleStatic = function (req, res) {
+	var self = this;
+	var pathName = path.join (
+		self.static.root.path,
+		path.join('.', req.url.pathname),
+		/\/$/.test(req.url.pathname) ? self.static.index : ''
+	);
+
+	console.log ('filesys ', req.method, req.url.pathname);
+
+	var contentType, charset;
+	// make sure html return fast as possible
+	// if ('.html' == path.extname(pathName)) {
+	// 	contentType = 'text/html';
+	// 	charset = 'utf-8';
+	// } else
+	if (mime && mime.lookup) {
+		contentType = mime.lookup (pathName);
+		// The logic for charset lookups is pretty rudimentary.
+		if (contentType.match (/^text\//))
+			charset = mime.charsets.lookup(contentType, 'utf-8');
+		if (charset) contentType += '; charset='+charset;
+	} else if (!contentType) {
+		console.error(
+			'sorry, there is no content type for %s', pathName
+		);
+	}
+
+	var file = project.root.fileIO(pathName);
+	var fileOptions = {flags: "r"};
+
+	var statusCode = 200;
+	var start = 0;
+	var end   = 0;
+	var rangeHeader = req.headers['range'];
+	if (rangeHeader != null) {
+		// console.log (rangeHeader);
+		var range = rangeHeader.split ('bytes=')[1].split ('-');
+		start = parseInt(range[0]);
+		end   = parseInt(range[1]);
+		if (!isNaN(start)) {
+			if (!isNaN(end) && start > end) {
+				// error, return 200
+			} else {
+				statusCode = 206;
+				fileOptions.start = start;
+				if (!isNaN(end))
+					fileOptions.end = end;
+				// console.log (
+				// 	'Browser requested bytes from %d to %d of file %s',
+				// 	start, end, file.name
+				// );
+
+
+			}
+		}
+	}
+
+	file.readStream (fileOptions, function (readStream, stats) {
+
+		if (!stats) {
+			self.createFlowByCode (404, req, res);
+			return;
+		}
+
+		// if (isNaN(end) || end == 0) end = stat.size-1;
+		if (stats.isDirectory() && !readStream) {
+
+			res.statusCode = 303;
+			res.setHeader('Location', req.url.pathname +'/');
+			res.end('Redirecting to ' + req.url.pathname +'/');
+			return;
+
+		} else if (stats.isFile() && readStream) {
+			var headers = {};
+
+			var uri = req.url.pathname;
+			while (uri.length > 1) {
+				var h = self.static.headers[uri];
+				headers = util.extend(headers, h || {});
+				uri = path.dirname(uri);
+			}
+
+			var headersExtend = {
+				'Content-Type': contentType,
+				'Content-Length': stats.size,
+				'Date': self.httpDate (stats.mtime),
+			};
+
+			if (project.config.debug) {
+				headersExtend['Cache-Control'] = 'no-store, no-cache';
+			}
+
+			if (statusCode == 206) {
+				end = fileOptions.end ? fileOptions.end : stats.size-1;
+				headersExtend['Content-Range'] = 'bytes '
+					+fileOptions.start+'-'
+					+(end)+'/'+stats.size;
+				headersExtend["Accept-Ranges"]  = "bytes";
+				headersExtend["Content-Length"] = end - fileOptions.start + 1;
+
+				// console.log (headersExtend);
+			}
+
+			headers = util.extend (headers, headersExtend);
+
+			req.on('close', function() {
+				readStream.destroy();
+			});
+
+			res.writeHead (statusCode, headers);
+			readStream.pipe (res);
+			readStream.resume ();
+			return;
+		}
+
+		self.handleFileStream (stats, readStream, req, res);
+	});
+
+}
+
 httpdi.prototype.listen = function () {
 
 	var self = this;
@@ -428,156 +600,7 @@ httpdi.prototype.listen = function () {
 		// use for flow match
 		req[req.method] = true;
 
-		// NOTE: we don't want to serve static files using nodejs.
-		// NOTE: but for rapid development this is acceptable.
-		// NOTE: you MUST write static: false for production
-		if (self.static && req.method == 'GET') {
-			// TODO: factor out static file handling
-			// - - - - -
-			var pathName = path.join(
-				self.static.root.path,
-				path.join('.', req.url.pathname),
-				/\/$/.test(req.url.pathname) ? self.static.index : ''
-			);
-
-			var contentType, charset;
-			// make sure html return fast as possible
-			// if ('.html' == path.extname(pathName)) {
-			// 	contentType = 'text/html';
-			// 	charset = 'utf-8';
-			// } else
-			if (mime && mime.lookup) {
-				contentType = mime.lookup (pathName);
-				// The logic for charset lookups is pretty rudimentary.
-				if (contentType.match (/^text\//))
-					charset = mime.charsets.lookup(contentType, 'utf-8');
-				if (charset) contentType += '; charset='+charset;
-			} else if (!contentType) {
-				console.error(
-					'sorry, there is no content type for %s', pathName
-				);
-			}
-
-			var file = project.root.fileIO(pathName);
-			var fileOptions = {flags: "r"};
-
-			var statusCode = 200;
-			var start = 0;
-			var end   = 0;
-			var rangeHeader = req.headers['range'];
-			if (rangeHeader != null) {
-				// console.log (rangeHeader);
-				var range = rangeHeader.split ('bytes=')[1].split ('-');
-				start = parseInt(range[0]);
-				end   = parseInt(range[1]);
-				if (!isNaN(start)) {
-					if (!isNaN(end) && start > end) {
-						// error, return 200
-					} else {
-						statusCode = 206;
-						fileOptions.start = start;
-						if (!isNaN(end))
-							fileOptions.end = end;
-						// console.log (
-						// 	'Browser requested bytes from %d to %d of file %s',
-						// 	start, end, file.name
-						// );
-
-
-					}
-				}
-			}
-
-			file.readStream (fileOptions, function (readStream, stats) {
-
-				if (stats) {
-					// if (isNaN(end) || end == 0) end = stat.size-1;
-					if (stats.isDirectory() && !readStream) {
-
-						res.statusCode = 303;
-						res.setHeader('Location', req.url.pathname +'/');
-						res.end('Redirecting to ' + req.url.pathname +'/');
-						return;
-
-					} else if (stats.isFile() && readStream) {
-						var headers = {};
-
-						var uri = req.url.pathname;
-						while (uri.length > 1) {
-							var h = self.static.headers[uri];
-							headers = util.extend(headers, h || {});
-							uri = path.dirname(uri);
-						}
-
-						var headersExtend = {
-							'Content-Type': contentType,
-							'Content-Length': stats.size,
-							'Date': self.httpDate (stats.mtime),
-						};
-
-						if (project.config.debug) {
-							headersExtend['Cache-Control'] = 'no-store, no-cache';
-						}
-
-						if (statusCode == 206) {
-							end = fileOptions.end ? fileOptions.end : stats.size-1;
-							headersExtend['Content-Range'] = 'bytes '
-								+fileOptions.start+'-'
-								+(end)+'/'+stats.size;
-							headersExtend["Accept-Ranges"]  = "bytes";
-							headersExtend["Content-Length"] = end - fileOptions.start + 1;
-
-							// console.log (headersExtend);
-						}
-
-						headers = util.extend (headers, headersExtend);
-
-						req.on('close', function() {
-							readStream.destroy();
-						});
-
-						res.writeHead (statusCode, headers);
-						readStream.pipe (res);
-						readStream.resume ();
-						return;
-					}
-
-					self.handleFileStream (stats, readStream, req, res);
-					return;
-				}
-
-				// TODO: factor this out
-				// - - - - -
-				var df = self.router (req, res);
-
-				if (df && !df.ready) {
-					console.error ("flow not ready and cannot be started");
-				}
-
-				if (!df) {
-					console.log ('httpdi not detected: ' + req.method + ' to ' + req.url.pathname);
-					self.emit ("unknown", req, res);
-					self.createFlowByCode(404, req, res) || res.end();
-				}
-				// - - - - - end of router creation
-			});
-			// - - - - - end of static file handling
-		} else {
-			// TODO: factor this out
-			// - - - - -
-			var df = self.router (req, res);
-
-			if (df && !df.ready) {
-				console.error ("dataflow not ready and cannot be started");
-			}
-
-			if (!df) {
-				console.log ('httpdi not detected: ' + req.method + ' to ' + req.url.pathname);
-				self.emit ("unknown", req, res);
-				self.createFlowByCode(404, req, res) || res.end();
-			}
-			// - - - - - end of router creation
-		}
+		self.findHandler (req, res);
 	});
 
 	if (this.host)

@@ -161,7 +161,51 @@
 						}]
 					}]
 				},
+				"xtest-http-initiator": {
+					"tasks": [{
+						"$class":"remoteResource",
+						"$method": "toBuffer",
+						"url": "http://127.0.0.1:51111/favicon.ico",
+						"successCodes": "2xx",
+						"$setOnFail": "favicon"
+					}, {
+						"$function": "console.log",
+						"$args": [
+							"favicon http response: want 404, got {$favicon.code}"
+						],
+						"$important": true
+					}, {
+						"$class":"remoteResource",
+						"$method": "toBuffer",
+						"url": "http://127.0.0.1:51111/index.html",
+						"successCodes": "2xx",
+						"$set": "indexPage"
+					}, {
+						"$function": "console.log",
+						"$args": [
+							"index page http response: want 200, got {$indexPage.code}"
+						],
+						"$important": true
+					}, {
+						"$class":"remoteResource",
+						"$method": "toBuffer",
+						"url": "http://127.0.0.1:51111/test/post",
+						"bodyData": {
+							"a": "b",
+							"c": "d"
+						},
+						"successCodes": "2xx",
+						"$set": "postObj"
+					}, {
+						"$function": "console.log",
+						"$args": [
+							"{$postObj.data}"
+						],
+						"$important": true
 
+					}]
+
+				},
 				"xtest-every-000": {
 					"data": {
 						"articleSelector":
@@ -209,6 +253,61 @@
 			}
 		},
 		"http": {
+			"port": 51111,
+			"static": {
+				"root": "example"
+			},
+
+			"prepare": 	{
+				"post": {
+					"tasks": [{
+						"$class": "post",
+						"request": "{$request}",
+						"$set": "request.body"
+					}]
+				}
+			},
+			"flows":[{
+				"path": ""
+			}, {
+				"path": "^(\\w+)$",
+				"prepare": ["post"],
+				"tasks": [{
+					"$function": "handleGet",
+					"require":   "{$request.GET}"
+				}],
+				"presenter": "json"
+			}, {
+				"path": "test",
+				"flows": [{
+					"path": "redirect",
+					"tasks":[{
+						"$class": "redirect",
+						"url": "/redirected",
+						"output": "{$response}"
+					}],
+					"presenter": {
+						"headers": {
+							"Set-Cookie": "auth: 1234"
+						}
+					}
+				}, {
+					"path": "post",
+					"prepare": ["post"],
+					"tasks": [{
+						"$function": "handleGet",
+						"require":   "{$request.POST}"
+					}],
+					"presenter": {
+						"type": "json",
+						"vars": "{$request.body}"
+					}
+
+				}]
+			}]
+		},
+		"timer": {
+			"flows": []
 		}
 	}
 }

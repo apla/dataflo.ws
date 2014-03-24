@@ -512,13 +512,13 @@ util.extend (dataflow.prototype, {
 
 		if (this.taskStates[taskStateNames.ready] || this.taskStates[taskStateNames.running]) {
 			// it is save to continue, wait for running/ready task
-			console.log ('have running tasks');
+			// console.log ('have running tasks');
 
 			self.isIdle = true;
 
 			return;
 		} else if (self.haveCompletedTasks) {
-			console.log ('have completed tasks');
+			// console.log ('have completed tasks');
 			// stack will be happy
 			self.runDelayed();
 

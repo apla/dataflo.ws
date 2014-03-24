@@ -273,10 +273,19 @@ util.extend (presenterTask.prototype, {
 		 *
 		 * Default values depend on the template {@link #type}.
 		 */
+
 		if (!self.type) {
-			// guess on file name
-			self.type = self.file.substring (self.file.lastIndexOf ('.') + 1);;
-			console.log ('guessed ' + self.type + ' presenter type from filename: ' + self.file);
+			if (self.file) {
+				// guess on file name
+				self.type = self.file.substring (self.file.lastIndexOf ('.') + 1);;
+				self.emit ('log', 'guessed ' + self.type + ' presenter type from filename: ' + self.file);
+			} else {
+				// if (self.response.statusCode > 200) {
+				self.renderResult ();
+				return;
+				// }
+				// TODO: throw error in case of 2xx response code
+			}
 		}
 
 		switch (self.type.toLowerCase()) {
