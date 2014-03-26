@@ -94,7 +94,7 @@ util.extend(HttpModelManager.prototype, {
 
 			if (nextHTTP) {
 				nextHTTP.isDownloading = true;
-				nextHTTP.run();
+				nextHTTP.run (nextHTTP.params, nextHTTP.headers, nextHTTP.bodyData);
 			}
 		}
 	},

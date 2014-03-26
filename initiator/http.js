@@ -8,11 +8,20 @@ var EventEmitter = require ('events').EventEmitter,
 	os           = require ('os');
 	log          = require ('dataflo.ws/log');
 
+var mime, memoize;
+
 try {
-	var mime     = require ('mime');
+	mime = require ('mime');
 } catch (e) {
 	console.error (log.c.red('cannot find mime module'));
 };
+
+try {
+	memoize = require ('memoizee');
+} catch (e) {
+	console.error (log.c.red('cannot find memoizee module'));
+};
+
 
 /**
  * @class initiator.httpdi
@@ -339,14 +348,19 @@ httpdi.prototype.hierarchical = function (req, res) {
 	var pathParts = pathName.split(/\/+/).slice(1);
 
 	var capture = [];
-	var config = this.hierarchical.findByPath(
-		this, pathParts, 0, capture
+	this.hierarchical.tree = this;
+	var routeFinder = this.hierarchical.findByPath.bind (this.hierarchical);
+	if (memoize)
+		routeFinder = memoize (routeFinder);
+	var config = routeFinder (
+		null, pathParts, 0, capture
 	);
 
 	if (config) {
 		req.capture = capture;
 		return this.createFlow(config, req, res);
 	}
+
 	return null;
 };
 
@@ -371,6 +385,8 @@ httpdi.prototype.hierarchical.walkList = function (
 httpdi.prototype.hierarchical.findByPath = function (
 	tree, pathParts, level, capture
 ) {
+	if (!tree)
+		tree = this.tree;
 	var list = tree.workflows || tree.dataflows || tree.flows;
 	var checkedLevel = level;
 	var branch = null;

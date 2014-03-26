@@ -202,6 +202,19 @@
 							"{$postObj.data}"
 						],
 						"$important": true
+					}, {
+						"$class":"remoteResource",
+						"$method": "toBuffer",
+						"url": "http://127.0.0.1:51111/test/redirect",
+						"successCodes": "2xx",
+						"$set": "redirectObj"
+					}, {
+						"$function": "console.print",
+						"$args": [
+							"{$redirectObj.data}"
+						],
+						"$important": true
+
 
 					}]
 
@@ -283,13 +296,20 @@
 					"path": "redirect",
 					"tasks":[{
 						"$class": "redirect",
-						"url": "/redirected",
+						"url": "/test/redirected",
 						"output": "{$response}"
 					}],
 					"presenter": {
 						"headers": {
-							"Set-Cookie": "auth: 1234"
+							"Set-Cookie": "auth=123; expires=Fri Jan 31 2031 00:00:00 GMT; path=/; domain=127.0.0.1"
 						}
+					}
+				}, {
+					"path": "redirected",
+					"presenter": {
+						"type": "json",
+						"vars": "{$request.headers}",
+						"verbose": true
 					}
 				}, {
 					"path": "post",

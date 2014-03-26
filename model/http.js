@@ -2,23 +2,13 @@ var util			= require ('util'),
 	fs				= require ('fs'),
 	urlUtils		= require ('url'),
 	querystring     = require ('querystring'),
-	httpManager     = require ('./http/model-manager');
+	httpManager     = require ('./http/model-manager'),
+	tough           = require ('tough-cookie');
 
 var HTTPClient, HTTPSClient, followRedirects;
 
-try {
-	followRedirects = require('follow-redirects');
-	HTTPClient  = followRedirects.http;
-	HTTPSClient = followRedirects.https;
-} catch (e) {
-	console.warn(
-		'Falling back to standard HTTP(S) client.',
-		'If you want to follow redirects,',
-		'install "follow-redirects" module.'
-	);
 	HTTPClient  = require('http');
 	HTTPSClient = require('https');
-}
 
 // - - - - - - -
 
@@ -78,6 +68,10 @@ var httpModel = module.exports = function (modelBase, optionalUrlParams) {
 		delete this.params.bodyData;
 
 	}
+
+	this.redirectCount = 0;
+	this.cookieJar = new tough.CookieJar (null, false);
+
 	if (this.params.headers) {
 		try {
 			util.extend(this.headers, this.params.headers);
@@ -271,16 +265,36 @@ util.extend (httpModel.prototype, {
 		}
 		return false;
 	},
-
-	run: function () {
+	/**
+	 * called from http model manager
+	 * @return {[type]} [description]
+	 */
+	run: function (params, headers, bodyData) {
 		var self = this;
 
-		var Client = (this.params.protocol == 'https:') ? HTTPSClient : HTTPClient;
+		var Client = (params.protocol == 'https:') ? HTTPSClient : HTTPClient;
 
-		var req = self.req = Client.request(this.params, function (res) {
+		var requestUrl = params.href;
+
+		var req = self.req = Client.request (params, function (res) {
 
 			self.res = res;
 
+			if (res.headers['set-cookie']) {
+				if (res.headers['set-cookie'].constructor != Array) {
+					res.headers['set-cookie'] = [res.headers['set-cookie']];
+				}
+				res.headers['set-cookie'].forEach (function (header) {
+					self.cookieJar.setCookieSync (header, requestUrl);
+					// console.log (self.cookieJar.getCookiesSync (requestUrl));
+				});
+			}
+
+			var redirected = self.isRedirected (requestUrl, res);
+			if (redirected) {
+				self.run (urlUtils.parse (redirected, true), {});
+				this.redirectCount ++;
+			}
 			// if (res.statusCode != 200) {
 			// 	self.modelBase.emit (
 			// 		'error',
@@ -289,6 +303,7 @@ util.extend (httpModel.prototype, {
 			// 	return;
 			// }
 
+			// TODO: handle redirect
 			util.extend (self.progress, {
 				bytesTotal: res.headers['content-length'],
 				reader: res,
@@ -307,7 +322,8 @@ util.extend (httpModel.prototype, {
 			});
 
 			res.on ('data', function (chunk) {
-				if (!self.isStream) self.target.to.data = Buffer.concat ([self.target.to.data, chunk]);
+				if (!self.isStream)
+					self.target.to.data = Buffer.concat ([self.target.to.data, chunk]);
 				self.modelBase.emit ('data', chunk);
 			});
 
@@ -320,18 +336,43 @@ util.extend (httpModel.prototype, {
 			self.modelBase.emit ('error', 'req : '+e);
 		});
 
-		if (self.headers) {
-			for (var key in self.headers) {
-				req.setHeader(key, self.headers[key]);
+		if (headers) {
+			for (var key in headers) {
+				req.setHeader(key, headers[key]);
 			}
 		}
 
-		if (self.bodyData) {
-			req.write(self.bodyData);
+		this.cookieJar.getCookiesSync (requestUrl).forEach (function (cookie) {
+			req.setHeader ('cookie', cookie.cookieString());
+		});
+
+		if (bodyData) {
+			req.write (bodyData);
 		}
 
-
 		req.end();
+	},
+
+	isRedirected: function (reqUrl, res) {
+
+		if (!("" + res.statusCode).match (/^30[1,2,3,5,7]$/)) {
+			return false;
+        }
+
+		// no `Location:` header => nowhere to redirect
+		if (!('location' in res.headers)) {
+			return false;
+		}
+
+		// we are going to follow the redirect, but in node 0.10 we must first attach a data listener
+		// to consume the stream and send the 'end' event
+		res.on('data', function() {});
+
+		// save the original clientRequest to our redirectOptions so we can emit errors later
+
+		// need to use url.resolve() in case location is a relative URL
+		var redirectUrl = urlUtils.resolve (reqUrl, "" + res.headers['location']);
+		return redirectUrl;
 	},
 
 	stop: function () {

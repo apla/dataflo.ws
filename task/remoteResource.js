@@ -71,7 +71,8 @@ cacheTask.prototype.initModel = function () {
 		// 	// console.log("%%%%%%%%%%cache failed");
 		// 	self.emitError(e, data);
 		// });
-		self.model.on ('error', function () {
+		self.model.on ('error', function (error) {
+			console.log (error);
 			self.clearOperationTimeout();
 			self.finishWith ({}, 'failed');
 		});

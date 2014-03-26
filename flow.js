@@ -478,8 +478,15 @@ util.extend (dataflow.prototype, {
 			self.emit ('failed', self);
 			self.log (this.stage + ' failed immediately due unready state');
 			self.isIdle = true;
+			return;
 		}
 
+		if (!this.tasks) {
+			self.emit ('failed', self);
+			self.log (this.stage + ' failed immediately due empty task list');
+			self.isIdle = true;
+			return;
+		}
 		this.tasks.map (function (task) {
 
 			if (task.subscribed === void(0)) {
@@ -580,7 +587,7 @@ util.extend (dataflow.prototype, {
 		self.isIdle = true;
 
 	},
-	stageMarker: {prepare: "()", dataflow: "[]", presentation: "<>"},
+	stageMarker: {prepare: "[]", dataflow: "()", presentation: "{}"},
 	_log: function (level, msg) {
 //		if (this.quiet || process.quiet) return;
 		var toLog = [].slice.call (arguments);

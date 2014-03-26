@@ -220,6 +220,9 @@ util.extend (presenterTask.prototype, {
 		}
 		this.headers.connection = 'close';
 
+		if (this.verbose)
+			console.log (this.headers, result);
+
 		if (!result) {
 			this.response.end();
 		} else if (result instanceof stream) {

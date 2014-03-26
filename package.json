@@ -16,7 +16,8 @@
     "multiparty": "*",
     "mime": "*",
     "minimist": "*",
-    "ansi-color": "*"
+    "ansi-color": "*",
+	"tough-cookie": "*"
   },
   "engines": {
     "node": ">=0.8.0",
