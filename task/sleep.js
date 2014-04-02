@@ -1,3 +1,9 @@
+var define;
+if (typeof define === "undefined")
+	define = function (classInstance) {
+		classInstance (require, exports, module);
+	}
+
 define (function (require, exports, module) {
 
 var task = require ('./base');
