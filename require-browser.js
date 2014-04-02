@@ -10,10 +10,7 @@ var _required = {
 
 };
 
-define ('fs', [], function () {});
-define ('path', [], function () {});
-
-define ('util', [], function () {
+require.register ('util.js', function () {
 	var util = {};
 	util.inherits = function (ctor, superCtor) {
 		ctor.super_ = superCtor;
@@ -94,46 +91,21 @@ define ('util', [], function () {
 		// Return the modified object
 		return target;
 	}
-	return util;
+	return {exports: util};
 });
 
-define ('events', [], function () {
-	var events = module.exports = {
-		EventEmitter: function () {}
-	};
+require.alias("util.js", "apla-dataflo.ws/deps/util.js");
+require.alias("util.js", "elmobro/deps/util.js");
 
-	// move to event emitter
-	events.EventEmitter.prototype.on = function (type, cb) {
-		if (!this.cb)
-			this.cb = {};
-		if (!this.cb[type])
-			this.cb[type] = [];
+require.alias("apla-dataflo.ws/common.js", "common.js");
 
-		this.cb[type].push (cb);
-	}
+var events = require ('events');
+events.EventEmitter = events;
 
-	// TODO: add un method
+var eventsPath = require.resolve ('events');
 
-	events.EventEmitter.prototype.emit = function (type) {
-		if (!this.cb)
-			return;
-		if (!this.cb[type])
-			return;
-
-		var args = Array.prototype.slice.call(arguments);
-
-		args.shift ();
-
-		var self = this;
-
-		this.cb[type].map (function (item) {
-			item.apply (self, args)
-		});
-	}
-
-	return events;
-
-});
+require.alias(eventsPath, "apla-dataflo.ws/deps/events.js");
+require.alias(eventsPath, "elmobro/deps/events.js");
 
 
 util = {};

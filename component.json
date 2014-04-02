@@ -14,10 +14,10 @@
   "homepage": "https://github.com/apla/dataflo.ws",
   "author": "https://github.com/apla/",
   "scripts": [
-    "flow.js", "common.js", "log.js",
-    "initiator/callback.js", "initiator/timer.js",
-    "io/easy.js",
-    "task/base.js", "task/every.js"
+    "common.js", "index.js", "log.js",
+    "task/base.js", "task/every.js", "flow.js",
+    "task/emit.js", "task/sleep.js",
+    "initiator/callback.js", "initiator/timer.js"
   ],
   "license": "GPLv3",
   "readmeFilename": "README.md"

@@ -11,11 +11,14 @@ define (function (require, exports, module) {
 var MODULE_NAME = 'dataflo.ws';
 var INITIATOR_PATH = 'initiator';
 
-var path = require ('path');
-	fs   = require ('fs');
+var path,
+	fs,
 	common = require ('./common');
 
 if ($isServerSide) {
+	path = require ('path');
+	fs   = require ('fs');
+
 }
 
 
