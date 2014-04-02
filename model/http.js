@@ -279,6 +279,7 @@ util.extend (httpModel.prototype, {
 		var req = self.req = Client.request (params, function (res) {
 
 			self.res = res;
+			res.responseData = new Buffer("");
 
 			if (res.headers['set-cookie']) {
 				if (res.headers['set-cookie'].constructor != Array) {
@@ -292,6 +293,7 @@ util.extend (httpModel.prototype, {
 
 			var redirected = self.isRedirected (requestUrl, res);
 			if (redirected) {
+				res.redirected = true;
 				self.run (urlUtils.parse (redirected, true), {});
 				this.redirectCount ++;
 			}
@@ -321,14 +323,21 @@ util.extend (httpModel.prototype, {
 				self.modelBase.emit ('error', 'res : '+exception);
 			});
 
+			// clean data on redirect
 			res.on ('data', function (chunk) {
 				if (!self.isStream)
-					self.target.to.data = Buffer.concat ([self.target.to.data, chunk]);
+					res.responseData += chunk;
 				self.modelBase.emit ('data', chunk);
 			});
 
 			res.on ('end', function () {
-				self.modelBase.emit ('end');
+				if (!res.redirected) {
+					self.target.to.data = res.responseData;
+					delete res.responseData;
+					self.modelBase.emit ('end');
+					return;
+				}
+				self.modelBase.emit ('stop');
 			});
 		});
 
