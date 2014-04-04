@@ -581,7 +581,6 @@ util.extend (dataflow.prototype, {
 
 			self.emit ('completed', self);
 			self.log (this.stage + ' complete in ' + (self.stopped - self.started) + 'ms');
-
 		}
 
 		self.isIdle = true;
@@ -674,8 +673,10 @@ util.extend (dataflow.prototype, {
 
 			if (!task.retries && task.$setOnFail) {
 				common.pathToVal(self.data, task.$setOnFail, failedValue || true);
+				self.haveCompletedTasks = true;
+			} else {
+				self.failed = true;
 			}
-			self.failed = true;
 
 			if (self.isIdle)
 				self.runDelayed ();

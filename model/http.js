@@ -251,6 +251,8 @@ util.extend (httpModel.prototype, {
 		result.headers = (this.res.headers) ? this.res.headers : {};
 	},
 	isSuccessResponse: function check () {
+		if (!this.res)
+			return false;
 		var statusCode = this.res.statusCode;
 		if (this.params.successCodes) {
 			// format: 2xx,3xx

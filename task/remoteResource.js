@@ -112,7 +112,7 @@ cacheTask.prototype.isSameUrlLoading = function () {
  * (in milliseconds)
  * @cfg {String} [successCodes="200"] (HTTP only) Success status codes (example: "2xx,4xx")
  * otherwise task will fail
- * @cfg {String|Object} postData (HTTP only) POST body, can be string (raw POST data)
+ * @cfg {String|Object} bodyData (HTTP only) POST body, can be string (raw POST data)
  * or object (urlencoded query)
  * @cfg {String} headers (HTTP only) HTTP headers for request
  * @cfg {String} auth (HTTP only) basic auth
@@ -179,7 +179,7 @@ cacheTask.prototype.finishWith = function (result, method) {
  * (in milliseconds)
  * @cfg {String} [successCodes="200"] Success HTTP status codes (example: "2xx,4xx")
  * otherwise task will fail
- * @cfg {String|Object} postData (HTTP only) POST body, can be string (raw POST data)
+ * @cfg {String|Object} bodyData (HTTP only) POST body, can be string (raw POST data)
  * or object (urlencoded query)
  * @cfg {String} headers (HTTP only) HTTP headers for request
  * @cfg {String} auth (HTTP only) basic auth
