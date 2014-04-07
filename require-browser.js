@@ -16,6 +16,8 @@ var eventsPath = require.resolve ('events');
 require.alias(eventsPath, "apla-dataflo.ws/deps/events.js");
 require.alias(eventsPath, "elmobro/deps/events.js");
 
+var buffer = require ('buffer');
+window.Buffer = buffer.Buffer;
 
 util = {};
 

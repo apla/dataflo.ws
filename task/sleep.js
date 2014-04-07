@@ -7,6 +7,7 @@ if (typeof define === "undefined")
 define (function (require, exports, module) {
 
 var task = require ('./base');
+var util = require ('util');
 
 var sleepTask = module.exports = function (config) {
 	this.init (config);
