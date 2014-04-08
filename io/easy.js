@@ -95,7 +95,7 @@ io.prototype.findUp = function (fileName, cb, errCb) {
 			return;
 		}
 
-		self.parent().findUp(fileName, cb);
+		self.parent().findUp(fileName, cb, errCb);
 	});
 }
 
