@@ -4,24 +4,38 @@ var MODULE_NAME = 'dataflo.ws';
 var INITIATOR_PATH = 'initiator';
 var DEFAULT_REQUIRE = 'main';
 
-var path = require('path');
+var path      = require('path');
 var dataflows = require(MODULE_NAME);
 var common = require(path.join(MODULE_NAME, 'common'));
 
-var $global = common.$global;
-var project = $global.project = common.getProject(); // used by initiators
+var minimist  = require ('minimist');
+
+var $global   = common.$global;
+var project   = $global.project = common.getProject(); // used by initiators
 
 function launchScript (conf, err) {
 	var scriptName = process.argv[2];
+
+	if (!scriptName)
+		scriptName = "help";
+
+	if (err && err === "no project config" && !(scriptName && scriptName.match (/help|init/))) {
+		console.error (
+			'no', log.dataflows(),
+			'project config found. please run',
+			log.path ('dataflows help'), 'or', log.path ('dataflows init')
+		);
+	}
 
 	var scriptClass;
 	try {
 		scriptClass = require (project.root.fileIO ('bin', scriptName).path);
 	} catch (e) {
 		try {
+			// console.log (path.join (MODULE_NAME, 'script', scriptName));
 			scriptClass = require (path.join (MODULE_NAME, 'script', scriptName));
 		} catch (e) {
-			// console.log (e);
+			console.error (e);
 		}
 	}
 
@@ -34,16 +48,21 @@ function launchScript (conf, err) {
 	var scriptMethod = 'launch';
 
 	if (typeof scriptClass.launchContext == 'function') {
-		var launchContext = scriptClass.launchContext();
+		var launchContext = scriptClass.launchContext() || {};
 		if (launchContext.method) {
 			scriptMethod = launchContext.method;
 		}
 	}
 
-	if (err && typeof scriptClass[scriptMethod + 'Anyway'] == 'function') {
-		scriptClass[scriptMethod + 'Anyway'](conf);
-	} else if (typeof scriptClass[scriptMethod] == 'function') {
+	scriptClass.command = launchContext.command || process.argv[2];
+	scriptClass.args    = launchContext.args || minimist(process.argv.slice(3));
+
+	// scriptClass.args =
+
+	if (!err && typeof scriptClass[scriptMethod] == 'function') {
 		scriptClass[scriptMethod](conf);
+	} else if (typeof scriptClass[scriptMethod + 'Anyway'] == 'function') {
+		scriptClass[scriptMethod + 'Anyway'](conf);
 	} else {
 		console.error(
 			'missing method "%s" for script "%s"',

@@ -1,19 +1,77 @@
-var dataflows = require('dataflo.ws');
-var common    = require('dataflo.ws/common');
-var log       = require('dataflo.ws/log');
-var minimist  = require('minimist');
+var dataflows = require ('dataflo.ws');
+var common    = dataflows.common;
+var log       = dataflows.log;
+var fs        = require ('fs');
+var path      = require ('path');
 
 module.exports = {
 	launchContext: function () {
-		return {
-			args:     minimist(process.argv.slice(3))
-		};
 	},
 	launch: function (conf) {
 
 		if (!conf) {
-			console.log ('no dataflo.ws project found within current dir. please run `dataflows init` within project dir');
+			if (this.args._.length <= 1) {
+				var projectPath = path.resolve (this.args._[0] || '.');
+				console.log (log.dataflows(), 'initalizing project in ', log.path (this.args._[0] || '.', '('+projectPath+')'));
+
+				var confDir      = path.resolve (projectPath, '.dataflows');
+				var instanceName = process.env.USER + '@' + process.env.HOSTNAME
+				var confFixup    = path.resolve (confDir, instanceName);
+
+				fs.mkdirSync (confDir);
+				// TODO: add detection of stub variables
+				fs.writeFileSync (
+					path.resolve (confDir, 'project'),
+					"// json\n" + JSON.stringify ({
+						daemon: {
+							http: {
+								initiator: ['http']
+							}
+						},
+						initiator: {
+							callback: {
+								flows: {
+
+								}
+							},
+							http: {
+								port: "{$daemonHttpPort}",
+								static: "",
+								prepare: {},
+								flows: []
+							}
+						}
+					}, null, true)
+				);
+				fs.writeFileSync (
+					path.resolve (confDir, 'instance'),
+					instanceName
+				);
+
+				fs.mkdirSync (confFixup);
+				// TODO: add detection of stub variables
+				fs.writeFileSync (
+					path.resolve (confFixup, 'fixup'),
+					"// json\n" + JSON.stringify ({
+						debug: true,
+						initiator: {
+							http: {
+								port: "{$daemonHttpPort}",
+							}
+						}
+					}, null, true)
+				);
+				// TODO: gitignore
+
+			} else {
+
+			}
+
+			// console.log ('no dataflo.ws project found within current dir. please run `dataflows init` within project dir');
 			return;
+		} else {
+			console.log (log.dataflows(), 'project already initialized');
+			process.kill();
 		}
 
 		var project = common.getProject ();

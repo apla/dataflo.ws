@@ -1,10 +1,12 @@
 var dataflows = require('dataflo.ws');
+var minimist  = require('minimist');
 
 module.exports = {
 	launchContext: function () {
 		return {
 			configKey: process.argv[3],
-			method:    process.argv[4]
+			method:    process.argv[4],
+			args:      minimist(process.argv.slice(5))
 		};
 	},
 	launch: function (conf) {

@@ -73,11 +73,7 @@ Project.prototype.checkConfig = function (cb) {
 		self.emit ('config-checked');
 		return true;
 	}, function () {
-		console.error (
-			'no', log.dataflows(),
-			'project config found. please run',
-			log.path ('dataflows help'), 'or', log.path ('dataflows init')
-		);
+		self.emit ('error', 'no project config');
 	});
 
 }
