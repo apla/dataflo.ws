@@ -13,7 +13,8 @@ var INITIATOR_PATH = 'initiator';
 
 var path,
 	fs,
-	common = require ('./common');
+	common = require ('./common'),
+	log    = require ('./log');
 
 if ($isServerSide) {
 	path = require ('path');
@@ -119,5 +120,6 @@ module.exports.register = function (instanceType, instanceName, instanceClass) {
 };
 
 module.exports.common = common;
+module.exports.log    = log;
 
 });

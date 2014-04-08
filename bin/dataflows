@@ -6,7 +6,8 @@ var DEFAULT_REQUIRE = 'main';
 
 var path      = require('path');
 var dataflows = require(MODULE_NAME);
-var common = require(path.join(MODULE_NAME, 'common'));
+var common    = dataflows.common;
+var log       = dataflows.log;
 
 var minimist  = require ('minimist');
 
