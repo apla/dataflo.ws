@@ -7,7 +7,7 @@ var path      = require ('path');
 module.exports = {
 	launchContext: function () {
 	},
-	launch: function (conf) {
+	launch: function (conf, project) {
 
 		if (!conf) {
 			if (this.args._.length <= 1) {
@@ -18,11 +18,13 @@ module.exports = {
 				var instanceName = process.env.USER + '@' + process.env.HOSTNAME
 				var confFixup    = path.resolve (confDir, instanceName);
 
-				fs.mkdirSync (confDir);
+				if (!fs.existsSync (confDir))
+					fs.mkdirSync (confDir);
 				// TODO: add detection of stub variables
-				fs.writeFileSync (
-					path.resolve (confDir, 'project'),
+				if (!fs.existsSync (path.resolve (confDir, 'project')))
+				fs.writeFileSync (path.resolve (confDir, 'project'),
 					"// json\n" + JSON.stringify ({
+						debug: "<$debug>",
 						daemon: {
 							http: {
 								initiator: ['http']
@@ -35,31 +37,36 @@ module.exports = {
 								}
 							},
 							http: {
-								port: "{$daemonHttpPort}",
+								port: "<$daemonHttpPort>",
 								static: "",
 								prepare: {},
 								flows: []
 							}
 						}
-					}, null, true)
-				);
-				fs.writeFileSync (
-					path.resolve (confDir, 'instance'),
-					instanceName
+					}, null, "\t"), {flag: "wx"}
 				);
 
-				fs.mkdirSync (confFixup);
-				// TODO: add detection of stub variables
+				if (!fs.existsSync (path.resolve (confDir, 'instance')))
+				fs.writeFileSync (
+					path.resolve (confDir, 'instance'),
+					instanceName,
+					{flag: "wx"}
+				);
+
+				if (!fs.existsSync (confFixup))
+					fs.mkdirSync (confFixup);
+
+				if (!fs.existsSync (path.resolve (confFixup, 'fixup')))
 				fs.writeFileSync (
 					path.resolve (confFixup, 'fixup'),
 					"// json\n" + JSON.stringify ({
 						debug: true,
 						initiator: {
 							http: {
-								port: "{$daemonHttpPort}",
+								port: "<$daemonHttpPort>",
 							}
 						}
-					}, null, true)
+					}, null, "\t"), {flag: "wx"}
 				);
 				// TODO: gitignore
 
@@ -69,6 +76,31 @@ module.exports = {
 
 			// console.log ('no dataflo.ws project found within current dir. please run `dataflows init` within project dir');
 			return;
+		} else if (conf && !project.instance) {
+			var confDir      = project.configDir;
+			var instanceName = process.env.USER + '@' + process.env.HOSTNAME
+			var confFixup    = path.resolve (confDir, instanceName);
+
+			fs.writeFileSync (
+				path.resolve (confDir, 'instance'),
+				instanceName,
+				{flag: "wx"}
+			);
+
+			if (!fs.existsSync (confFixup))
+				fs.mkdirSync (confFixup);
+			fs.writeFileSync (
+				path.resolve (confFixup, 'fixup'),
+				"// json\n" + JSON.stringify ({
+					debug: true,
+					initiator: {
+						http: {
+							port: "<$daemonHttpPort>",
+						}
+					}
+				}, null, "\t"), {flag: "wx"}
+			);
+
 		} else {
 			console.log (log.dataflows(), 'project already initialized');
 			process.kill();

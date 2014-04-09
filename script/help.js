@@ -17,7 +17,6 @@ module.exports = {
 		console.log ("\t", log.path ('init [dir]'), "\t", 'initialize dataflo.ws project');
 		console.log ("\t", log.path ('daemon [name]'), "\t", 'run preconfigured daemon');
 		console.log ("\t", log.path ('flow name'), "\t", 'run flow from initiator', log.path ('callback'));
-		console.log ("\t", log.path ('test'), "\t", '(internal) run release tests for dataflo.ws');
-		console.log ("\t", log.path ('test'), "\t", '(internal) run release tests for dataflo.ws');
+		console.log ("\t", log.path ('test'), "\t\t", '(internal) run release tests for dataflo.ws');
 	}
 }

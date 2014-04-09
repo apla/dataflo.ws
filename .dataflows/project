@@ -266,7 +266,7 @@
 			}
 		},
 		"http": {
-			"port": 51111,
+			"port": "<$fixme>",
 			"static": {
 				"root": "example"
 			},

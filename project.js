@@ -105,6 +105,10 @@ Project.prototype.readInstance = function () {
 	});
 }
 
+Project.prototype.logUnpopulated = function(variable) {
+	console.error ("variable", log.path(variable), "unpopulated. please run", log.dataflows ("config set", variable, "<value>"));
+};
+
 Project.prototype.loadConfig = function () {
 
 	var self = this;
@@ -150,7 +154,11 @@ Project.prototype.loadConfig = function () {
 
 		self.id = config.id;
 
-		self.loadIncludes(config, 'projectRoot', function (err, config) {
+		// TODO: load includes after fixup is loaded
+		self.loadIncludes(config, 'projectRoot', function (err, config, variables) {
+
+			self.variables = variables;
+
 			if (err) {
 				console.error(err);
 				console.warn("Couldn't load includes.");
@@ -161,44 +169,74 @@ Project.prototype.loadConfig = function () {
 			self.config = config;
 
 			if (!self.instance) {
+				for (var k in variables) {
+					self.logUnpopulated (k);
+				}
 				self.emit ('ready');
 				return;
 			}
 
-			self.root.fileIO (path.join(self.configDir, self.instance, 'fixup')).readFile (function (err, data) {
+			self.fixupFile = path.join(self.configDir, self.instance, 'fixup');
+
+			self.root.fileIO (self.fixupFile).readFile (function (err, data) {
+				var fixupConfig = {};
 				if (err) {
 					console.error (
 						"config fixup file unavailable ("+log.path (path.join(self.configDir, self.instance, 'fixup'))+")",
 						"create one and define local configuration fixup"
 					);
-					self.emit ('ready');
-					// process.kill ();
-					return;
+				} else {
+					var fixupData = (""+data).match (/(\w+)(\W[^]*)/);
+					fixupData.shift ();
+					var fixupParser = fixupData.shift ();
 
+					// console.log ('parsing etc/' + self.instance + '/fixup using "' + fixupParser + '" parser');
+					// TODO: error handling
+
+					if (fixupParser == 'json') {
+						fixupConfig = self.fixupConfig = JSON.parse (fixupData[0]);
+					} else {
+						console.error (
+							'parser ' + fixupParser + ' unknown in etc/' + self.instance + 'fixup; '
+							+ 'we analyze parser using first string of file; '
+							+ 'you must put in first string comment with file format, like "// json"');
+					}
 				}
 
-				var fixupData = (""+data).match (/(\w+)(\W[^]*)/);
-				fixupData.shift ();
-				var fixupParser = fixupData.shift ();
+				util.extend (true, self.config, fixupConfig);
 
-				var fixupData = (""+data).match (/(\w+)(\W[^]*)/);
-				fixupData.shift ();
-				var fixupParser = fixupData.shift ();
+				var unpopulatedVars = false;
 
-				// console.log ('parsing etc/' + self.instance + '/fixup using "' + fixupParser + '" parser');
-				// TODO: error handling
+				// var variables = {};
 
-				if (fixupParser == 'json') {
-					var config = JSON.parse (fixupData[0]);
+				var tagRe = /^<([^>]+)>$/;
+				function iterateNode (node, key, depth) {
+					var value = node[key];
+					var fullKey = depth.join ('.');
+					var match;
 
-					util.extend (true, self.config, config);
-				} else {
-					console.error (
-						'parser ' + fixupParser + ' unknown in etc/' + self.instance + 'fixup; '
-						+ 'we analyze parser using first string of file; '
-						+ 'you must put in first string comment with file format, like "// json"');
+					if ('string' === typeof value) {
+						match = value.match(tagRe);
+						if (match) {
 
-					// process.kill ();
+							if (match[1].match (/^\$\w+/)) {
+								self.variables[fullKey] = [match[1]];
+								self.logUnpopulated (fullKey);
+								unpopulatedVars = true;
+								return;
+							}
+						}
+					}
+
+					if (self.variables[fullKey] && !match) {
+						self.variables[fullKey][1] = value.toString ? value.toString() : value;
+					}
+				}
+
+				self.iterateTree (config, iterateNode, []);
+
+				if (unpopulatedVars) {
+					self.emit ('error', 'unpopulated variables');
 					return;
 				}
 
@@ -209,6 +247,8 @@ Project.prototype.loadConfig = function () {
 		});
 	});
 }
+
+
 
 
 Project.prototype.connectors = {};
@@ -258,16 +298,40 @@ Project.prototype.require = function (name, optional) {
 
 var configCache = {};
 
+Project.prototype.iterateTree = function iterateTree (tree, cb, depth) {
+	if (null == tree)
+		return;
+
+	var level = depth.length;
+
+	var step = function (node, key, tree) {
+		depth[level] = key;
+		cb (tree, key, depth);
+		iterateTree (node, cb, depth.slice (0));
+	};
+
+	if (Array === tree.constructor) {
+		tree.forEach (step);
+	} else if (Object === tree.constructor) {
+		Object.keys(tree).forEach(function (key) {
+			step (tree[key], key, tree)
+		});
+	}
+}
+
+
 Project.prototype.loadIncludes = function (config, level, cb) {
 	var self = this;
 
 	var DEFAULT_ROOT = this.configDir,
 		DELIMITER = ' > ',
-		tagRe = /<([^>]+)>/,
+		tagRe = /^<([^>]+)>$/,
 		cnt = 0,
 		len = 0;
 
 	var levelHash = {};
+
+	var variables = {};
 
 	level.split(DELIMITER).forEach(function(key) {
 		levelHash[key] = true;
@@ -276,40 +340,28 @@ Project.prototype.loadIncludes = function (config, level, cb) {
 	function onLoad() {
 		cnt += 1;
 		if (cnt >= len) {
-			cb(null, config);
+			cb(null, config, variables);
 		}
 	}
 
 	function onError(err) {
 		console.log('[WARNING] Level:', level, 'is not correct.\nError:', log.errMsg (err));
-		cb(err, config);
+		cb(err, config, variables);
 	}
 
-	function iterateTree(tree, cb) {
-		if (null == tree) { return; }
-
-		var step = function (node, key, tree) {
-			cb(tree, key);
-			iterateTree(node, cb);
-		};
-
-		if (Array === tree.constructor) {
-			tree.forEach(step);
-		} else if (Object === tree.constructor) {
-			Object.keys(tree).forEach(function (key) {
-				step(tree[key], key, tree)
-			});
-		}
-	}
-
-	function iterateNode(node, key) {
+	function iterateNode (node, key, depth) {
 		var value = node[key];
 
 		if ('string' === typeof value) {
 			var match = value.match(tagRe);
 			if (match) {
-				len += 1;
+				len ++;
 
+				if (match[1].match (/^\$\w+/)) {
+					variables[depth.join ('.')] = [match[1]];
+					len --;
+					return;
+				}
 				var incPath = match[1];
 
 				if (0 !== incPath.indexOf('/')) {
@@ -352,9 +404,9 @@ Project.prototype.loadIncludes = function (config, level, cb) {
 		}
 	}
 
-	iterateTree(config, iterateNode);
+	this.iterateTree(config, iterateNode, []);
 
 //	console.log('including:', level, config);
 
-	!len && cb(null, config);
+	!len && cb(null, config, variables);
 }
