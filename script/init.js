@@ -38,7 +38,11 @@ module.exports = {
 							},
 							http: {
 								port: "<$daemonHttpPort>",
-								static: "",
+								static: {
+									root: "www",
+									index: "index.html",
+									headers: {}
+								},
 								prepare: {},
 								flows: []
 							}

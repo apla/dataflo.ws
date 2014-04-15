@@ -14,7 +14,7 @@ var io = module.exports = function (path) {
 }
 
 io.prototype.relative = function (relPath) {
-	return Path.relative (this.path, relPath);
+	return Path.relative (this.path, relPath instanceof io ? relPath.path : relPath);
 };
 
 

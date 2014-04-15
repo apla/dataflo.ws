@@ -46,7 +46,8 @@ var httpdi = module.exports = function httpdIConstructor (config) {
 	if (config.static) {
 		this.static = config.static == true ? {} : config.static;
 		// - change static root by path
-		this.static.root = project.root.fileIO(this.static.root || 'www');
+		this.static.root = project.root.fileIO (this.static.root || 'www');
+		this.static.index = this.static.index || "index.html";
 		this.static.headers = this.static.headers || {};
 	}
 
@@ -77,12 +78,15 @@ util.inherits (httpdi, EventEmitter);
 httpdi.prototype.ready = function () {
 	// called from server listen
 	console.log(
-		'HTTP initiator running at',
+		'http initiator running at',
 		log.path (
 			'http://'
 			+(this.host ? this.host : '127.0.0.1')
 			+(this.port == 80 ? '' : ':'+this.port)+'/'
-		)
+		),
+		this.static
+			? "and serving static files from " + log.path (project.root.relative (this.static.root))
+			: ""
 	);
 
 	this.emit ('ready', this.server);
@@ -482,13 +486,16 @@ httpdi.prototype.findHandler = function (req, res) {
 
 httpdi.prototype.handleStatic = function (req, res) {
 	var self = this;
+
+	var isIndex  = /\/$/.test(req.url.pathname) ? self.static.index : '';
+
 	var pathName = path.join (
 		self.static.root.path,
 		path.join('.', req.url.pathname),
-		/\/$/.test(req.url.pathname) ? self.static.index : ''
+		isIndex
 	);
 
-	console.log ('filesys ', req.method, req.url.pathname);
+	console.log ('filesys ', req.method, req.url.pathname, isIndex ? '=> '+ isIndex : '');
 
 	var contentType, charset;
 	// make sure html return fast as possible
