@@ -34,7 +34,7 @@ function launchScript (conf, err) {
 	} catch (e) {
 		try {
 			// console.log (path.join (MODULE_NAME, 'script', scriptName));
-			scriptClass = require (path.join (MODULE_NAME, 'script', scriptName));
+			scriptClass = require (path.join (MODULE_NAME, 'bin', scriptName));
 		} catch (e) {
 			console.error (e);
 		}
@@ -47,9 +47,10 @@ function launchScript (conf, err) {
 	}
 
 	var scriptMethod = 'launch';
+	var launchContext;
 
-	if (typeof scriptClass.launchContext == 'function') {
-		var launchContext = scriptClass.launchContext() || {};
+	if (typeof scriptClass.launchContext === 'function') {
+		launchContext = scriptClass.launchContext() || {};
 		if (launchContext.method) {
 			scriptMethod = launchContext.method;
 		}
@@ -60,9 +61,9 @@ function launchScript (conf, err) {
 
 	// scriptClass.args =
 
-	if (!err && typeof scriptClass[scriptMethod] == 'function') {
+	if (!err && typeof scriptClass[scriptMethod] === 'function') {
 		scriptClass[scriptMethod](conf, project);
-	} else if (typeof scriptClass[scriptMethod + 'Anyway'] == 'function') {
+	} else if (typeof scriptClass[scriptMethod + 'Anyway'] === 'function') {
 		scriptClass[scriptMethod + 'Anyway'](conf, project);
 	} else {
 		console.error(
