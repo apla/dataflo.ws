@@ -1,3 +1,5 @@
+"use strict";
+
 var FS     = require('fs');
 var Path   = require('path');
 
@@ -11,7 +13,7 @@ var io = module.exports = function (path) {
 
 	this.extension = Path.extname (path).substr (1);
 
-}
+};
 
 io.prototype.relative = function (relPath) {
 	return Path.relative (this.path, relPath instanceof io ? relPath.path : relPath);
@@ -24,7 +26,7 @@ io.prototype.isFile = function () {
 
 io.prototype.isDirectory = function () {
 	return this.stats ? this.stats.isDirectory () : null;
-}
+};
 
 io.prototype.fileIO = io.prototype.file_io = function () {
 	var path = Path.join.apply(Path, arguments);
@@ -36,12 +38,12 @@ io.prototype.chmod = function (mode, cb) {
 	FS.chmod (p, mode, function (err) {
 		cb (err);
 	});
-}
+};
 
 
 io.prototype.writeStream = function (options) {
 	return FS.createWriteStream (this.path, options);
-}
+};
 
 io.prototype.readStream = function (options, cb) {
 
@@ -61,7 +63,7 @@ io.prototype.readStream = function (options, cb) {
 
 		cb.call (self, readStream, stats);
 	});
-}
+};
 
 io.prototype.scanTree = function (cb) {
 	var self = this;
@@ -75,7 +77,7 @@ io.prototype.scanTree = function (cb) {
 			f.stat (self.scanSubTree, cb);
 		}
 	});
-}
+};
 
 io.prototype.findUp = function (fileName, cb, errCb) {
 	var self = this;
@@ -86,7 +88,7 @@ io.prototype.findUp = function (fileName, cb, errCb) {
 	var fileIO = this.fileIO (fileName);
 	fileIO.stat (function (err, stats) {
 		if (!err) {
-			var result = cb (this);
+			var result = cb (this, stats);
 			if (result)
 				return;
 		}
@@ -97,7 +99,7 @@ io.prototype.findUp = function (fileName, cb, errCb) {
 
 		self.parent().findUp(fileName, cb, errCb);
 	});
-}
+};
 
 io.prototype.scanSubTree = function (err, stats, cb) {
 	var scanFurther = 0;
@@ -106,7 +108,7 @@ io.prototype.scanSubTree = function (err, stats, cb) {
 //		console.log (scanFurther, this.isDirectory ());
 	if (scanFurther && this.isDirectory ())
 		this.scanTree (cb);
-}
+};
 
 io.prototype.stat = function (cb) {
 	var self = this;
@@ -118,18 +120,18 @@ io.prototype.stat = function (cb) {
 		if (cb)
 			cb.call (self, err, stats, a[1]);
 	});
-}
+};
 
 io.prototype.parent = function () {
 	return new io (Path.dirname (this.path));
-}
+};
 
 io.prototype.readFile = function (cb) {
 	var self = this;
 	FS.readFile(this.path, function (err, data) {
 		cb.call (self, err, data);
 	});
-}
+};
 
 io.prototype.writeFile = function (data, cb) {
 	var self = this;
@@ -137,4 +139,4 @@ io.prototype.writeFile = function (data, cb) {
 		if (cb)
 			cb.call (self, err);
 	});
-}
+};
