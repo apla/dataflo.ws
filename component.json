@@ -22,7 +22,7 @@
     "flow.js",
     "task/emit.js",
     "task/sleep.js",
-    "initiator/callback.js",
+    "initiator/token.js",
     "initiator/timer.js"
   ],
   "license": "GPLv3",

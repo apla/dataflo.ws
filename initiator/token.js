@@ -10,15 +10,15 @@ var EventEmitter = require ('events').EventEmitter,
 	util         = require ('util'),
 	flow         = require ('../flow');
 
-var callbacki = module.exports = function (config) {
+var tokenInitiator = module.exports = function (config) {
 	var self = this;
 
 	this.flows = config.workflows || config.dataflows || config.flows;
 }
 
-util.inherits (callbacki, EventEmitter);
+util.inherits (tokenInitiator, EventEmitter);
 
-util.extend (callbacki.prototype, {
+util.extend (tokenInitiator.prototype, {
 	prepare: function () {
 		this.emit ('ready');
 

@@ -31,7 +31,7 @@ module.exports = {
 							}
 						},
 						initiator: {
-							callback: {
+							token: {
 								flows: {
 
 								}
@@ -43,7 +43,15 @@ module.exports = {
 									index: "index.html",
 									headers: {}
 								},
-								prepare: {},
+								prepare: {
+									post: {
+										tasks: [{
+											$class: "post",
+											request: "{$request}",
+											$set: "request.body"
+										}]
+									}
+								},
 								flows: []
 							}
 						}

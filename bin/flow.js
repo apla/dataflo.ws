@@ -10,24 +10,12 @@ module.exports = {
 		};
 	},
 	launch: function (conf) {
-		/*var daemonName = this.launchContext().configKey;
-		if (!conf.daemon || !conf.daemon[daemonName]) {
-			// TODO: add description for daemon config generation
-			console.error(
-				'No daemon named "%s" found in configuration', daemonName
-			);
-			process.exit();
-		}
-		var daemonConf = conf.daemon[daemonName];
-		// var initiatorTypes = daemonConf.initiator;
-		*/
-
-		var callbackIConf = conf.initiator['callback'];
+		var tokenDFConf = conf.initiator ['token'];
 		
-		var callbackIClass = dataflows.initiator('callback');
+		var tokenIClass = dataflows.initiator ('token');
 
-		if ('function' == typeof callbackIClass) {
-			var processor = new callbackIClass(callbackIConf);
+		if ('function' == typeof tokenIClass) {
+			var processor = new tokenIClass (tokenDFConf);
 		} else {
 			console.error('Cannot load initiator "%s"', 'callback');
 		}
