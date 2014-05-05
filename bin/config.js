@@ -1,6 +1,5 @@
 var dataflows = require('dataflo.ws');
 var minimist  = require('minimist');
-var fs        = require('fs');
 
 var log = dataflows.log;
 
@@ -12,35 +11,21 @@ module.exports = {
 			value:    process.argv[5]
 		};
 	},
-	setAnyway: function (conf, project) {
-		var context = this.launchContext();
-		var pathChunks = [];
-		if (!project.instance) {
-			console.log ('instance is undefined, please run', log.dataflows('init'));
-			process.kill ();
-		}
-		var root = project.fixupConfig;
-		context.varPath.split ('.').forEach (function (chunk, index, chunks) {
-			pathChunks[index] = chunk;
-			var newRoot = root[chunk];
-			if (!newRoot) {
-				root[chunk] = {};
-				newRoot = root[chunk];
-			}
-			if (index == chunks.length - 1) {
-				root[chunk] = context.value;
-			}
-			root = newRoot;
-		});
+	launchAnyway: function (conf, project) {
 
-		fs.writeFileSync (
-			project.fixupFile,
-			"// json\n" + JSON.stringify (project.fixupConfig, null, "\t")
-		);
 	},
-	vars: function (conf, project) {
+	setAnyway: function (conf, project, callerContext) {
+		var context = callerContext || this.launchContext();
+		var fixupVars = {};
+		fixupVars[context.varPath] = context.value;
+		project.setVariables (fixupVars, true);
+	},
+	varsAnyway: function (conf, project) {
 		for (var k in project.variables) {
 			console.log (log.path (k), "\t", project.variables[k][1]);
+		}
+		for (k in project.placeholders) {
+			console.log (log.path (k), "\t", project.placeholders[k][1]);
 		}
 
 	}

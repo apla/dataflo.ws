@@ -286,14 +286,13 @@ define (function (require, exports, module) {
 
 
 String.prototype.interpolate = function (dict, marks) {
-	if (!marks) {
-		marks = {
-			start: '{', end: '}',
-			path: '.',
-			typeSafe: '$',
-			typeRaw: '*'
-		};
-	}
+	if (!marks)
+		marks = {};
+	marks.start    = marks.start || '{';
+	marks.end      = marks.end   || '}';
+	marks.path     = marks.path  || '.';
+	marks.typeSafe = marks.typeSafe || '$';
+	marks.typeRaw  = marks.typeRaw  || '*';
 
 	// TODO: escape character range delims
 	var re = new RegExp([
