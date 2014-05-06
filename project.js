@@ -115,21 +115,12 @@ Project.prototype.readInstance = function () {
 	});
 };
 
-Project.prototype.addUnpopulated = function(variable, suggested) {
-	if (!this.logUnpopulated.list) {
-		this.logUnpopulated.list = {};
-	}
-
-	// console.log (variable, suggested);
-	this.logUnpopulated.list[variable] = suggested;
-}
-
-Project.prototype.logUnpopulated = function() {
+Project.prototype.logUnpopulated = function(varPaths) {
 	console.error ("those config variables is unpopulated:");
-	for (var varPath in this.logUnpopulated.list) {
-		var value = this.logUnpopulated.list[varPath];
+	for (var varPath in varPaths) {
+		var value = varPaths[varPath][0];
 		console.log ("\t", log.path(varPath), '=', value);
-		this.logUnpopulated.list[varPath] = value || "<#undefined>";
+		varPaths[varPath] = value || "<#undefined>";
 	}
 	console.error (
 		"you can run",
@@ -139,7 +130,6 @@ Project.prototype.logUnpopulated = function() {
 		"to define all those vars at once"
 	);
 	// console.log (this.logUnpopulated.list);
-	this.setVariables (this.logUnpopulated.list);
 };
 
 Project.prototype.setVariables = function (fixupVars, force) {
@@ -162,7 +152,7 @@ Project.prototype.setVariables = function (fixupVars, force) {
 			var newRoot = root[chunk];
 			if (index === chunks.length - 1) {
 				if (force || !(chunk in root)) {
-					root[chunk] = fixupVars[varPath];
+					root[chunk] = fixupVars[varPath][0] || "<#undefined>";
 				}
 			} else if (!newRoot) {
 				root[chunk] = {};
@@ -182,13 +172,24 @@ Project.prototype.setVariables = function (fixupVars, force) {
 Project.prototype.formats = [{
 	type: "json",
 	check: /(\/\/\s*json[ \t\n\r]*)?[\{\[]/,
-	parser: function (match, configData) {
+	parse: function (match, configData) {
 		try {
 			var config = JSON.parse ((""+configData).substr (match[0].length - 1));
 			return {object: config};
 		} catch (e) {
 			return {object: null, error: e};
 		}
+	},
+	stringify: JSON.stringify.bind (JSON),
+}, {
+	type: "ini",
+	check: /^;\s*ini/,
+	require: "ini",
+	parse: function () {
+
+	},
+	stringify: function () {
+
 	}
 }];
 
@@ -199,7 +200,7 @@ Project.prototype.parseConfig = function (configData, configFile) {
 	this.formats.some (function (format) {
 		var match = (""+configData).match (format.check);
 		if (match) {
-			result = format.parser (match, configData);
+			result = format.parse (match, configData);
 			result.type = format.type;
 			return true;
 		}
@@ -217,20 +218,18 @@ Project.prototype.parseConfig = function (configData, configFile) {
 Project.prototype.interpolateVars = function (error) {
 	// var variables = {};
 	var self = this;
-	var unpopulatedVars = false;
 
 	function iterateNode (node, key, depth) {
 		var value = node[key];
 		var fullKey = depth.join ('.');
 		var match;
 
+		if (self.variables[fullKey]) {
+			self.variables[fullKey][1] = value;
+		}
+
 		if ('string' !== typeof value)
 			return;
-
-		// TODO: techdebt
-		// interpolate all inline variables
-		// value.interpolate (config, {start: '<', end: '>'});
-
 
 		var enchanted = self.isEnchantedValue (value);
 		if (!enchanted) {
@@ -242,9 +241,7 @@ Project.prototype.interpolateVars = function (error) {
 		}
 		if ("placeholder" in enchanted) {
 			// this is a placeholder, not filled in fixup
-			self.variables[fullKey] = [enchanted.placeholder];
-			self.addUnpopulated (fullKey, value);
-			unpopulatedVars = true;
+			self.variables[fullKey] = [value];
 			return;
 		}
 		if ("variable" in enchanted) {
@@ -252,30 +249,55 @@ Project.prototype.interpolateVars = function (error) {
 			// current match is a variable path
 			// we must write both variable path and a key,
 			// containing it to the fixup
-			self.variables[fullKey] = [enchanted.variable];
-			var varValue = self.getValue (enchanted.variable.substr (1));
-			if (!varValue) {
-				self.addUnpopulated (fullKey, value);
-				self.addUnpopulated (enchanted.variable.substr (1), "");
-				unpopulatedVars = true;
-			} else {
+
+			var varValue = self.getKeyDesc (enchanted.variable.substr (1));
+			if (varValue.enchanted !== undefined) {
+				if ("variable" in varValue.enchanted) {
+					console.error (
+						"variable value cannot contains another variables. used variable",
+						log.path(enchanted.variable),
+						"which resolves to",
+						log.path (varValue.value),
+						"in key",
+						log.path(fullKey)
+					);
+					process.kill ();
+				}
+				self.variables[fullKey] = [value];
+			} else if (varValue.value !== undefined) {
 				node[key] = value.interpolate (self.config, {start: '<', end: '>'});
+				self.variables[fullKey] = [value, node[key]];
+			} else {
+				self.variables[fullKey] = [value];
 			}
 
 			return;
 		}
 		// this cannot happens, but i can use those checks for assertions
 		if ("error" in enchanted || "include" in enchanted) {
-			throw ("this value must be populated: \"" + value + "\"");
+			// throw ("this value must be populated: \"" + value + "\"");
 		}
 	}
 
 	self.iterateTree (self.config, iterateNode, []);
 
+	var unpopulatedVars = {};
+
+	var varNames = Object.keys (self.variables);
+	varNames.forEach (function (varName) {
+		if (self.variables[varName][1] !== undefined) {
+
+		} else {
+			unpopulatedVars[varName] = self.variables[varName];
+		}
+	});
+
+	this.setVariables (self.variables);
+
 	// any other error take precendence over unpopulated vars
-	if (unpopulatedVars || error) {
+	if (Object.keys(unpopulatedVars).length || error) {
 		if (unpopulatedVars) {
-			self.logUnpopulated();
+			self.logUnpopulated(unpopulatedVars);
 		}
 		self.emit ('error', error || 'unpopulated variables');
 		return;
@@ -447,12 +469,31 @@ Project.prototype.iterateTree = function iterateTree (tree, cb, depth) {
 	}
 };
 
-Project.prototype.getValue = function (key) {
+Project.prototype.getKeyDesc = function (key) {
+	var result = {};
 	var value = common.getByPath (key, this.config);
-	if (!value)
+	result.value = value.value;
+	result.enchanted = this.isEnchantedValue (result.value);
+	// if value is enchanted, then it definitely a string
+	if (result.enchanted && "variable" in result.enchanted) {
+		result.interpolated = result.value.interpolate();
+		return result;
+	}
+	return result;
+}
+
+
+Project.prototype.getValue = function (key) {
+	var value = common.getByPath (key, this.config).value;
+	if (value === undefined)
 		return;
-	if (this.isEnchantedValue (value))
-		return;
+	var enchanted = this.isEnchantedValue (value);
+	// if value is enchanted, then it definitely a string
+	if (enchanted && "variable" in enchanted) {
+		var result = new String (value.interpolate());
+		result.rawValue = value;
+		return result;
+	}
 	return value;
 }
 
@@ -518,11 +559,11 @@ Project.prototype.loadIncludes = function (config, level, cb) {
 		if (!enchanted)
 			return;
 		if ("variable" in enchanted) {
-			variables[depth.join ('.')] = [enchanted.variable];
+			variables[depth.join ('.')] = [value];
 			return;
 		}
 		if ("placeholder" in enchanted) {
-			placeholders[depth.join ('.')] = [enchanted.placeholder];
+			variables[depth.join ('.')] = [value];
 			return;
 		}
 		if ("error" in enchanted) {
