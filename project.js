@@ -242,6 +242,11 @@ Project.prototype.interpolateVars = function (error) {
 		if ("placeholder" in enchanted) {
 			// this is a placeholder, not filled in fixup
 			self.variables[fullKey] = [value];
+			if (enchanted.optional) {
+				self.variables[fullKey][1] = null;
+			} else if (enchanted.default) {
+				self.variables[fullKey][1] = enchanted.default;
+			}
 			return;
 		}
 		if ("variable" in enchanted) {
@@ -499,7 +504,7 @@ Project.prototype.getValue = function (key) {
 
 Project.prototype.isEnchantedValue = function (value) {
 
-	var tagRe = /<(([\$\#]*)[^>]+)>/;
+	var tagRe = /<(([\$\#]*)((optional|default):)?([^>]+))>/;
 	var result;
 
 	if ('string' !== typeof value) {
@@ -510,7 +515,9 @@ Project.prototype.isEnchantedValue = function (value) {
 		if (check[2] === "$") {
 			return {"variable": check[1]};
 		} else if (check[2] === "#") {
-			return {"placeholder": check[1]};
+			result = {"placeholder": check[1]};
+			if (check[4]) result[check[4]] = check[5];
+			return result;
 		} else if (check[0].length === value.length) {
 			return {"include": check[1]};
 		} else {
