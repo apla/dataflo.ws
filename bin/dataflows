@@ -20,12 +20,18 @@ function launchScript (conf, err) {
 	if (!scriptName)
 		scriptName = "help";
 
-	if (err && err === "no project config" && !(scriptName && scriptName.match (/help|init/))) {
-		console.error (
-			'no', log.dataflows(),
-			'project config found. please run',
-			log.path ('dataflows help'), 'or', log.path ('dataflows init')
-		);
+
+	if (err) {
+		if (err === "no project config" && !scriptName.match (/^(help|init)$/)) {
+			console.error (
+				'no', log.dataflows(),
+				'project config found. please run',
+				log.path ('dataflows help'), 'or', log.path ('dataflows init')
+			);
+		}
+		if (conf && scriptName !== "config") {
+			conf = null;
+		}
 	}
 
 	var scriptClass;
@@ -107,13 +113,9 @@ project.on ('ready', function () {
 project.on ('error', function (err) {
 	// if (err === 'unpopulated variables')
 	// 	return;
-	if (project.config) {
-		// project emits error only if project config cannot be parsed
-
-	}
 	// now we can launch script;
 	// script require postponed until project get prepared
 
-	launchScript (null, err);
+	launchScript (project.config, err);
 });
 

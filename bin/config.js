@@ -27,6 +27,8 @@ module.exports = {
 		for (k in project.placeholders) {
 			console.log (log.path (k), "\t", project.placeholders[k][1]);
 		}
-
+	},
+	dumpAnyway: function (conf, project) {
+		console.log (conf);
 	}
 }

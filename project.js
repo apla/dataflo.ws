@@ -214,6 +214,80 @@ Project.prototype.parseConfig = function (configData, configFile) {
 	return result;
 }
 
+Project.prototype.interpolateVars = function (error) {
+	// var variables = {};
+	var self = this;
+	var unpopulatedVars = false;
+
+	function iterateNode (node, key, depth) {
+		var value = node[key];
+		var fullKey = depth.join ('.');
+		var match;
+
+		if ('string' !== typeof value)
+			return;
+
+		// TODO: techdebt
+		// interpolate all inline variables
+		// value.interpolate (config, {start: '<', end: '>'});
+
+
+		var enchanted = self.isEnchantedValue (value);
+		if (!enchanted) {
+			if (self.variables[fullKey]) {
+				self.variables[fullKey][1] = value.toString ? value.toString() : value;
+			}
+
+			return;
+		}
+		if ("placeholder" in enchanted) {
+			// this is a placeholder, not filled in fixup
+			self.variables[fullKey] = [enchanted.placeholder];
+			self.addUnpopulated (fullKey, value);
+			unpopulatedVars = true;
+			return;
+		}
+		if ("variable" in enchanted) {
+			// this is a variable, we must fill it now
+			// current match is a variable path
+			// we must write both variable path and a key,
+			// containing it to the fixup
+			self.variables[fullKey] = [enchanted.variable];
+			var varValue = self.getValue (enchanted.variable.substr (1));
+			if (!varValue) {
+				self.addUnpopulated (fullKey, value);
+				self.addUnpopulated (enchanted.variable.substr (1), "");
+				unpopulatedVars = true;
+			} else {
+				node[key] = value.interpolate (self.config, {start: '<', end: '>'});
+			}
+
+			return;
+		}
+		// this cannot happens, but i can use those checks for assertions
+		if ("error" in enchanted || "include" in enchanted) {
+			throw ("this value must be populated: \"" + value + "\"");
+		}
+	}
+
+	self.iterateTree (self.config, iterateNode, []);
+
+	// any other error take precendence over unpopulated vars
+	if (unpopulatedVars || error) {
+		if (unpopulatedVars) {
+			self.logUnpopulated();
+		}
+		self.emit ('error', error || 'unpopulated variables');
+		return;
+	}
+
+	// console.log ('project ready');
+
+	self.emit ('ready');
+
+
+}
+
 Project.prototype.loadConfig = function () {
 
 	var self = this;
@@ -247,37 +321,18 @@ Project.prototype.loadConfig = function () {
 			self.variables    = variables;
 			self.placeholders = placeholders;
 
-			// TODO: techdebt
-			// interpolate all inline variables
-			// value.interpolate (config, {start: '<', end: '>'});
-
 			if (err) {
-				console.error(err);
-				console.warn("Couldn't load includes.");
-				self.emit ('ready');
+				console.error (err);
+				console.warn ("Couldn't load includes.");
+				// actually, failure when loading includes is a warning, not an error
+				self.interpolateVars();
 				return;
 			}
 
 			self.config = config;
 
 			if (!self.instance) {
-				var isReady = true;
-				for (var k in placeholders) {
-					self.addUnpopulated (k, placeholders[k]);
-					isReady = false;
-				}
-				for (k in variables) {
-					if (!self.getValue (k)) {
-						isReady = false;
-					}
-				}
-				if (!isReady) {
-					self.logUnpopulated();
-					self.emit ('error', 'unpopulated variables');
-					return;
-				}
-
-				self.emit ('ready');
+				self.interpolateVars ();
 				return;
 			}
 
@@ -298,67 +353,14 @@ Project.prototype.loadConfig = function () {
 						var message = 'Config fixup cannot be parsed:';
 						console.error (message, log.errMsg (parsedFixup.error));
 						self.emit ('error', message + ' ' + parsedFixup.error.toString());
+						process.kill ();
 					}
 				}
 
 				util.extend (true, self.config, fixupConfig);
 
-				var unpopulatedVars = false;
+				self.interpolateVars ();
 
-				// var variables = {};
-
-				function iterateNode (node, key, depth) {
-					var value = node[key];
-					var fullKey = depth.join ('.');
-					var match;
-
-					if ('string' !== typeof value)
-						return;
-					var enchanted = self.isEnchantedValue (value);
-					if (!enchanted) {
-						if (self.variables[fullKey]) {
-							self.variables[fullKey][1] = value.toString ? value.toString() : value;
-						}
-
-						return;
-					}
-					if ("placeholder" in enchanted) {
-						// this is a placeholder, not filled in fixup
-						self.variables[fullKey] = [enchanted.placeholder];
-						self.addUnpopulated (fullKey, value);
-						unpopulatedVars = true;
-						return;
-					}
-					if ("variable" in enchanted) {
-						// this is a variable, we must fill it now
-						// current match is a variable path
-						// we must write both variable path and a key,
-						// containing it to the fixup
-						self.variables[fullKey] = [enchanted.variable];
-						self.addUnpopulated (fullKey, value);
-						if (!self.getValue (enchanted.variable.substr (1))) {
-							self.addUnpopulated (enchanted.variable.substr (1), "");
-						}
-						unpopulatedVars = true;
-						return;
-					}
-					// this cannot happens, but i can use those checks for assertions
-					if ("error" in enchanted || "include" in enchanted) {
-						throw ("this value must be populated: \"" + value + "\"");
-					}
-				}
-
-				self.iterateTree (config, iterateNode, []);
-
-				if (unpopulatedVars) {
-					self.logUnpopulated();
-					self.emit ('error', 'unpopulated variables');
-					return;
-				}
-
-				// console.log ('project ready');
-
-				self.emit ('ready');
 			});
 		});
 	});
