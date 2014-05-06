@@ -6,9 +6,7 @@ var log = dataflows.log;
 module.exports = {
 	launchContext: function () {
 		return {
-			method:   process.argv[3],
-			varPath:  process.argv[4],
-			value:    process.argv[5]
+			method:   process.argv[3]
 		};
 	},
 	launchAnyway: function (conf, project) {
@@ -17,7 +15,14 @@ module.exports = {
 	setAnyway: function (conf, project, callerContext) {
 		var context = callerContext || this.launchContext();
 		var fixupVars = {};
-		fixupVars[context.varPath] = context.value;
+		this.args._.shift();
+		this.args._.forEach (function (item, idx, arr) {
+			if (idx % 2)
+				return;
+			fixupVars[item] = [arr[idx + 1]];
+		});
+		// console.log (fixupVars);
+		// fixupVars[context.varPath] = [context.value];
 		project.setVariables (fixupVars, true);
 	},
 	varsAnyway: function (conf, project) {
