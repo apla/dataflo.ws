@@ -22,7 +22,7 @@ util.extend (sleepTask.prototype, {
 		var self = this;
 
 		setTimeout (function () {
-			self.completed (1);
+			self.completed (self.amount);
 		}, self.amount);
 	}
 });

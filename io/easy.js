@@ -1,5 +1,3 @@
-"use strict";
-
 var FS     = require('fs');
 var Path   = require('path');
 
@@ -38,6 +36,14 @@ io.prototype.chmod = function (mode, cb) {
 	FS.chmod (p, mode, function (err) {
 		cb (err);
 	});
+};
+
+io.prototype.mkdir = function (mode, callback) {
+	if ("function" === typeof mode && callback === undefined) {
+		callback = mode;
+		mode = 0777; // node defaults
+	}
+	return FS.mkdir (this.path, mode, callback && callback.bind (this));
 };
 
 

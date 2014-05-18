@@ -7,6 +7,53 @@ var path      = require ('path');
 module.exports = {
 	launchContext: function () {
 	},
+	defaultConfig: {
+		debug: "<#false for production>",
+		daemon: {
+			http: {
+				initiator: ['http']
+			}
+		},
+		initiator: {
+			token: {
+				flows: {
+
+				}
+			},
+			http: {
+				host: "<#default:127.0.0.1>",
+				domain: "<#host.local>",
+				port: "<#50100>",
+				session: {
+					secret: "<#please generate unique string>",
+					cookieTemplate: {
+						name: "session",
+						domain: "<$initiator.http.domain>",
+						path: "/",
+						expirePeriod: "+172800000",
+						httpOnly: true
+					}
+				},
+
+				static: {
+					root: "www",
+					index: "index.html",
+					headers: {}
+				},
+				prepare: {
+					post: {
+						tasks: [{
+							$class: "post",
+							request: "{$request}",
+							$set: "request.body"
+						}]
+					}
+				},
+				flows: []
+			}
+		}
+
+	},
 	launch: function (conf, project) {
 
 		if (!conf) {
@@ -15,7 +62,7 @@ module.exports = {
 				console.log (log.dataflows(), 'initalizing project in ', log.path (this.args._[0] || '.', '('+projectPath+')'));
 
 				var confDir      = path.resolve (projectPath, '.dataflows');
-				var instanceName = process.env.USER + '@' + process.env.HOSTNAME
+				var instanceName = process.env.USER + '@' + process.env.HOSTNAME;
 				var confFixup    = path.resolve (confDir, instanceName);
 
 				if (!fs.existsSync (confDir))
@@ -23,39 +70,7 @@ module.exports = {
 				// TODO: add detection of stub variables
 				if (!fs.existsSync (path.resolve (confDir, 'project')))
 				fs.writeFileSync (path.resolve (confDir, 'project'),
-					"// json\n" + JSON.stringify ({
-						debug: "<$debug>",
-						daemon: {
-							http: {
-								initiator: ['http']
-							}
-						},
-						initiator: {
-							token: {
-								flows: {
-
-								}
-							},
-							http: {
-								port: "<$daemonHttpPort>",
-								static: {
-									root: "www",
-									index: "index.html",
-									headers: {}
-								},
-								prepare: {
-									post: {
-										tasks: [{
-											$class: "post",
-											request: "{$request}",
-											$set: "request.body"
-										}]
-									}
-								},
-								flows: []
-							}
-						}
-					}, null, "\t"), {flag: "wx"}
+					JSON.stringify (this.defaultConfig, null, "\t"), {flag: "wx"}
 				);
 
 				if (!fs.existsSync (path.resolve (confDir, 'instance')))
@@ -67,20 +82,6 @@ module.exports = {
 
 				if (!fs.existsSync (confFixup))
 					fs.mkdirSync (confFixup);
-
-				if (!fs.existsSync (path.resolve (confFixup, 'fixup')))
-				fs.writeFileSync (
-					path.resolve (confFixup, 'fixup'),
-					"// json\n" + JSON.stringify ({
-						debug: true,
-						initiator: {
-							http: {
-								port: "<$daemonHttpPort>",
-							}
-						}
-					}, null, "\t"), {flag: "wx"}
-				);
-				// TODO: gitignore
 
 			} else {
 
@@ -101,17 +102,6 @@ module.exports = {
 
 			if (!fs.existsSync (confFixup))
 				fs.mkdirSync (confFixup);
-			fs.writeFileSync (
-				path.resolve (confFixup, 'fixup'),
-				"// json\n" + JSON.stringify ({
-					debug: true,
-					initiator: {
-						http: {
-							port: "<$daemonHttpPort>",
-						}
-					}
-				}, null, "\t"), {flag: "wx"}
-			);
 
 		} else {
 			console.log (log.dataflows(), 'project already initialized');

@@ -91,7 +91,20 @@ Project.prototype.readInstance = function () {
 		self.emit ('instantiated');
 		return;
 	}
-	this.root.fileIO (path.join (this.varDir, 'instance')).readFile (function (err, data) {
+	var instanceFile = this.root.fileIO (path.join (this.varDir, 'instance'));
+
+	instanceFile.readFile (function (err, data) {
+
+		if (err) {
+			var instanceName = process.env.USER + '@' + process.env.HOSTNAME;
+			// it is ok to have instance name defined and have no instance
+			// or fixup file because fixup is empty
+			self.instance = instanceName;
+			self.root.fileIO (path.join (self.varDir, instanceName)).mkdir ();
+			instanceFile.writeFile (instanceName);
+			self.emit ('instantiated');
+			return;
+		}
 
 		// assume .dataflows dir always correct
 		// if (err && self.varDir != '.dataflows') {
@@ -233,6 +246,7 @@ Project.prototype.interpolateVars = function (error) {
 
 		var enchanted = self.isEnchantedValue (value);
 		if (!enchanted) {
+			// WTF???
 			if (self.variables[fullKey]) {
 				self.variables[fullKey][1] = value.toString ? value.toString() : value;
 			}
@@ -244,8 +258,10 @@ Project.prototype.interpolateVars = function (error) {
 			self.variables[fullKey] = [value];
 			if (enchanted.optional) {
 				self.variables[fullKey][1] = null;
+				node[key] = null;
 			} else if (enchanted.default) {
 				self.variables[fullKey][1] = enchanted.default;
+				node[key] = enchanted.default;
 			}
 			return;
 		}

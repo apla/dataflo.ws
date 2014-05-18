@@ -1,12 +1,14 @@
+"use strict";
+
 var EventEmitter = require ('events').EventEmitter,
 	http         = require ('http'),
 	util         = require ('util'),
-	flow         = require ('dataflo.ws/flow'),
-	common       = require ('dataflo.ws/common'),
 	url          = require ('url'),
 	path         = require ('path'),
-	os           = require ('os');
-	log          = require ('dataflo.ws/log');
+	os           = require ('os'),
+	flow         = require ('../flow'),
+	common       = require ('../common'),
+	log          = require ('../log');
 
 var mime, memoize;
 
@@ -14,14 +16,13 @@ try {
 	mime = require ('mime');
 } catch (e) {
 	console.error (log.c.red('cannot find mime module'));
-};
+}
 
 try {
 	memoize = require ('memoizee');
 } catch (e) {
-	console.error (log.c.red('cannot find memoizee module'));
-};
-
+	console.error ('memoizee module not found. it provide optimized path lookups');
+}
 
 /**
  * @class initiator.httpdi
@@ -31,8 +32,6 @@ try {
  */
 var httpdi = module.exports = function httpdIConstructor (config) {
 	// we need to launch httpd
-
-	var self = this;
 
 	this.host = config.host;
 	if (!config.port)
@@ -44,10 +43,10 @@ var httpdi = module.exports = function httpdIConstructor (config) {
 
 	// I don't want to serve static files by default
 	if (config.static) {
-		this.static = config.static == true ? {} : config.static;
+		this.static = config.static === true ? {} : config.static;
 		// - change static root by path
-		this.static.root = project.root.fileIO (this.static.root || 'www');
-		this.static.index = this.static.index || "index.html";
+		this.static.root    = project.root.fileIO (this.static.root || 'www');
+		this.static.index   = this.static.index || "index.html";
 		this.static.headers = this.static.headers || {};
 	}
 
@@ -71,18 +70,18 @@ var httpdi = module.exports = function httpdIConstructor (config) {
 	// - - - OS detected
 
 	this.win = (os.type() == 'Windows_NT');
-}
+};
 
 util.inherits (httpdi, EventEmitter);
 
 httpdi.prototype.ready = function () {
 	// called from server listen
+	var listenHost = this.host ? this.host : '127.0.0.1';
+	var listenPort = this.port == 80 ? '' : ':'+this.port;
 	console.log(
 		'http initiator running at',
 		log.path (
-			'http://'
-			+(this.host ? this.host : '127.0.0.1')
-			+(this.port == 80 ? '' : ':'+this.port)+'/'
+			'http://'+listenHost+listenPort+'/'
 		),
 		this.static
 			? "and serving static files from " + log.path (project.root.relative (this.static.root))
@@ -90,7 +89,7 @@ httpdi.prototype.ready = function () {
 	);
 
 	this.emit ('ready', this.server);
-}
+};
 
 httpdi.prototype.runPrepare = function (df, request, response) {
 
@@ -107,7 +106,7 @@ httpdi.prototype.runPrepare = function (df, request, response) {
 
 		var prepareFailure = false;
 
-		prepareCfg.forEach(function(p, index, arr) {
+		prepareCfg.forEach (function(p) {
 
 			var innerDfConfig = prepare[p];
 
@@ -136,7 +135,7 @@ httpdi.prototype.runPrepare = function (df, request, response) {
 
 		// push main df to chain
 
-		dfChain.push(df)
+		dfChain.push(df);
 
 		// subscribe they
 
@@ -153,7 +152,7 @@ httpdi.prototype.runPrepare = function (df, request, response) {
 				var presenter = self.createPresenter(cDF, request, response, 'failed');
 				if (presenter)
 					presenter.run ();
-			})
+			});
 
 		}
 
@@ -164,7 +163,7 @@ httpdi.prototype.runPrepare = function (df, request, response) {
 		throw "Config doesn't contain such prepare type: " + df.prepare;
 
 	}
-}
+};
 
 
 httpdi.prototype.createPresenter = function (df, request, response, state) {
@@ -177,8 +176,8 @@ httpdi.prototype.createPresenter = function (df, request, response, state) {
 
 	if (!df.presenter) {
 		this.finishRequest (response);
-		return
-	};
+		return;
+	}
 	// TODO: emit SOMETHING
 
 	var presenter = df.presenter;
@@ -255,12 +254,12 @@ httpdi.prototype.createPresenter = function (df, request, response, state) {
 	});
 
 	return presenterDf;
-}
+};
 
 httpdi.prototype.finishRequest = function (res) {
 	if (!res.finished)
 		res.end ();
-}
+};
 
 httpdi.prototype.createFlow = function (cfg, req, res) {
 	var self = this;
@@ -305,7 +304,7 @@ httpdi.prototype.createFlow = function (cfg, req, res) {
 	}
 
 	return df;
-}
+};
 
 httpdi.prototype.createFlowByCode = function (code, req, res) {
 	res.statusCode = code;
@@ -458,31 +457,31 @@ httpdi.prototype.httpDate = function (date) {
 		// add leading zero if required
 		return ('0' + m).slice (-2);
 	});
-}
+};
 
 httpdi.prototype.findHandler = function (req, res) {
 	var df = this.router (req, res);
 
-	if (df && !df.ready) {
-		console.error ("flow not ready and cannot be started");
-	}
-
-	if (!df) {
-		// console.log ('httpdi not detected: ' + req.method + ' to ' + req.url.pathname);
-		this.emit ("unknown", req, res);
-
-		// NOTE: we don't want to serve static files using nodejs.
-		// NOTE: but for rapid development this is acceptable.
-		// NOTE: you MUST write static: false for production
-		if (this.static) {
-			this.handleStatic (req, res);
-		} else {
-			this.createFlowByCode (404, req, res) || res.end();
+	if (df) {
+		if (!df.ready) {
+			console.error ("flow not ready and cannot be started");
 		}
-
+		return;
 	}
 
-}
+	// console.log ('httpdi not detected: ' + req.method + ' to ' + req.url.pathname);
+	this.emit ("unknown", req, res);
+
+	// NOTE: we don't want to serve static files using nodejs.
+	// NOTE: but for rapid development this is acceptable.
+	// NOTE: you MUST write static: false for production
+	if (this.static) {
+		this.handleStatic (req, res);
+	} else {
+		this.createFlowByCode (404, req, res) || res.end();
+	}
+
+};
 
 httpdi.prototype.handleStatic = function (req, res) {
 	var self = this;
@@ -521,7 +520,7 @@ httpdi.prototype.handleStatic = function (req, res) {
 	var statusCode = 200;
 	var start = 0;
 	var end   = 0;
-	var rangeHeader = req.headers['range'];
+	var rangeHeader = req.headers.range;
 	if (rangeHeader != null) {
 		// console.log (rangeHeader);
 		var range = rangeHeader.split ('bytes=')[1].split ('-');
@@ -582,9 +581,7 @@ httpdi.prototype.handleStatic = function (req, res) {
 
 			if (statusCode == 206) {
 				end = fileOptions.end ? fileOptions.end : stats.size-1;
-				headersExtend['Content-Range'] = 'bytes '
-					+fileOptions.start+'-'
-					+(end)+'/'+stats.size;
+				headersExtend['Content-Range'] = 'bytes '+fileOptions.start+'-'+(end)+'/'+stats.size;
 				headersExtend["Accept-Ranges"]  = "bytes";
 				headersExtend["Content-Length"] = end - fileOptions.start + 1;
 
@@ -606,7 +603,7 @@ httpdi.prototype.handleStatic = function (req, res) {
 		self.handleFileStream (stats, readStream, req, res);
 	});
 
-}
+};
 
 httpdi.prototype.listen = function () {
 
@@ -626,12 +623,15 @@ httpdi.prototype.listen = function () {
 		self.findHandler (req, res);
 	});
 
-	if (this.host)
-		this.server.listen (this.port, this.host, function () {
-			self.ready ()
-		});
-	else
-		this.server.listen (this.port, function () {
-			self.ready ()
-		})
-}
+	var listenArgs = [this.port];
+
+	if (this.host) {
+		listenArgs.push (this.host);
+	}
+
+	listenArgs.push (function () {
+		self.ready ();
+	});
+
+	this.server.listen.apply (this.server, listenArgs);
+};
