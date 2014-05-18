@@ -17,7 +17,7 @@ var pipeProgress = function (config) {
 	this.bytesPass  = 0; // because bytes can be read and written
 	this.lastLogged = 0;
 	util.extend (this, config);
-}
+};
 
 pipeProgress.prototype.watch = function () {
 	var self = this;
@@ -30,7 +30,7 @@ pipeProgress.prototype.watch = function () {
 			self.bytesPass += chunk.length;
 		});
 	}
-}
+};
 
 /**
  * @class httpModel
@@ -47,7 +47,7 @@ var httpModel = module.exports = function (modelBase, optionalUrlParams) {
 	this.headers = {};
 
 	if (this.params.auth) {
-		this.headers['Authorization'] = 'Basic ' +
+		this.headers.Authorization = 'Basic ' +
 			new Buffer(self.params.auth).toString('base64');
 	}
 
@@ -126,7 +126,7 @@ httpModel.prototype.handleBodyData = function () {
 		break;
 	}
 
-}
+};
 
 util.extend (httpModel.prototype, {
 	DefaultParams: {
@@ -256,14 +256,14 @@ util.extend (httpModel.prototype, {
 		var statusCode = this.res.statusCode;
 		if (this.params.successCodes) {
 			// format: 2xx,3xx
-			var check = new RegExp (this.params.successCodes.replace (/x/g, "\\d").replace (/,/g, "|"));
-			if ((""+statusCode).match (check)){
+			var checkRe = new RegExp (this.params.successCodes.replace (/x/g, "\\d").replace (/,/g, "|"));
+			if ((""+statusCode).match (checkRe)){
 				return true;
 			} else {
 				return false;
 			}
 		} else if (statusCode == 200) {
-			return true
+			return true;
 		}
 		return false;
 	},
@@ -382,7 +382,7 @@ util.extend (httpModel.prototype, {
 		// save the original clientRequest to our redirectOptions so we can emit errors later
 
 		// need to use url.resolve() in case location is a relative URL
-		var redirectUrl = urlUtils.resolve (reqUrl, "" + res.headers['location']);
+		var redirectUrl = urlUtils.resolve (reqUrl, "" + res.headers.location);
 		return redirectUrl;
 	},
 

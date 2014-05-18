@@ -15,7 +15,7 @@ function getConnectionLimits(urlParams) {
 
 	var httpHost = urlParams.hostname + urlParams.pathname;
 	var result = connectionLimits[httpHost];
-	return result ? result : 1;
+	return result ? result : 10;
 }
 
 var connectionTimeout = 10000;

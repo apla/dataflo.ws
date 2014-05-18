@@ -298,7 +298,8 @@ var dataflow = module.exports = function (config, reqParam) {
 					require:   checkRequirements,
 					important: actualTaskParams.important || actualTaskParams.$important,
 					flowId:    self.coloredId,
-					getDict:   createDict
+					getDict:   createDict,
+					timeout:   actualTaskParams.timeout
 				});
 			} catch (e) {
 				console.log ('instance of "'+taskClassName+'" creation failed:');
@@ -396,7 +397,8 @@ var dataflow = module.exports = function (config, reqParam) {
 				functionName: taskFnName,
 				logTitle:     actualTaskParams.logTitle || actualTaskParams.$logTitle,
 				require:      checkRequirements,
-				important:    actualTaskParams.important || actualTaskParams.$important
+				important:    actualTaskParams.important || actualTaskParams.$important,
+				timeout:      actualTaskParams.timeout
 			});
 
 		}

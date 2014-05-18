@@ -143,7 +143,7 @@ util.extend (task.prototype, taskStateMethods, {
 
 			this.state = 1;
 
-			setTimeout (this.run.bind(this), this.timeout.seconds());
+			setTimeout (this.run.bind(this), this.timeout);
 		}
 
 		/**
@@ -187,7 +187,7 @@ util.extend (task.prototype, taskStateMethods, {
 		// default values
 
 		// TODO: this is provided only on run
-		self.timeout = config.timeout || 1;
+		self.timeout = config.timeout || 1000;
 		self.retries = config.retries || null;
 
 		self.attempts = 0;
@@ -382,7 +382,7 @@ util.extend (task.prototype, taskStateMethods, {
 				self.model.stop();
 				self._cancel();
 
-			}, self.timeout.seconds());
+			}, self.timeout);
 		}
 	},
 
