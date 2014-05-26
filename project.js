@@ -6,9 +6,10 @@ var util = require ('util');
 
 var EventEmitter = require ('events').EventEmitter;
 
-var io     = require ('./io/easy');
-var log    = require ('./log');
-var common = require ('./common');
+var dataflows = require ('./index');
+var io        = require ('./io/easy');
+var paint     = require ('./color');
+var common    = require ('./common');
 
 // var fsm = StateMachine.create({
 //   events: [
@@ -47,11 +48,11 @@ Project.prototype.checkLegacy = function (cb) {
 	var self = this;
 	this.root.fileIO ('etc/project').stat(function (err, stats) {
 		if (!err && stats && stats.isFile()) {
-			console.error (log.errMsg ('project has legacy configuration layout. you can migrate by running those commands:'));
+			console.error (paint.error ('project has legacy configuration layout. you can migrate by running those commands:'));
 			console.error ("\n\tcd "+self.root.path);
 			console.error ("\tmv etc .dataflows");
 
-			// console.warn ("in", log.dataflows ("@0.60.0"), "we have changed configuration layout. please run", log.path("dataflows doctor"));
+			// console.warn ("in", paint.dataflows ("@0.60.0"), "we have changed configuration layout. please run", paint.path("dataflows doctor"));
 			self.configDir = 'etc';
 			self.varDir    = 'var';
 			self.legacy    = true;
@@ -72,7 +73,7 @@ Project.prototype.checkConfig = function (cb) {
 	guessedRoot.findUp (this.configDir, function (foundConfigDir) {
 		var detectedRoot = foundConfigDir.parent();
 		if (self.root.path !== detectedRoot.path) {
-			console.log (log.dataflows (), 'using', log.path (detectedRoot.path), 'as project root');
+			console.log (paint.dataflows (), 'using', paint.path (detectedRoot.path), 'as project root');
 		}
 		self.root = detectedRoot;
 		self.emit ('config-checked');
@@ -87,7 +88,7 @@ Project.prototype.readInstance = function () {
 	var self = this;
 	this.instance = process.env.PROJECT_INSTANCE;
 	if (this.instance) {
-		console.log (log.dataflows(), 'instance is:', log.path (instance));
+		console.log (paint.dataflows(), 'instance is:', paint.path (instance));
 		self.emit ('instantiated');
 		return;
 	}
@@ -109,14 +110,14 @@ Project.prototype.readInstance = function () {
 		// assume .dataflows dir always correct
 		// if (err && self.varDir != '.dataflows') {
 			// console.error ("PROBABLY HARMFUL: can't access "+self.varDir+"/instance: "+err);
-			// console.warn (log.dataflows(), 'instance not defined');
+			// console.warn (paint.dataflows(), 'instance not defined');
 		// } else {
 
 			var instance = (""+data).split (/\n/)[0];
 			self.instance = instance == "undefined" ? null : instance;
-			var args = [log.dataflows(), 'instance is:', log.path (instance)];
+			var args = [paint.dataflows(), 'instance is:', paint.path (instance)];
 			if (err) {
-				args.push ('(' + log.errMsg (err) + ')');
+				args.push ('(' + paint.error (err) + ')');
 			} else if (self.legacy) {
 				console.error ("\tmv var/instance .dataflows/");
 			}
@@ -132,14 +133,14 @@ Project.prototype.logUnpopulated = function(varPaths) {
 	console.error ("those config variables is unpopulated:");
 	for (var varPath in varPaths) {
 		var value = varPaths[varPath][0];
-		console.log ("\t", log.path(varPath), '=', value);
+		console.log ("\t", paint.path(varPath), '=', value);
 		varPaths[varPath] = value || "<#undefined>";
 	}
 	console.error (
 		"you can run",
-		log.dataflows ("config set <variable> <value>"),
+		paint.dataflows ("config set <variable> <value>"),
 		"to define individual variable\nor edit",
-		log.path (".dataflows/"+this.instance+"/fixup"),
+		paint.path (".dataflows/"+this.instance+"/fixup"),
 		"to define all those vars at once"
 	);
 	// console.log (this.logUnpopulated.list);
@@ -149,7 +150,7 @@ Project.prototype.setVariables = function (fixupVars, force) {
 	var self = this;
 	// ensure fixup is defined
 	if (!this.instance) {
-		console.log ('Cannot write to the fixup file with undefined instance. Please run', log.dataflows('init'));
+		console.log ('Cannot write to the fixup file with undefined instance. Please run', paint.dataflows('init'));
 		process.kill ();
 	}
 
@@ -222,7 +223,7 @@ Project.prototype.parseConfig = function (configData, configFile) {
 		var message =
 			'Unknown file format in '+(configFile.path || configFile)+'; '
 			+ 'for now only JSON supported. You can add new formats using Project.prototype.formats.';
-		console.error (log.errMsg (message));
+		console.error (paint.error (message));
 		self.emit ('error', message);
 	}
 	return result;
@@ -276,11 +277,11 @@ Project.prototype.interpolateVars = function (error) {
 				if ("variable" in varValue.enchanted) {
 					console.error (
 						"variable value cannot contains another variables. used variable",
-						log.path(enchanted.variable),
+						paint.path(enchanted.variable),
 						"which resolves to",
-						log.path (varValue.value),
+						paint.path (varValue.value),
 						"in key",
-						log.path(fullKey)
+						paint.path(fullKey)
 					);
 					process.kill ();
 				}
@@ -339,7 +340,7 @@ Project.prototype.loadConfig = function () {
 	configFile.readFile (function (err, data) {
 		if (err) {
 			var message = "Can't access "+self.configDir+"/project file. Create one and define project id";
-			console.error (log.dataflows(), log.errMsg (message));
+			console.error (paint.dataflows(), paint.error (message));
 			// process.kill ();
 			self.emit ('error', message);
 			return;
@@ -351,7 +352,7 @@ Project.prototype.loadConfig = function () {
 			config = parsed.object;
 		} else {
 			var message = 'Project config cannot be parsed:';
-			console.error (message, log.errMsg (parsed.error));
+			console.error (message, paint.error (parsed.error));
 			self.emit ('error', message + ' ' + parsed.error.toString());
 			process.kill ();
 		}
@@ -385,8 +386,8 @@ Project.prototype.loadConfig = function () {
 				var fixupConfig = {};
 				if (err) {
 					console.error (
-						"Config fixup file unavailable ("+log.path (path.join(self.configDir, self.instance, 'fixup'))+")",
-						"Please run", log.dataflows ('init')
+						"Config fixup file unavailable ("+paint.path (path.join(self.configDir, self.instance, 'fixup'))+")",
+						"Please run", paint.dataflows ('init')
 					);
 				} else {
 					var parsedFixup = self.parseConfig (data, self.fixupFile);
@@ -394,7 +395,7 @@ Project.prototype.loadConfig = function () {
 						self.fixupConfig = fixupConfig = parsedFixup.object;
 					} else {
 						var message = 'Config fixup cannot be parsed:';
-						console.error (message, log.errMsg (parsedFixup.error));
+						console.error (message, paint.error (parsedFixup.error));
 						self.emit ('error', message + ' ' + parsedFixup.error.toString());
 						process.kill ();
 					}
@@ -443,7 +444,7 @@ Project.prototype.getModule = function (type, name, optional) {
 			if (e.toString().indexOf(name + '\'') > 0 && e.code == "MODULE_NOT_FOUND") {
 				return false;
 			} else {
-				console.error ('requirement failed:', log.errMsg (e.toString()), "in", log.path (self.root.relative (modPath)));
+				console.error ('requirement failed:', paint.error (e.toString()), "in", paint.path (self.root.relative (modPath)));
 				return true;
 			}
 		}
@@ -568,7 +569,7 @@ Project.prototype.loadIncludes = function (config, level, cb) {
 	}
 
 	function onError(err) {
-		console.log('[WARNING] Level:', level, 'is not correct.\nError:', log.errMsg (err));
+		console.log('[WARNING] Level:', level, 'is not correct.\nError:', paint.error (err));
 		cb(err, config, variables, placeholders);
 	}
 

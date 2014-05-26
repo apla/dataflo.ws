@@ -10,9 +10,9 @@ define (function (require, exports, module) {
 var EventEmitter = require ('events').EventEmitter,
 	util         = require ('util'),
 	dataflows    = require ('./index'),
-	common       = require ('./common'),
+	common       = dataflows.common,
 	taskClass    = require ('./task/base'),
-	log          = require ('./log');
+	paint        = dataflows.color;
 
 var $global = common.$global;
 
@@ -628,13 +628,13 @@ util.extend (dataflow.prototype, {
 			'error',
 			task.logTitle,
 			'(' + task.state + ') ',
-			log.errMsg (util.inspect (msg), util.inspect (options || '')),
+			paint.error (util.inspect (msg), util.inspect (options || '')),
 			lastFrame
 		);
 	},
 	logError: function (task, msg, options) {
 		// TODO: fix by using console.error
-		this._log('error', log.errMsg (util.inspect (msg), util.inspect (options || '')));
+		this._log('error', paint.error (util.inspect (msg), util.inspect (options || '')));
 	},
 	addEventListenersToTask: function (task) {
 		var self = this;

@@ -1,6 +1,6 @@
 var dataflows = require ('dataflo.ws');
 var common    = dataflows.common;
-var log       = dataflows.log;
+var paint     = dataflows.color;
 var fs        = require ('fs');
 var path      = require ('path');
 
@@ -59,7 +59,7 @@ module.exports = {
 		if (!conf) {
 			if (this.args._.length <= 1) {
 				var projectPath = path.resolve (this.args._[0] || '.');
-				console.log (log.dataflows(), 'initalizing project in ', log.path (this.args._[0] || '.', '('+projectPath+')'));
+				console.log (paint.dataflows(), 'initalizing project in ', paint.path (this.args._[0] || '.', '('+projectPath+')'));
 
 				var confDir      = path.resolve (projectPath, '.dataflows');
 				var instanceName = process.env.USER + '@' + process.env.HOSTNAME;
@@ -104,7 +104,7 @@ module.exports = {
 				fs.mkdirSync (confFixup);
 
 		} else {
-			console.log (log.dataflows(), 'project already initialized');
+			console.log (paint.dataflows(), 'project already initialized');
 			process.kill();
 		}
 
@@ -112,7 +112,7 @@ module.exports = {
 
 		// 1) check for legacy project dir
 		if (project.legacy) {
-			console.error (log.c.red ('project has legacy configuration layout. you can migrate by running those commands:'));
+			console.error (paint.error ('project has legacy configuration layout. you can migrate by running those commands:'));
 			console.error ("\n\tcd "+project.root.path);
 			console.error ("\tmv etc .dataflows");
 			if (project.instance)

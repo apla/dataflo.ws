@@ -6,16 +6,17 @@ var EventEmitter = require ('events').EventEmitter,
 	url          = require ('url'),
 	path         = require ('path'),
 	os           = require ('os'),
+	dataflows    = require ('../index'),
 	flow         = require ('../flow'),
-	common       = require ('../common'),
-	log          = require ('../log');
+	common       = dataflows.common,
+	paint        = dataflows.color;
 
 var mime, memoize;
 
 try {
 	mime = require ('mime');
 } catch (e) {
-	console.error (log.c.red('cannot find mime module'));
+	console.error (paint.error ('cannot find mime module'));
 }
 
 try {
@@ -80,11 +81,11 @@ httpdi.prototype.ready = function () {
 	var listenPort = this.port == 80 ? '' : ':'+this.port;
 	console.log(
 		'http initiator running at',
-		log.path (
+		paint.path (
 			'http://'+listenHost+listenPort+'/'
 		),
 		this.static
-			? "and serving static files from " + log.path (project.root.relative (this.static.root))
+			? "and serving static files from " + paint.path (project.root.relative (this.static.root))
 			: ""
 	);
 
@@ -111,7 +112,7 @@ httpdi.prototype.runPrepare = function (df, request, response) {
 			var innerDfConfig = prepare[p];
 
 			if (!innerDfConfig || !innerDfConfig.tasks) {
-				console.error (log.c.red('request canceled:'), 'no prepare task named "'+p+'"');
+				console.error (paint.error('request canceled:'), 'no prepare task named "'+p+'"');
 				prepareFailure = true;
 				var presenter = self.createPresenter({}, request, response, 'failed');
 				if (presenter)

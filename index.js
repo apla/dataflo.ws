@@ -14,7 +14,7 @@ var INITIATOR_PATH = 'initiator';
 var path,
 	fs,
 	common = require ('./common'),
-	log    = require ('./log');
+	color  = require ('./color');
 
 if ($isServerSide) {
 	path = require ('path');
@@ -119,7 +119,14 @@ module.exports.register = function (instanceType, instanceName, instanceClass) {
 	registry[instanceType][instanceName] = instanceClass;
 };
 
+color.error     = color.bind (color, "red+white_bg");
+color.path      = color.cyan.bind (color);
+color.dataflows = color.green.bind (color, "dataflows");
+
+	
 module.exports.common = common;
-module.exports.log    = log;
+module.exports.color  = color;
+	
+
 
 });

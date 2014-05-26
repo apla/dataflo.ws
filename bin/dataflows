@@ -7,7 +7,7 @@ var DEFAULT_REQUIRE = 'main';
 var path      = require('path');
 var dataflows = require(MODULE_NAME);
 var common    = dataflows.common;
-var log       = dataflows.log;
+var paint     = dataflows.color;
 
 var minimist  = require ('minimist');
 
@@ -24,9 +24,9 @@ function launchScript (conf, err) {
 	if (err) {
 		if (err === "no project config" && !scriptName.match (/^(help|init)$/)) {
 			console.error (
-				'no', log.dataflows(),
+				'no', paint.dataflows(),
 				'project config found. please run',
-				log.path ('dataflows help'), 'or', log.path ('dataflows init')
+				paint.path ('dataflows help'), 'or', paint.path ('dataflows init')
 			);
 		}
 		if (conf && scriptName !== "config") {

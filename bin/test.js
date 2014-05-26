@@ -1,5 +1,5 @@
 var dataflows = require('dataflo.ws');
-var log       = require('dataflo.ws/log');
+var paint     = dataflows.color;
 
 module.exports = {
 	launchContext: function () {
@@ -9,13 +9,13 @@ module.exports = {
 		};
 	},
 	launch: function (conf) {
-		var callbackIConf = conf.initiator['callback'];
-		var callbackIClass = dataflows.initiator('callback');
+		var tokenIConf = conf.initiator['token'];
+		var tokenIClass = dataflows.initiator('token');
 
-		if ('function' == typeof callbackIClass) {
-			var processor = new callbackIClass(callbackIConf);
+		if ('function' == typeof tokenIClass) {
+			var processor = new tokenIClass(tokenIConf);
 		} else {
-			console.error('Cannot load initiator "%s"', 'callback');
+			console.error('Cannot load initiator "%s"', 'token');
 		}
 
 		var flows = processor.dataflows || processor.flows;
@@ -37,7 +37,7 @@ module.exports = {
 			console.log('Completed: ' + casesResult.ok.length + ' of ' + cases.length );
 			console.log(
 				'Failed:    ' + casesResult.fail.length + ' of ' + cases.length
-				+ ': ' + casesResult.fail.map (function (c) {return log.c.red (c)}).join (', ')
+				+ ': ' + casesResult.fail.map (function (c) {return paint.error (c)}).join (', ')
 			);
 			process.kill();
 		}
@@ -53,7 +53,7 @@ module.exports = {
 				failKey    = 'ok';
 			}
 
-			console.log ('Running test case ' + log.c.magenta (token) + '; expected ' + log.c.green (successKey));
+			console.log ('Running test case ' + paint.magenta (token) + '; expected ' + paint.green (successKey));
 //			console.log (conf.templates.task);
 
 			var flow = processor.process(token, {
@@ -63,12 +63,12 @@ module.exports = {
 			});
 
 			flow.on('completed', function(flow) {
-				console.log (log.c.green ('Test case', token, 'ok'));
+				console.log (paint.green ('Test case', token, 'ok'));
 				casesResult[successKey].push (token);
 				onTestEnd(token);
 			});
 			flow.on('failed', function(flow) {
-				console.log (log.c.red ('Test case', token, 'failed'));
+				console.log (paint.red ('Test case', token, 'failed'));
 				casesResult[failKey].push (token);
 				onTestEnd(token);
 			});
