@@ -4,6 +4,8 @@ var path = require ('path');
 var fs   = require ('fs');
 var util = require ('util');
 
+var EventEmitter = require ('events').EventEmitter;
+
 var io     = require ('./io/easy');
 var log    = require ('./log');
 var common = require ('./common');
@@ -38,8 +40,6 @@ var Project = function (rootPath) {
 };
 
 module.exports = Project;
-
-var EventEmitter = require ('events').EventEmitter;
 
 util.inherits (Project, EventEmitter);
 
