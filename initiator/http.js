@@ -193,6 +193,8 @@ httpdi.prototype.createPresenter = function (df, request, response, state) {
 
 	if (Object.is('String', presenter)) {
 		// "template.name"
+		// WTF? not sure about use case. we want all data declared explicitly.
+		// but here is no data passed to presenter
 		tasks.push ({
 			file:      presenter,
 			//vars:      "{$vars}",
@@ -206,7 +208,9 @@ httpdi.prototype.createPresenter = function (df, request, response, state) {
 			var task = {};
 			util.extend (true, task, item);
 			task.response  = "{$response}";
-			task.vars      = task.vars || {};
+			task.vars      = task.vars || task.data || {};
+			if (!Object.keys (task.vars).length && task.dump)
+				task.vars = df.data;
 			if (!task.functionName || !task.$function) {
 				task.className = task.$class || task.className ||
 					"presenter";
@@ -217,7 +221,9 @@ httpdi.prototype.createPresenter = function (df, request, response, state) {
 	} else {
 		// {"type": "json"}
 		presenter.response  = "{$response}";
-		presenter.vars      = presenter.vars || {};
+		presenter.vars      = presenter.vars || presenter.data || {};
+		if (!Object.keys (presenter.vars).length && presenter.dump)
+			presenter.vars = df.data;
 		if (!presenter.functionName || !presenter.$function) {
 			presenter.className = presenter.$class || presenter.className ||
 				"presenter";

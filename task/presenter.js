@@ -155,7 +155,7 @@ util.extend (presenterTask.prototype, {
 				var compileMethod = self.compileMethod || 'compile';
 
 				if (!presenters[self.type])
-					presenters[self.type] = require (self.type);
+					presenters[self.type] = require (self.moduleName || self.type);
 
 				if (!presenters[self.type][compileMethod]) {
 					console.error (
@@ -305,12 +305,21 @@ util.extend (presenterTask.prototype, {
 				}
 			case 'jade':
 			case 'mustache':
-			case 'hogan.js':
+			case 'handlebars':
+			
 				self.setContentType('text/html; charset=utf-8');
 
 				self.renderCompile();
 				break;
 
+			case 'hogan':
+				self.setContentType('text/html; charset=utf-8');
+				self.moduleName   = 'hogan.js';
+				self.renderMethod = 'render';
+
+				self.renderCompile();
+				break;
+				
 			case 'json':
 				self.setContentType('application/json; charset=utf-8');
 				self.renderResult (
