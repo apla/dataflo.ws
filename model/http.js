@@ -247,7 +247,7 @@ util.extend (httpModel.prototype, {
 	 * @param {Object} result result fields
 	 */
 	addResultFields: function (result) {
-		result.code    = this.res.statusCode;
+		result.code    = this.res.statusCode || 500;
 		result.headers = (this.res.headers) ? this.res.headers : {};
 	},
 	isSuccessResponse: function check () {
@@ -322,7 +322,8 @@ util.extend (httpModel.prototype, {
 			}
 
 			res.on ('error', function (exception) {
-				self.modelBase.emit ('error', 'res : '+exception);
+				exception.scope = 'response';
+				self.modelBase.emit ('error', exception);
 			});
 
 			// clean data on redirect
@@ -343,8 +344,10 @@ util.extend (httpModel.prototype, {
 			});
 		});
 
-		req.on('error', function(e) {
-			self.modelBase.emit ('error', 'req : '+e);
+		req.on('error', function (exception) {
+			self.res = {};
+			exception.scope = 'request';
+			self.modelBase.emit ('error', exception);
 		});
 
 		if (headers) {
@@ -368,7 +371,7 @@ util.extend (httpModel.prototype, {
 
 		if (!("" + res.statusCode).match (/^30[1,2,3,5,7]$/)) {
 			return false;
-        }
+		}
 
 		// no `Location:` header => nowhere to redirect
 		if (!('location' in res.headers)) {

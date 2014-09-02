@@ -624,8 +624,8 @@ util.extend (dataflow.prototype, {
 			task.logTitle,
 			'(' + task.state + ') ',
 			paint.error (
-				util.inspect (msg).replace (/(^'|'$)/g, ""),
-				util.inspect (options || '').replace (/(^'|'$)/g, "")
+				util.inspect (msg).replace (/(^'|'$)/g, "").replace (/\\'/, "'"),
+				util.inspect (options || '').replace (/(^'|'$)/g, "").replace (/\\'/, "'")
 			),
 			lastFrame
 		);
@@ -633,8 +633,8 @@ util.extend (dataflow.prototype, {
 	logError: function (msg, options) {
 		// TODO: fix by using console.error
 		this._log ('error', paint.error (
-			util.inspect (msg).replace (/(^'|'$)/g, ""),
-			util.inspect (options || '').replace (/(^'|'$)/g, "")
+			util.inspect (msg).replace (/(^'|'$)/g, "").replace (/\\'/, "'"),
+			util.inspect (options || '').replace (/(^'|'$)/g, "").replace (/\\'/, "'")
 		));
 	},
 	addEventListenersToTask: function (task) {

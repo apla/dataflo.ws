@@ -226,7 +226,7 @@ httpdi.prototype.createPresenter = function (df, request, response, state) {
 		// {"type": "json"}
 		presenter.response  = "{$response}";
 		presenter.vars      = presenter.vars || presenter.data || {};
-		if (!Object.keys (presenter.vars).length && presenter.dump)
+		if (Object.is('Object', presenter.vars) && !Object.keys (presenter.vars).length && presenter.dump)
 			presenter.vars = df.data;
 		if (!presenter.functionName || !presenter.$function) {
 			presenter.className = presenter.$class || presenter.className ||
@@ -283,12 +283,17 @@ httpdi.prototype.createFlow = function (cfg, req, res) {
 	if (!cfg.tasks && !cfg.presenter)
 		return;
 
-	console.log ('dataflow', req.method, req.url.pathname);
+	try {
+		var df = new flow(
+			util.extend (true, {}, cfg),
+			{ request: req, response: res }
+		);
+	} catch (e) {
+		console.error ('dataflow failed', req.method, req.url.pathname);
+		throw e;
+	}
 
-	var df = new flow(
-		util.extend (true, {}, cfg),
-		{ request: req, response: res }
-	);
+	console.log ('dataflow', req.method, req.url.pathname, df.coloredId);
 
 	df.on('completed', function (df) {
 		var presenter = self.createPresenter(df, req, res, 'completed');
