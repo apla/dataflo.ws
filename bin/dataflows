@@ -15,21 +15,22 @@ var $global   = common.$global;
 
 var Project = require (MODULE_NAME + '/project');
 
+var project;
+
 common.getProject = function (rootPath) {
-	if (!projectInstance) {
-		projectInstance = new Project(rootPath);
+	if (!project) {
+		project = new Project(rootPath);
 	}
-	return projectInstance;
+	return project;
 };
 
-var project = $global.project = common.getProject(); // used by initiators
+$global.project = common.getProject(); // used by initiators
 
 function launchScript (conf, err) {
 	var scriptName = process.argv[2];
 
 	if (!scriptName)
 		scriptName = "help";
-
 
 	if (err) {
 		if (err === "no project config" && !scriptName.match (/^(help|init)$/)) {
