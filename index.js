@@ -19,7 +19,6 @@ var path,
 if ($isServerSide) {
 	path = require ('path');
 	fs   = require ('fs');
-
 }
 
 
@@ -123,10 +122,10 @@ color.error     = color.bind (color, "red+white_bg");
 color.path      = color.cyan.bind (color);
 color.dataflows = color.green.bind (color, "dataflows");
 
-	
+
 module.exports.common = common;
 module.exports.color  = color;
-	
+
 
 
 });

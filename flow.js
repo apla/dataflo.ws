@@ -1,12 +1,3 @@
-var define;
-if (typeof define === "undefined") {
-	define = function (classInstance) {
-		classInstance (require, exports, module);
-	};
-}
-
-define (function (require, exports, module) {
-
 var EventEmitter = require ('events').EventEmitter,
 	util         = require ('util'),
 	dataflows    = require ('./index'),
@@ -713,5 +704,3 @@ util.extend (dataflow.prototype, {
 
 // legacy
 dataflow.isEmpty = common.isEmpty;
-
-});
