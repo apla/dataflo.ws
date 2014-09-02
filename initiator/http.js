@@ -107,14 +107,16 @@ httpdi.prototype.runPrepare = function (df, request, response) {
 
 		var prepareFailure = false;
 
-		prepareCfg.forEach (function(p) {
+		prepareCfg.forEach(function(p, index, arr) {
 
 			var innerDfConfig = prepare[p];
 
 			if (!innerDfConfig || !innerDfConfig.tasks) {
 				console.error (paint.error('request canceled:'), 'no prepare task named "'+p+'"');
+//				self.emit ('error', 'no prepare task named "'+p+'"');
 				prepareFailure = true;
 				var presenter = self.createPresenter({}, request, response, 'failed');
+//				var presenter = self.createPresenter(cDF, 'failed');
 				if (presenter)
 					presenter.run ();
 				return;
