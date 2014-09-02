@@ -12,7 +12,17 @@ var paint     = dataflows.color;
 var minimist  = require ('minimist');
 
 var $global   = common.$global;
-var project   = $global.project = common.getProject(); // used by initiators
+
+var Project = require (MODULE_NAME + '/project');
+
+common.getProject = function (rootPath) {
+	if (!projectInstance) {
+		projectInstance = new Project(rootPath);
+	}
+	return projectInstance;
+};
+
+var project = $global.project = common.getProject(); // used by initiators
 
 function launchScript (conf, err) {
 	var scriptName = process.argv[2];

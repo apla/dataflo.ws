@@ -4,6 +4,8 @@ var task   = require ('./base'),
 	util   = require ('util'),
 	stream = require('stream');
 
+// TODO: write a message 
+
 var presenters = {},
 	defaultTemplateDir = (project && project.config && project.config.templateDir) || 'share/presentation',
 	isWatched = (project && project.config && project.config.debug);
@@ -290,6 +292,8 @@ util.extend (presenterTask.prototype, {
 				// TODO: throw error in case of 2xx response code
 			}
 		}
+		
+		// TODO: lowercase all headers
 
 		switch (self.type.toLowerCase()) {
 			case 'html':
@@ -307,13 +311,13 @@ util.extend (presenterTask.prototype, {
 			case 'mustache':
 			case 'handlebars':
 			
-				self.setContentType('text/html; charset=utf-8');
+				self.setContentType(self.headers['content-type'] || 'text/html; charset=utf-8');
 
 				self.renderCompile();
 				break;
 
 			case 'hogan':
-				self.setContentType('text/html; charset=utf-8');
+				self.setContentType(self.headers['content-type'] || 'text/html; charset=utf-8');
 				self.moduleName   = 'hogan.js';
 				self.renderMethod = 'render';
 
@@ -349,7 +353,6 @@ util.extend (presenterTask.prototype, {
 				});
 
 				break;
-
 
 			case 'asis':
 			default:

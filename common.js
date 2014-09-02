@@ -46,35 +46,6 @@ function isEmpty(obj) {
 	);
 }
 
-console.print = function () {
-	var BLUE = '';
-	var RESET = '';
-	var line = '============================================================';
-
-	if ($isServerSide) {
-		BLUE = '\033[34m';
-		RESET = '\033[0m';
-	}
-
-	var err = new Error();
-	var stack = err.stack.split('\n');
-	var lastFunc = stack[2];
-	var msg = [];
-	msg.push.apply(msg, arguments);
-
-	var start = BLUE + line + '\n' + lastFunc + RESET + '\n';
-	var end ='\n' + BLUE + line + RESET;
-
-	if (Object.is('String', msg[0])) {
-		msg[0] = start + msg[0];
-	} else {
-		msg.unshift(start);
-	}
-	msg.push(end);
-
-	return console.log.apply(console, msg);
-};
-
 var Project;
 var projectRoot;
 var projectInstance;
@@ -227,6 +198,10 @@ Number.prototype.times = function (cb) {
 	return a;
 }
 
+// especially for stupid loaders
+if (0)
+	module.exports = {};
+
 module.exports.$global = $global;
 
 // overwrite subject with values from object (merge object with subject)
@@ -334,20 +309,6 @@ String.prototype.interpolate = function (dict, marks) {
 	}
 
 	return replacedStr;
-};
-
-var Project;
-if ($isServerSide) {
-
-	Project = require ('./project');
-
-}
-
-module.exports.getProject = function (rootPath) {
-	if (!projectInstance) {
-		projectInstance = new Project(rootPath);
-	}
-	return projectInstance;
 };
 
 module.exports.isEmpty = isEmpty;

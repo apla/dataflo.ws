@@ -11,12 +11,12 @@ function color () {
 	var args = [].slice.apply (arguments);
 	var colorNames = args.shift();
 	var str = args.join (' ');
-	
+
 	if (!isNode())
 		return str;
 	if (!colorNames)
 		return str;
-	
+
 	var color_attrs = colorNames.split("+");
 	var strPrefix = "", strPostfix = "";
 	for (var i = 0, attr; attr = color_attrs[i]; i++) {
@@ -31,7 +31,9 @@ function color () {
 var colorList = "black|red|green|yellow|blue|magenta|cyan|white";
 
 colorList.split ('|').forEach (function (colorName) {
-	uColors[colorName+'_bg'] = [uColors[colorName][0] + 10, 49];
+	if (isNode ()) {
+		uColors[colorName+'_bg'] = [uColors[colorName][0] + 10, 49];
+	}
 	color[colorName] = color.bind (color, colorName);
 });
 
