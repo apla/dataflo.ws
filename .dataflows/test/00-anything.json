@@ -178,7 +178,7 @@
 			"successCodes": "2xx",
 			"$set": "redirectObj"
 		}, {
-			"$function": "console.print",
+			"$function": "console.log",
 			"$args": [
 				"{$redirectObj.data}"
 			],
@@ -191,7 +191,7 @@
 			"timeout": 5000,
 			"$set": "timeoutObj"
 		}, {
-			"$function": "console.print",
+			"$function": "console.log",
 			"$args": [
 				"{$timeoutObj.data}"
 			],
