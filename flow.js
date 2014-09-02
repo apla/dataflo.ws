@@ -170,14 +170,17 @@ var dataflow = module.exports = function (config, reqParam) {
 
 //	console.log ('config, reqParam', config, reqParam);
 
-	if (!this.tasks)
+	if (!this.tasks || !this.tasks.length) {
 		return;
+	}
 
 	self.ready = true;
 
 	// TODO: optimize usage - find placeholders and check only placeholders
 
-	config.tasks = config.tasks || [];
+	if (!config.tasks || !config.tasks.length) {
+		config.tasks = [];
+	}
 
 	this.tasks = config.tasks.map (function (taskParams) {
 		var task;
@@ -456,7 +459,7 @@ util.extend (dataflow.prototype, {
 
 		if (self.stopped)
 			return;
-        /* @behrad following was overriding already set failed status by failed tasks */
+		/* @behrad following was overriding already set failed status by failed tasks */
 //		self.failed = false;
 		self.isIdle = false;
 		self.haveCompletedTasks = false;
@@ -467,19 +470,20 @@ util.extend (dataflow.prototype, {
 
 		// check task states
 
-		if (!this.ready) {
+		if (!this.tasks) {
 			self.emit ('failed', self);
-			self.log (this.stage + ' failed immediately due unready state');
+			self.logError (this.stage + ' failed immediately due empty task list');
 			self.isIdle = true;
 			return;
 		}
 
-		if (!this.tasks) {
+		if (!this.ready) {
 			self.emit ('failed', self);
-			self.log (this.stage + ' failed immediately due empty task list');
+			self.logError (this.stage + ' failed immediately due unready state');
 			self.isIdle = true;
 			return;
 		}
+
 		this.tasks.map (function (task) {
 
 			if (task.subscribed === void(0)) {
@@ -567,7 +571,7 @@ util.extend (dataflow.prototype, {
 
 			self.emit ('failed', self);
 			var failedtasksCount = this.taskStates[taskStateNames.failed]
-			self.log (this.stage + ' failed in ' + (self.stopped - self.started) + 'ms; failed ' + failedtasksCount + ' ' + (failedtasksCount == 1 ? 'task': 'tasks') +' out of ' + self.tasks.length);
+			self.logError (this.stage + ' failed in ' + (self.stopped - self.started) + 'ms; failed ' + failedtasksCount + ' ' + (failedtasksCount == 1 ? 'task': 'tasks') +' out of ' + self.tasks.length);
 
 		} else {
 			// dataflow stopped and not failed
@@ -619,13 +623,19 @@ util.extend (dataflow.prototype, {
 			'error',
 			task.logTitle,
 			'(' + task.state + ') ',
-			paint.error (util.inspect (msg), util.inspect (options || '')),
+			paint.error (
+				util.inspect (msg).replace (/(^'|'$)/g, ""),
+				util.inspect (options || '').replace (/(^'|'$)/g, "")
+			),
 			lastFrame
 		);
 	},
-	logError: function (task, msg, options) {
+	logError: function (msg, options) {
 		// TODO: fix by using console.error
-		this._log('error', paint.error (util.inspect (msg), util.inspect (options || '')));
+		this._log ('error', paint.error (
+			util.inspect (msg).replace (/(^'|'$)/g, ""),
+			util.inspect (options || '').replace (/(^'|'$)/g, "")
+		));
 	},
 	addEventListenersToTask: function (task) {
 		var self = this;

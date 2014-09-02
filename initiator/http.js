@@ -122,6 +122,8 @@ httpdi.prototype.runPrepare = function (df, request, response) {
 				return;
 			}
 
+			innerDfConfig.idPrefix = df.coloredId + '>';
+
 			var innerDf = new flow(innerDfConfig, {
 				request: request,
 				response: response,

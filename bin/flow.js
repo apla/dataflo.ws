@@ -10,8 +10,8 @@ module.exports = {
 		};
 	},
 	launch: function (conf) {
-		var tokenDFConf = conf.initiator ['token'];
-		
+		var tokenDFConf = conf.initiator.token;
+
 		var tokenIClass = dataflows.initiator ('token');
 
 		if ('function' == typeof tokenIClass) {
