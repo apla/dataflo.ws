@@ -251,15 +251,6 @@ var pathToVal = module.exports.pathToVal = function (dict, path, value, method) 
 	return pathToVal(dict[chunk], rest, value, method);
 };
 
-var define;
-if (typeof define === "undefined")
-	define = function () {};
-var _exports = module.exports;
-define (function (require, exports, module) {
-	return _exports;
-});
-
-
 String.prototype.interpolate = function (dict, marks) {
 	if (!marks)
 		marks = {};
@@ -310,5 +301,43 @@ String.prototype.interpolate = function (dict, marks) {
 
 	return replacedStr;
 };
+
+/**
+ * [waitAll wait all events to complete]
+ * @param  {[type]}   events   array of event arrays: [[subject, eventName, description]]
+ * @param  {Function} callback called after all events handled
+ * @return {[type]}            [description]
+ */
+module.exports.waitAll = function waitAll (events, callback) {
+	var remaining = [];
+	function _listener (eventName) {
+		remaining.some (function (remainingName, idx) {
+			if (remainingName == eventName) {
+				remaining.splice (idx, 1);
+				return true;
+			}
+		})
+		// console.log ("wait for " + remaining.length + " more: " + remaining.join (', '));
+		if (!remaining.length)
+			callback();
+	}
+	events.forEach (function (event) {
+		var subject   = event[0];
+		var eventName = event[1];
+		var eventLogName = eventName + ' ' + event[2];
+		remaining.push (eventLogName);
+		if (typeof subject === "function") {
+			subject (_listener.bind ($global, eventLogName));
+		} else {
+			if (subject.addEventListener) {
+				subject.addEventListener (eventName, _listener.bind (subject, eventLogName), false);
+			} else {
+				subject.on (eventName, _listener.bind (subject, eventLogName), false);
+			}
+
+		}
+
+	});
+}
 
 module.exports.isEmpty = isEmpty;
