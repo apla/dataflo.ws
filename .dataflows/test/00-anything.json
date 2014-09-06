@@ -139,6 +139,25 @@
 			}]
 		}]
 	},
+	"test:09-promise": {
+		"expect": "ok",
+		"tasks": [{
+			"$promise": "getPromise",
+			"$args": [3000, 111, true, "<- last parameter define successful execution"],
+			"$set": "promise111"
+		}, {
+			"$promise": "getPromise",
+			"$args": [3000, 222, false, "<- last parameter define unsuccessful execution"],
+			"$setOnFail": "promise222"
+		}, {
+			"$function": "throwUnlessEqual",
+			"// 1 ": "this task must fail because unsatisfied dependencies of result.a",
+			"// 2 ": "which replaced by second JSON parse task. task state is skipped, but $important fail skipped task",
+			"$args": ["{$result.a}"],
+			"$important": true
+
+		}]
+	},
 	"http-initiator": {
 		"expect": "ok",
 		"tasks": [{
