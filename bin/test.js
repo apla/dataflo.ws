@@ -24,8 +24,6 @@ module.exports = {
 
 		var caseMatch = context.args._[0] || "^test\\W";
 
-		console.log (context.args, caseMatch);
-
 		var flows = processor.dataflows || processor.flows;
 		var cases = [];
 		for (var token in flows) {

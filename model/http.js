@@ -341,6 +341,7 @@ util.extend (httpModel.prototype, {
 					return;
 				}
 				self.modelBase.emit ('stop');
+				res.jar = self.cookieJar;
 			});
 		});
 
