@@ -1,5 +1,6 @@
 {
-	"test:ok:00-expansion": {
+	"test:00-expansion": {
+		"expect": "ok",
 		"description": "basic 'every' task test",
 		"tasks": [{
 			"$function": "console.log",
@@ -15,8 +16,9 @@
 			}]
 		}]
 	},
-	"test:ok:01-origin": "<test/01-origin>",
-	"test:fail:02-every": {
+	"test:01-origin": "<test/01-origin>",
+	"test:02-every": {
+		"expect": "fail",
 		"description": "basic 'every' task test",
 		"tasks": [{
 			"$every": [2, 1, 2],
@@ -29,7 +31,8 @@
 			}]
 		}]
 	},
-	"test:ok:03-every": {
+	"test:03-every": {
+		"expect": "ok",
 		"tasks": [{
 			"$every": [0, 1, 2],
 			"$tasks": [{
@@ -41,7 +44,8 @@
 			}]
 		}]
 	},
-	"test:ok:03-every-object": {
+	"test:03-every-object": {
+		"expect": "ok",
 		"tasks": [{
 			"$every": {"a": "a", "b": "b", "c": "c"},
 			"$tasks": [{
@@ -59,7 +63,8 @@
 			"$args": ["{$numbers}"]
 		}]
 	},
-	"test:ok:04-template-merge": {
+	"test:04-template-merge": {
+		"expect": "ok",
 		"tasks": [{
 			"$template": "jsonParseAndMerge",
 			"$args": ["{\"a\":\"b\"}"]
@@ -75,7 +80,8 @@
 			"$args": ["{$result.c}"]
 		}]
 	},
-	"test:ok:05-template-set": {
+	"test:05-template-set": {
+		"expect": "ok",
 		"tasks": [{
 			"$template": "jsonParseAndSet",
 			"$args": ["{\"a\":\"b\"}"]
@@ -91,7 +97,8 @@
 			"$args": ["{$result.c}"]
 		}]
 	},
-	"test:fail:06-template-set-important": {
+	"test:06-template-set-important": {
+		"expect": "fail",
 		"tasks": [{
 			"$template": "jsonParseAndSet",
 			"$args": ["{\"a\":\"b\"}"]
@@ -110,7 +117,8 @@
 			"$args": ["{$result.c}"]
 		}]
 	},
-	"test:ok:07-every-template": {
+	"test:07-every-template": {
+		"expect": "ok",
 		"tasks": [{
 			"$every": [0, 1, 2],
 			"$tasks": [{
@@ -118,7 +126,8 @@
 			}]
 		}]
 	},
-	"test:ok:08-every-double-expansion": {
+	"test:08-every-double-expansion": {
+		"expect": "ok",
 		"tasks": [{
 			"$every": [0, 1, 2],
 			"$tasks": [{
@@ -130,7 +139,8 @@
 			}]
 		}]
 	},
-	"xtest-http-initiator": {
+	"http-initiator": {
+		"expect": "ok",
 		"tasks": [{
 			"$class":"remoteResource",
 			"$method": "toBuffer",
@@ -138,10 +148,8 @@
 			"successCodes": "2xx",
 			"$setOnFail": "favicon"
 		}, {
-			"$function": "console.log",
-			"$args": [
-				"favicon http response: want 404, got {$favicon.code}"
-			],
+			"$function": "throwUnlessEqual",
+			"$args": [404, "{$favicon.code}", "favicon http response:"],
 			"$important": true
 		}, {
 			"$class":"remoteResource",
@@ -150,10 +158,8 @@
 			"successCodes": "2xx",
 			"$set": "indexPage"
 		}, {
-			"$function": "console.log",
-			"$args": [
-				"index page http response: want 200, got {$indexPage.code}"
-			],
+			"$function": "throwUnlessEqual",
+			"$args": [200, "{$indexPage.code}", "index page http response:"],
 			"$important": true
 		}, {
 			"$class":"remoteResource",
@@ -166,10 +172,16 @@
 			"successCodes": "2xx",
 			"$set": "postObj"
 		}, {
-			"$function": "console.log",
-			"$args": [
-				"{$postObj.data}"
-			],
+			"$function": "JSON.parse",
+			"$args": ["{$postObj.data}"],
+			"$set": "postData"
+		}, {
+			"$function": "throwUnlessEqual",
+			"$args": ["b", "{$postData.fields.a}", "post page http response:"],
+			"$important": true
+		}, {
+			"$function": "throwUnlessEqual",
+			"$args": ["d", "{$postData.fields.c}", "post page http response:"],
 			"$important": true
 		}, {
 			"$class":"remoteResource",
@@ -178,10 +190,12 @@
 			"successCodes": "2xx",
 			"$set": "redirectObj"
 		}, {
-			"$function": "console.log",
-			"$args": [
-				"{$redirectObj.data}"
-			],
+			"$function": "JSON.parse",
+			"$args": ["{$redirectObj.data}"],
+			"$set": "redirectData"
+		}, {
+			"$function": "throwUnlessEqual",
+			"$args": ["auth=123", "{$redirectData.cookie}", "redirect cookie page http response:"],
 			"$important": true
 		}, {
 			"$class":"remoteResource",

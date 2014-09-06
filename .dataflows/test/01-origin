@@ -1,4 +1,5 @@
 {
+	"expect": "ok",
 	"description":   "here is simple scalar string. task made uppercase string",
 	"isTest":        true,
 	"tasks": [{
