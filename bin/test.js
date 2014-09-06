@@ -42,7 +42,8 @@ module.exports = {
 			console.log('Completed: ' + casesResult.ok.length + ' of ' + cases.length );
 			console.log(
 				'Failed:    ' + casesResult.fail.length + ' of ' + cases.length
-				+ ': ' + casesResult.fail.map (function (c) {return paint.error (c)}).join (', ')
+				+ (casesResult.fail.length === 0 ? '': ': ')
+				+ casesResult.fail.map (function (c) {return paint.error (c)}).join (', ')
 			);
 			process.kill();
 		}
