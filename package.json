@@ -1,48 +1,48 @@
 {
-  "name": "dataflo.ws",
-  "description": "Zero-code JSON config-based dataflow engine for Node, PhoneGap and browser.",
-  "keywords": [
-    "flow-based-programming",
-    "workflow",
-    "dataflow"
-  ],
-  "bin": { "dataflows": "bin/dataflows" },
-  "repository": {
-    "type": "git",
-    "url": "git://github.com/apla/dataflo.ws.git"
-  },
-  "peerDependencies": {
-    "multiparty": "*",
-    "mime": "*",
-    "minimist": "*",
-	"version": "0.64.1",
-	  "tough-cookie": "*"
-  },
-  "engines": {
-    "node": ">=0.8.0",
-    "npm": ">=1.2.10"
-  },
-  "preferGlobal": true,
-  "devDependencies": {
-    "utest": "*"
-  },
-  "homepage": "https://github.com/apla/dataflo.ws",
-  "author": "https://github.com/apla/",
-  "main": "index.js",
-  "directories": {
-    "example": "example",
-    "test": "test"
-  },
-  "optionalDependencies": {},
-  "_engineSupported": true,
-  "_defaultsLoaded": true,
-  "dist": {
-    "shasum": "dae79e14e13bcca90a09487af54e95a08d9e72b2"
-  },
-  "scripts": {
-    "test": "exit 0"
-  },
-  "license": "GPLv3",
-  "readmeFilename": "README.md"
-	"ayepromise": "*"
+	"name": "dataflo.ws",
+	"description": "Zero-code JSON config-based dataflow engine for Node, PhoneGap and browser.",
+	"version": "0.64.2",
+	"keywords": [
+		"flow-based-programming",
+		"workflow",
+		"dataflow"
+	],
+	"bin": { "dataflows": "bin/dataflows" },
+	"repository": {
+		"type": "git",
+		"url": "git://github.com/apla/dataflo.ws.git"
+	},
+	"peerDependencies": {
+		"multiparty": "*",
+		"mime": "*",
+		"minimist": "*",
+		"tough-cookie": "*"
+	},
+	"engines": {
+		"node": ">=0.8.0",
+		"npm": ">=1.2.10"
+	},
+	"preferGlobal": true,
+	"devDependencies": {
+		"utest": "*",
+		"ayepromise": "*"
+	},
+	"homepage": "https://github.com/apla/dataflo.ws",
+	"author": "https://github.com/apla/",
+	"main": "index.js",
+	"directories": {
+		"example": "example",
+		"test": "test"
+	},
+	"optionalDependencies": {},
+	"_engineSupported": true,
+	"_defaultsLoaded": true,
+	"dist": {
+		"shasum": "dae79e14e13bcca90a09487af54e95a08d9e72b2"
+	},
+	"scripts": {
+		"test": "exit 0"
+	},
+	"license": "GPLv3",
+	"readmeFilename": "README.md"
 }
