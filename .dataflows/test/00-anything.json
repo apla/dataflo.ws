@@ -143,17 +143,17 @@
 		"expect": "ok",
 		"tasks": [{
 			"$promise": "getPromise",
-			"$args": [3000, 111, true, "<- last parameter define successful execution"],
+			"$args": [500, 111, true, "<- last parameter define successful execution"],
 			"$set": "promise111"
 		}, {
 			"$promise": "getPromise",
-			"$args": [3000, 222, false, "<- last parameter define unsuccessful execution"],
+			"$args": [500, 111, false, "<- last parameter define unsuccessful execution"],
 			"$setOnFail": "promise222"
 		}, {
 			"$function": "throwUnlessEqual",
 			"// 1 ": "this task must fail because unsatisfied dependencies of result.a",
 			"// 2 ": "which replaced by second JSON parse task. task state is skipped, but $important fail skipped task",
-			"$args": ["{$result.a}"],
+			"$args": ["{$promise111}", "{$promise222}"],
 			"$important": true
 
 		}]

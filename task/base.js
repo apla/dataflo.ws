@@ -483,8 +483,11 @@ task.prepare = function (flow, dataflows, gen, taskParams, idx, array) {
 
 	//		console.log (taskParams);
 
-	var taskClassName = actualTaskParams.className || actualTaskParams.$class;
+	var taskClassName = actualTaskParams.className || actualTaskParams.$class || actualTaskParams.task;
 	var taskFnName = actualTaskParams.functionName || actualTaskParams.$function;
+	var taskPromise = actualTaskParams.promise || actualTaskParams.$promise;
+
+//	console.log ('task:', taskClassName, 'function:', taskFnName, 'promise:', taskPromise);
 
 	if (taskClassName && taskFnName)
 		flow.logError ('defined both className and functionName, using className');
@@ -513,15 +516,24 @@ task.prepare = function (flow, dataflows, gen, taskParams, idx, array) {
 
 		}
 
-	} else if (actualTaskParams.coderef || taskFnName) {
+	} else if (actualTaskParams.coderef || taskFnName || taskPromise) {
 
-		//			flow.log ((taskParams.functionName || taskParams.logTitle) + ': initializing task from function');
-		if (!taskFnName && !actualTaskParams.logTitle)
-			throw "task must have a logTitle when using call parameter";
+		//	flow.log ((taskParams.functionName || taskParams.logTitle) + ': initializing task from function');
+		if (taskPromise || taskFnName || actualTaskParams.logTitle || actualTaskParams.displayName) {
+
+		} else
+			throw "task must have a `displayName` when calling function";
 
 		var xTaskClass = function (config) {
 			this.init (config);
 		};
+
+		if (taskPromise) {
+			// functions and promises similar, but function return value, promise promisepromise promise
+			taskFnName = taskPromise;
+		}
+
+		console.log (taskPromise);
 
 		util.inherits (xTaskClass, task);
 
@@ -534,6 +546,7 @@ task.prepare = function (flow, dataflows, gen, taskParams, idx, array) {
 					 */
 				if (taskFnName) {
 					var origin = null;
+					// WTF???
 					var fnPath = taskFnName.split('#', 2);
 
 					if (fnPath.length == 2) {
@@ -575,7 +588,12 @@ task.prepare = function (flow, dataflows, gen, taskParams, idx, array) {
 							this.failed(failed);
 						}
 
-						if (!failed) {
+						if (taskPromise) {
+							returnVal.then (
+								this.completed.bind (this),
+								this.failed.bind (this)
+							);
+						} else if (!failed) {
 							this.completed(returnVal);
 
 							//								if (isVoid(returnVal)) {
@@ -598,8 +616,8 @@ task.prepare = function (flow, dataflows, gen, taskParams, idx, array) {
 
 		theTask = new xTaskClass ({
 			originalConfig: originalTaskConfig,
-			functionName: taskFnName,
-			logTitle:     actualTaskParams.logTitle || actualTaskParams.$logTitle,
+			functionName: taskFnName || taskPromise,
+			logTitle:     actualTaskParams.logTitle || actualTaskParams.$logTitle || actualTaskParams.displayName,
 			require:      gen ('checkRequirements', actualTaskParams),
 			important:    actualTaskParams.important || actualTaskParams.$important,
 			timeout:      actualTaskParams.timeout
