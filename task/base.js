@@ -238,10 +238,10 @@ util.extend (task.prototype, taskStateMethods, {
 			}
 		}
 
-        //@behrad set $empty on completion of all task types
-        if (common.isEmpty (result)) {
-            this.empty();
-        }
+		//@behrad set $empty on completion of all task types
+		if (common.isEmpty (result)) {
+			this.empty();
+		}
 
 		/**
 		 * @event complete
@@ -400,7 +400,7 @@ util.extend (task.prototype, taskStateMethods, {
 	 * - `complete`
 	 * - `failed`
 	 * - `skipped`
-     * - `empty`
+	* - `empty`
 	 */
 	stateNames: taskStateNames,
 
@@ -439,6 +439,179 @@ util.extend (task.prototype, taskStateMethods, {
 
 
 });
+
+task.prepare = function (flow, dataflows, gen, taskParams, idx, array) {
+	var theTask;
+
+	var idxLog = (idx < 10 ? " " : "") + idx;
+	if ($isServerSide) {
+		idxLog = "\x1B[0;3" + (parseInt(idx) % 8)  + "m" + idxLog + "\x1B[0m";
+	}
+	var actualTaskParams = {
+		dfTaskNo: idx,
+		dfTaskLogNum: idxLog
+	};
+	var taskTemplateName = taskParams.$template;
+	if (taskTemplateName && flow.templates && flow.templates[taskTemplateName]) {
+		util.extend (true, actualTaskParams, flow.templates[taskTemplateName]);
+		delete actualTaskParams.$template;
+	}
+
+	// we expand templates in every place in config
+	// for tasks such as every
+	util.extend (true, actualTaskParams, taskParams);
+
+	if (actualTaskParams.$every) {
+		actualTaskParams.$class = 'every';
+		actualTaskParams.$tasks.forEach (function (everyTaskConf, idx) {
+			var taskTemplateName = everyTaskConf.$template;
+			if (taskTemplateName && flow.templates && flow.templates[taskTemplateName]) {
+				var newEveryTaskConf = util.extend (true, {}, flow.templates[taskTemplateName]);
+				util.extend (true, newEveryTaskConf, everyTaskConf);
+				util.extend (true, everyTaskConf, newEveryTaskConf);
+				delete everyTaskConf.$template;
+				console.log (everyTaskConf, actualTaskParams.$tasks[idx]);//everyTaskConf.$tasks
+			}
+
+		});
+	}
+
+	//		var originalTaskConfig = JSON.parse(JSON.stringify(actualTaskParams));
+	var originalTaskConfig = util.extend (true, {}, actualTaskParams);
+
+	// check for data persistence in flow.templates[taskTemplateName], taskParams
+
+	//		console.log (taskParams);
+
+	var taskClassName = actualTaskParams.className || actualTaskParams.$class;
+	var taskFnName = actualTaskParams.functionName || actualTaskParams.$function;
+
+	if (taskClassName && taskFnName)
+		flow.logError ('defined both className and functionName, using className');
+
+	if (taskClassName) {
+		var xTaskClass;
+
+		xTaskClass = dataflows.task (taskClassName);
+
+		try {
+			theTask = new xTaskClass ({
+				originalConfig: originalTaskConfig,
+				className: taskClassName,
+				method:    actualTaskParams.method || actualTaskParams.$method,
+				require:   gen ('checkRequirements', actualTaskParams),
+				important: actualTaskParams.important || actualTaskParams.$important,
+				flowId:    flow.coloredId,
+				getDict:   gen ('createDict'),
+				timeout:   actualTaskParams.timeout
+			});
+		} catch (e) {
+			console.log ('instance of "'+taskClassName+'" creation failed:');
+			console.log (e.stack);
+			throw ('instance of "'+taskClassName+'" creation failed:');
+			flow.ready = false;
+
+		}
+
+	} else if (actualTaskParams.coderef || taskFnName) {
+
+		//			flow.log ((taskParams.functionName || taskParams.logTitle) + ': initializing task from function');
+		if (!taskFnName && !actualTaskParams.logTitle)
+			throw "task must have a logTitle when using call parameter";
+
+		var xTaskClass = function (config) {
+			this.init (config);
+		};
+
+		util.inherits (xTaskClass, task);
+
+		util.extend (xTaskClass.prototype, {
+			run: function () {
+				var failed = false;
+
+				/**
+					 * Apply $function to $args in $scope.
+					 */
+				if (taskFnName) {
+					var origin = null;
+					var fnPath = taskFnName.split('#', 2);
+
+					if (fnPath.length == 2) {
+						origin = $global.project.require(fnPath[0]);
+						taskFnName = fnPath[1];
+					} else if (this.$origin) {
+						origin = this.$origin;
+					} else {
+						origin = $global.$mainModule.exports;
+					}
+
+					var method = common.getByPath(taskFnName, origin);
+
+					/**
+						 * Try to look up $function in the global scope.
+						 */
+					if (!method || 'function' != typeof method.value) {
+						method = common.getByPath(taskFnName);
+					}
+
+					if (method && 'function' == typeof method.value) {
+						var fn = method.value;
+						var ctx  = this.$scope || method.scope;
+
+						var args = this.$args;
+						var argsType = Object.typeOf(args);
+
+						if (null == args) {
+							args = [ this ];
+						} else if ('Array' != argsType &&
+								   'Arguments' != argsType) {
+							args = [ args ];
+						}
+
+						try {
+							var returnVal = fn.apply(ctx, args);
+						} catch (e) {
+							failed = e;
+							this.failed(failed);
+						}
+
+						if (!failed) {
+							this.completed(returnVal);
+
+							//								if (isVoid(returnVal)) {
+							//								if (common.isEmpty(returnVal)) {
+							//									this.empty();
+							//								}
+						}
+					} else {
+						failed = taskFnName + ' is not a function';
+						this.failed(failed);
+					}
+				} else {
+					// TODO: detailed error description
+					this.completed(actualTaskParams.coderef(this));
+				}
+
+				if (failed) throw failed;
+			}
+		});
+
+		theTask = new xTaskClass ({
+			originalConfig: originalTaskConfig,
+			functionName: taskFnName,
+			logTitle:     actualTaskParams.logTitle || actualTaskParams.$logTitle,
+			require:      gen ('checkRequirements', actualTaskParams),
+			important:    actualTaskParams.important || actualTaskParams.$important,
+			timeout:      actualTaskParams.timeout
+		});
+
+	}
+
+	//		console.log (task);
+
+	return theTask;
+
+};
 
 /**
  * @method EmitError

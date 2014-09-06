@@ -182,63 +182,22 @@ var dataflow = module.exports = function (config, reqParam) {
 		config.tasks = [];
 	}
 
-	this.tasks = config.tasks.map (function (taskParams, idx, array) {
-		var task;
+	function createDict () {
+		// TODO: very bad idea: reqParam overwrites flow.data
+		var dict = util.extend(true, self.data, reqParam);
+		dict.global = $global;
+		dict.appMain = $mainModule.exports;
 
-		var idxLog = (idx < 10 ? " " : "") + idx;
 		if ($isServerSide) {
-			idxLog = "\x1B[0;3" + (parseInt(idx) % 8)  + "m" + idxLog + "\x1B[0m";
-		}
-		var actualTaskParams = {
-			dfTaskNo: idx,
-			dfTaskLogNum: idxLog
-		};
-		var taskTemplateName = taskParams.$template;
-		if (taskTemplateName && self.templates && self.templates[taskTemplateName]) {
-			util.extend (true, actualTaskParams, self.templates[taskTemplateName]);
-			delete actualTaskParams.$template;
+			try { dict.project = project; } catch (e) {}
 		}
 
-		// we expand templates in every place in config
-		// for tasks such as every
-		util.extend (true, actualTaskParams, taskParams);
+		return dict;
+	}
 
-		if (actualTaskParams.$every) {
-			actualTaskParams.$class = 'every';
-			actualTaskParams.$tasks.forEach (function (everyTaskConf, idx) {
-				var taskTemplateName = everyTaskConf.$template;
-				if (taskTemplateName && self.templates && self.templates[taskTemplateName]) {
-					var newEveryTaskConf = util.extend (true, {}, self.templates[taskTemplateName]);
-					util.extend (true, newEveryTaskConf, everyTaskConf);
-					util.extend (true, everyTaskConf, newEveryTaskConf);
-					delete everyTaskConf.$template;
-					console.log (everyTaskConf, actualTaskParams.$tasks[idx]);//everyTaskConf.$tasks
-				}
-
-			});
-		}
-
-//		var originalTaskConfig = JSON.parse(JSON.stringify(actualTaskParams));
-		var originalTaskConfig = util.extend (true, {}, actualTaskParams);
-
-		function createDict () {
-			// TODO: very bad idea: reqParam overwrites self.data
-			var dict = util.extend(true, self.data, reqParam);
-			dict.global = $global;
-			dict.appMain = $mainModule.exports;
-
-			if ($isServerSide) {
-				try {
-					dict.project = project;
-				} catch (e) {
-
-				}
-			}
-
-			return dict;
-		}
-
-		var checkRequirements = function () {
+	var taskGen = function (type, actualTaskParams) {
+		if (type === 'createDict') return createDict;
+		if (type === 'checkRequirements') return function () {
 			var dict = createDict ();
 
 			var result = checkTaskParams (actualTaskParams, dict, self.marks);
@@ -247,167 +206,15 @@ var dataflow = module.exports = function (config, reqParam) {
 				this.unsatisfiedRequirements = result.failed;
 				return false;
 			} else if (result.modified) {
+				// TODO: bad
 				util.extend (this, result.modified);
 				return true;
 			}
 		}
+	}
 
-		// check for data persistence in self.templates[taskTemplateName], taskParams
 
-//		console.log (taskParams);
-
-		var taskClassName = actualTaskParams.className || actualTaskParams.$class;
-		var taskFnName = actualTaskParams.functionName || actualTaskParams.$function;
-
-		if (taskClassName && taskFnName)
-			self.logError ('defined both className and functionName, using className');
-
-		if (taskClassName) {
-			var xTaskClass;
-
-			// TODO: need check all task classes,
-			// because some compile errors may be there
-			/*var taskPath = path.resolve(
-				$global.project.root.path,
-				'node_modules',
-				taskClassName
-			);*/
-
-			xTaskClass = dataflows.task(taskClassName);
-
-			/*try {
-				xTaskClass = require (taskPath);
-			} catch (e) {
-				try {
-					xTaskClass = require(
-						path.join('dataflo.ws', taskClassName)
-					);
-				} catch (eLib) {
-					console.log ('requirement "' + taskClassName + '" failed:');
-					console.log (e.stack);
-					console.log (eLib.stack);
-					throw ('requirement "' + taskClassName + '" failed:');
-					self.ready = false;
-				}
-			}*/
-
-			try {
-				task = new xTaskClass ({
-					originalConfig: originalTaskConfig,
-					className: taskClassName,
-					method:    actualTaskParams.method || actualTaskParams.$method,
-					require:   checkRequirements,
-					important: actualTaskParams.important || actualTaskParams.$important,
-					flowId:    self.coloredId,
-					getDict:   createDict,
-					timeout:   actualTaskParams.timeout
-				});
-			} catch (e) {
-				console.log ('instance of "'+taskClassName+'" creation failed:');
-				console.log (e.stack);
-				throw ('instance of "'+taskClassName+'" creation failed:');
-				self.ready = false;
-
-			}
-
-		} else if (actualTaskParams.coderef || taskFnName) {
-
-//			self.log ((taskParams.functionName || taskParams.logTitle) + ': initializing task from function');
-			if (!taskFnName && !actualTaskParams.logTitle)
-				throw "task must have a logTitle when using call parameter";
-
-			var xTaskClass = function (config) {
-				this.init (config);
-			};
-
-			util.inherits (xTaskClass, taskClass);
-
-			util.extend (xTaskClass.prototype, {
-				run: function () {
-					var failed = false;
-
-					/**
-					 * Apply $function to $args in $scope.
-					 */
-					if (taskFnName) {
-						var origin = null;
-						var fnPath = taskFnName.split('#', 2);
-
-						if (fnPath.length == 2) {
-							origin = $global.project.require(fnPath[0]);
-							taskFnName = fnPath[1];
-						} else if (this.$origin) {
-							origin = this.$origin;
-						} else {
-							origin = $global.$mainModule.exports;
-						}
-
-						var method = common.getByPath(taskFnName, origin);
-
-						/**
-						 * Try to look up $function in the global scope.
-						 */
-						if (!method || 'function' != typeof method.value) {
-							method = common.getByPath(taskFnName);
-						}
-
-						if (method && 'function' == typeof method.value) {
-							var fn = method.value;
-							var ctx  = this.$scope || method.scope;
-
-							var args = this.$args;
-							var argsType = Object.typeOf(args);
-
-							if (null == args) {
-								args = [ this ];
-							} else if ('Array' != argsType &&
-								'Arguments' != argsType) {
-								args = [ args ];
-							}
-
-							try {
-								var returnVal = fn.apply(ctx, args);
-							} catch (e) {
-								failed = e;
-								this.failed(failed);
-							}
-
-							if (!failed) {
-								this.completed(returnVal);
-
-//								if (isVoid(returnVal)) {
-//								if (common.isEmpty(returnVal)) {
-//									this.empty();
-//								}
-							}
-						} else {
-							failed = taskFnName + ' is not a function';
-							this.failed(failed);
-						}
-					} else {
-						// TODO: detailed error description
-						this.completed(actualTaskParams.coderef(this));
-					}
-
-					if (failed) throw failed;
-				}
-			});
-
-			task = new xTaskClass ({
-				originalConfig: originalTaskConfig,
-				functionName: taskFnName,
-				logTitle:     actualTaskParams.logTitle || actualTaskParams.$logTitle,
-				require:      checkRequirements,
-				important:    actualTaskParams.important || actualTaskParams.$important,
-				timeout:      actualTaskParams.timeout
-			});
-
-		}
-
-//		console.log (task);
-
-		return task;
-	});
+	this.tasks = config.tasks.map (taskClass.prepare.bind (taskClass, self, dataflows, taskGen));
 
 };
 
