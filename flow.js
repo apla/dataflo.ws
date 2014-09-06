@@ -182,10 +182,17 @@ var dataflow = module.exports = function (config, reqParam) {
 		config.tasks = [];
 	}
 
-	this.tasks = config.tasks.map (function (taskParams) {
+	this.tasks = config.tasks.map (function (taskParams, idx, array) {
 		var task;
 
-		var actualTaskParams = {};
+		var idxLog = (idx < 10 ? " " : "") + idx;
+		if ($isServerSide) {
+			"\x1B[0;3" + (parseInt(idx) % 8)  + "m" + idxLog + "\x1B[0m";
+		}
+		var actualTaskParams = {
+			dfTaskNo: idx,
+			dfTaskLogNum: idxLog
+		};
 		var taskTemplateName = taskParams.$template;
 		if (taskTemplateName && self.templates && self.templates[taskTemplateName]) {
 			util.extend (true, actualTaskParams, self.templates[taskTemplateName]);
@@ -607,7 +614,7 @@ util.extend (dataflow.prototype, {
 		this._log.apply (this, args);
 	},
 	logTask: function (task, msg) {
-		this._log ('log', task.logTitle,  "("+task.state+")",  msg);
+		this._log ('log', task.dfTaskLogNum, task.logTitle,  "("+task.state+")",  msg);
 	},
 	logTaskError: function (task, msg, options) {
 		var lastFrame = '';
@@ -621,6 +628,7 @@ util.extend (dataflow.prototype, {
 
 		this._log (
 			'error',
+			task.dfTaskLogNum,
 			task.logTitle,
 			'(' + task.state + ') ',
 			paint.error (
