@@ -187,7 +187,7 @@ var dataflow = module.exports = function (config, reqParam) {
 
 		var idxLog = (idx < 10 ? " " : "") + idx;
 		if ($isServerSide) {
-			"\x1B[0;3" + (parseInt(idx) % 8)  + "m" + idxLog + "\x1B[0m";
+			idxLog = "\x1B[0;3" + (parseInt(idx) % 8)  + "m" + idxLog + "\x1B[0m";
 		}
 		var actualTaskParams = {
 			dfTaskNo: idx,
