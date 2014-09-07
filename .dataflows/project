@@ -75,11 +75,17 @@
 					}
 				}, {
 					"path": "timeout",
+					"data": {
+						"empty response": true
+					},
 					"tasks":[{
 						"$class": "sleep",
 						"amount": 4000
 					}],
-					"presenter": "json"
+					"presenter": {
+						"type": "json",
+						"dump": true
+					}
 				}, {
 					"path": "redirected",
 					"presenter": {
