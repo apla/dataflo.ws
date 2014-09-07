@@ -181,6 +181,15 @@
 		}, {
 			"$template": "testHttpResource",
 			"url": "http://<$initiator.http.domain>:<$initiator.http.port>/test/post",
+			"successCodes": "2xx",
+			"$setOnFail": "postNoDataObj"
+		}, {
+			"$function": "throwUnlessEqual",
+			"$args": [500, "{$postNoDataObj.code}", "post page http response:"],
+			"$important": true
+		}, {
+			"$template": "testHttpResource",
+			"url": "http://<$initiator.http.domain>:<$initiator.http.port>/test/post",
 			"bodyData": {
 				"a": "b",
 				"c": "d"
@@ -217,12 +226,28 @@
 			"url": "http://<$initiator.http.domain>:<$initiator.http.port>/test/timeout",
 			"successCodes": "2xx",
 			"timeout": 5000,
-			"$set": "timeoutObj"
+			"$set": "noTimeoutObj"
 		}, {
 			"$function": "console.log",
 			"$args": [
-				"{$timeoutObj.data}"
+				"{$noTimeoutObj.data}"
 			],
+			"$important": true
+		}, {
+			"$template": "testHttpResource",
+			"url": "http://<$initiator.http.domain>:<$initiator.http.port>/test/timeout",
+			"successCodes": "2xx",
+			"timeout": 500,
+			"$setOnFail": "timeoutObj"
+		}, {
+			"$function": "console.log",
+			"$args": [
+				"{$timeoutObj}"
+			],
+			"$important": true
+		}, {
+			"$function": "throwUnlessEqual",
+			"$args": [504, "{$timeoutObj.code}", "timeout page http response:"],
 			"$important": true
 		}]
 
