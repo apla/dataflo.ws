@@ -227,7 +227,17 @@ httpdi.prototype.createPresenter = function (df, request, response, state) {
 		presenter.response  = "{$response}";
 
 		if (!presenter.vars && !presenter.data && presenter.dump) {
-			presenter.vars = df.data;
+			presenter.vars = {};
+			var skip = {};
+			"request|response|global|appMain|project".split ('|').forEach (function (k) {
+				skip[k] = true;
+			});
+			// WHY IS DF.DATA IS FILLED WITH JUNK???
+			for (var k in df.data) {
+				if (!skip[k]) {
+					presenter.vars[k] = df.data[k];
+				}
+			}
 		} else {
 			presenter.vars = presenter.vars || presenter.data || {};
 		}
