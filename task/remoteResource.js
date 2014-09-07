@@ -72,9 +72,9 @@ cacheTask.prototype.initModel = function () {
 		// 	self.emitError(e, data);
 		// });
 		self.model.on ('error', function (error) {
-			console.log (error);
+//			console.log (error);
 			self.clearOperationTimeout();
-			self.finishWith ({}, 'failed');
+			self.finishWith (error, 'failed');
 		});
 
 	};
@@ -102,6 +102,24 @@ cacheTask.prototype.isSameUrlLoading = function () {
 		}
 		return false;
 	};
+
+cacheTask.prototype.activityCheck = function (place) {
+	var self = this;
+
+	self.clearOperationTimeout();
+
+	self.timeoutId = setTimeout(function () {
+		self.state = 5;
+		self.emit (
+			'log', 'timeout is over for ' + place + ' operation'
+		);
+		self.model.stop ('timeout');
+//		self._cancel();
+
+	}, self.timeout);
+
+}
+
 /**
  * @method toBuffer
  * Downloads a given URL into a memory buffer.
@@ -164,9 +182,14 @@ cacheTask.prototype.finishWith = function (result, method) {
 			ds.addResultFields (result);
 		}
 
-		method = method || 'completed';
-		if (ds && ds.isSuccessResponse && !ds.isSuccessResponse ())
+//		method = method || 'completed';
+	if (!method)
+		if (ds && ds.isSuccessResponse && ds.isSuccessResponse ()) {
+			method = 'completed';
+		} else {
 			method = 'failed';
+		}
+
 		self[method] (result);
 	};
 /**

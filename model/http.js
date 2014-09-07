@@ -248,6 +248,8 @@ util.extend (httpModel.prototype, {
 	 */
 	addResultFields: function (result) {
 		result.code    = this.res.statusCode || 500;
+		if (result.stopReason === "timeout")
+			result.code = 504;
 		result.headers = (this.res.headers) ? this.res.headers : {};
 	},
 	isSuccessResponse: function check () {
@@ -345,9 +347,12 @@ util.extend (httpModel.prototype, {
 			});
 		});
 
-		req.on('error', function (exception) {
-			self.res = {};
+		req.on ('error', function (exception) {
+			self.res = self.res || {};
 			exception.scope = 'request';
+			if (self.stopReason)
+				exception.stopReason = self.stopReason;
+//			console.log (exception);
 			self.modelBase.emit ('error', exception);
 		});
 
@@ -390,7 +395,9 @@ util.extend (httpModel.prototype, {
 		return redirectUrl;
 	},
 
-	stop: function () {
+	stop: function (reason) {
+		if (reason)
+			this.stopReason = reason;
 		if (this.req) this.req.abort();
 		if (this.res) this.res.destroy();
 	}

@@ -225,9 +225,13 @@ httpdi.prototype.createPresenter = function (df, request, response, state) {
 	} else {
 		// {"type": "json"}
 		presenter.response  = "{$response}";
-		presenter.vars      = presenter.vars || presenter.data || {};
-		if (Object.is('Object', presenter.vars) && !Object.keys (presenter.vars).length && presenter.dump)
+
+		if (!presenter.vars && !presenter.data && presenter.dump) {
 			presenter.vars = df.data;
+		} else {
+			presenter.vars = presenter.vars || presenter.data || {};
+		}
+
 		if (!presenter.functionName || !presenter.$function) {
 			presenter.className = presenter.$class || presenter.className ||
 				"presenter";

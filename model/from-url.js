@@ -34,21 +34,16 @@ var model = module.exports = function (url, optionalParams) {
 	// fetch method
 
 	this.fetch = function (target) {
-
 		self.dataSource.fetch(target);
-
 	}
 
 	this.store = function (target) {
-
 		self.dataSource.store(target);
-
 	}
 
-	this.stop = function () {
-
-		if (self.dataSource.stop) self.dataSource.stop();
-
+	this.stop = function (reason) {
+		if (self.dataSource.stop)
+			self.dataSource.stop (reason);
 	}
 
 	// this.init();
