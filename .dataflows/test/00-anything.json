@@ -161,9 +161,8 @@
 	"http-initiator": {
 		"expect": "ok",
 		"tasks": [{
-			"$class":"remoteResource",
-			"$method": "toBuffer",
-			"url": "http://127.0.0.1:<$initiator.http.port>/favicon.ico",
+			"$template": "testHttpResource",
+			"url": "http://<$initiator.http.domain>:<$initiator.http.port>/favicon.ico",
 			"successCodes": "2xx",
 			"$setOnFail": "favicon"
 		}, {
@@ -171,9 +170,8 @@
 			"$args": [404, "{$favicon.code}", "favicon http response:"],
 			"$important": true
 		}, {
-			"$class":"remoteResource",
-			"$method": "toBuffer",
-			"url": "http://127.0.0.1:<$initiator.http.port>/index.html",
+			"$template": "testHttpResource",
+			"url": "http://<$initiator.http.domain>:<$initiator.http.port>/index.html",
 			"successCodes": "2xx",
 			"$set": "indexPage"
 		}, {
@@ -181,9 +179,8 @@
 			"$args": [200, "{$indexPage.code}", "index page http response:"],
 			"$important": true
 		}, {
-			"$class":"remoteResource",
-			"$method": "toBuffer",
-			"url": "http://127.0.0.1:<$initiator.http.port>/test/post",
+			"$template": "testHttpResource",
+			"url": "http://<$initiator.http.domain>:<$initiator.http.port>/test/post",
 			"bodyData": {
 				"a": "b",
 				"c": "d"
@@ -203,9 +200,8 @@
 			"$args": ["d", "{$postData.fields.c}", "post page http response:"],
 			"$important": true
 		}, {
-			"$class":"remoteResource",
-			"$method": "toBuffer",
-			"url": "http://127.0.0.1:<$initiator.http.port>/test/redirect",
+			"$template": "testHttpResource",
+			"url": "http://<$initiator.http.domain>:<$initiator.http.port>/test/redirect",
 			"successCodes": "2xx",
 			"$set": "redirectObj"
 		}, {
@@ -217,9 +213,8 @@
 			"$args": ["auth=123", "{$redirectData.cookie}", "redirect cookie page http response:"],
 			"$important": true
 		}, {
-			"$class":"remoteResource",
-			"$method": "toBuffer",
-			"url": "http://127.0.0.1:<$initiator.http.port>/test/timeout",
+			"$template": "testHttpResource",
+			"url": "http://<$initiator.http.domain>:<$initiator.http.port>/test/timeout",
 			"successCodes": "2xx",
 			"timeout": 5000,
 			"$set": "timeoutObj"
