@@ -351,11 +351,11 @@ util.extend (dataflow.prototype, {
 
 		// TODO: display scarce tasks unsatisfied requirements
 		if (this.taskStates[taskStateNames.scarce]) {
-			self.tasks.map (function (task) {
+			self.tasks.map (function (task, idx) {
 				if (task.state != taskStateNames.scarce && task.state != taskStateNames.skipped)
 					return;
 				if (task.important) {
-					task.failed ("important task didn't start");
+					task.failed (idx + " important task didn't start");
 					self.taskStates[taskStateNames.scarce]--;
 					self.taskStates[task.state]++;
 					self.failed = true;
@@ -363,7 +363,7 @@ util.extend (dataflow.prototype, {
 				}
 
 				if (task.state == taskStateNames.scarce || task.state == taskStateNames.failed)
-					scarceTaskMessage += (task.logTitle) + ' => ' + task.unsatisfiedRequirements.join (', ') + '; ';
+					scarceTaskMessage += idx + ' ' + (task.logTitle) + ' => ' + task.unsatisfiedRequirements.join (', ') + '; ';
 			});
 			self.log (scarceTaskMessage);
 		}
