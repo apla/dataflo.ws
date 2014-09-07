@@ -533,8 +533,6 @@ task.prepare = function (flow, dataflows, gen, taskParams, idx, array) {
 			taskFnName = taskPromise;
 		}
 
-		console.log (taskPromise);
-
 		util.inherits (xTaskClass, task);
 
 		util.extend (xTaskClass.prototype, {
