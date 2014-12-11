@@ -21,6 +21,13 @@ if ($isServerSide) {
 	fs   = require ('fs');
 }
 
+var util   = require ('util');
+try {
+	util.clone = require('node-v8-clone').clone;
+} catch (e) {
+	console.log (color.dataflows(), color.path ('node-v8-clone'), 'recommended to install to fasten clone operations');
+}
+
 
 var instanceTypes = [ 'initiator', 'task' ];
 
