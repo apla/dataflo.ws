@@ -21,6 +21,15 @@ if ($isServerSide) {
 	fs   = require ('fs');
 }
 
+color.error     = color.bind (color, "red+white_bg");
+color.path      = color.cyan.bind (color);
+color.dataflows = color.green.bind (color, "dataflows");
+
+
+module.exports.common = common;
+module.exports.color  = color;
+
+
 var util   = require ('util');
 try {
 	util.clone = require('node-v8-clone').clone;
@@ -124,14 +133,6 @@ module.exports.register = function (instanceType, instanceName, instanceClass) {
 
 	registry[instanceType][instanceName] = instanceClass;
 };
-
-color.error     = color.bind (color, "red+white_bg");
-color.path      = color.cyan.bind (color);
-color.dataflows = color.green.bind (color, "dataflows");
-
-
-module.exports.common = common;
-module.exports.color  = color;
 
 
 
