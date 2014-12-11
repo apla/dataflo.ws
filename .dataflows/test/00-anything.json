@@ -151,9 +151,24 @@
 			"$setOnFail": "promise222"
 		}, {
 			"$function": "throwUnlessEqual",
-			"// 1 ": "this task must fail because unsatisfied dependencies of result.a",
-			"// 2 ": "which replaced by second JSON parse task. task state is skipped, but $important fail skipped task",
 			"$args": ["{$promise111}", "{$promise222}"],
+			"$important": true
+
+		}]
+	},
+	"test:10-errback": {
+		"expect": "ok",
+		"tasks": [{
+			"$errback": "errback",
+			"$args": [500, 111, true, "<- last parameter define successful execution"],
+			"$set": "errback111"
+		}, {
+			"$errback": "errback",
+			"$args": [500, 111, false, "<- last parameter define unsuccessful execution"],
+			"$setOnFail": "errback222"
+		}, {
+			"$function": "throwUnlessEqual",
+			"$args": ["{$errback111}", "{$errback222}"],
 			"$important": true
 
 		}]

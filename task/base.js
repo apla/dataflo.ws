@@ -440,6 +440,21 @@ util.extend (task.prototype, taskStateMethods, {
 
 });
 
+	/**
+	 * @method prepare
+	 * Prepare task class to run, handle errors, workaround for a $every tasks.
+	 *
+	 * @return {Task}.
+	 * @param {Flow} flow for task.
+	 * @param {DataFlows} dataflows object.
+	 * @param {Function} generator for params dictionary and check requirements.
+	 * @param {Integer} index in task array for that flow.
+	 * @param {Array} task array.
+
+	 */
+
+
+
 task.prepare = function (flow, dataflows, gen, taskParams, idx, array) {
 	var theTask;
 
@@ -486,8 +501,9 @@ task.prepare = function (flow, dataflows, gen, taskParams, idx, array) {
 	var taskClassName = actualTaskParams.className || actualTaskParams.$class || actualTaskParams.task;
 	var taskFnName = actualTaskParams.functionName || actualTaskParams.$function;
 	var taskPromise = actualTaskParams.promise || actualTaskParams.$promise;
+	var taskErrBack = actualTaskParams.errback || actualTaskParams.$errback;
 
-//	console.log ('task:', taskClassName, 'function:', taskFnName, 'promise:', taskPromise);
+//	console.log ('task:', taskClassName, 'function:', taskFnName, 'promise:', taskPromise, 'errback:', taskErrBack);
 
 	if (taskClassName && taskFnName)
 		flow.logError ('defined both className and functionName, using className');
@@ -516,13 +532,9 @@ task.prepare = function (flow, dataflows, gen, taskParams, idx, array) {
 
 		}
 
-	} else if (actualTaskParams.coderef || taskFnName || taskPromise) {
+	} else if (taskFnName || taskPromise || taskErrBack) {
 
 		//	flow.log ((taskParams.functionName || taskParams.logTitle) + ': initializing task from function');
-		if (taskPromise || taskFnName || actualTaskParams.logTitle || actualTaskParams.displayName) {
-
-		} else
-			throw "task must have a `displayName` when calling function";
 
 		var xTaskClass = function (config) {
 			this.init (config);
@@ -531,6 +543,11 @@ task.prepare = function (flow, dataflows, gen, taskParams, idx, array) {
 		if (taskPromise) {
 			// functions and promises similar, but function return value, promise promisepromise promise
 			taskFnName = taskPromise;
+		}
+
+		if (taskErrBack) {
+			// functions and promises similar, but function return value, promise promisepromise promise
+			taskFnName = taskErrBack;
 		}
 
 		util.inherits (xTaskClass, task);
@@ -542,79 +559,91 @@ task.prepare = function (flow, dataflows, gen, taskParams, idx, array) {
 				/**
 					 * Apply $function to $args in $scope.
 					 */
-				if (taskFnName) {
-					var origin = null;
-					// WTF???
-					var fnPath = taskFnName.split('#', 2);
+				var origin = null;
+				// WTF???
+				var fnPath = taskFnName.split('#', 2);
 
-					if (fnPath.length == 2) {
-						origin = $global.project.require(fnPath[0]);
-						taskFnName = fnPath[1];
-					} else if (this.$origin) {
-						origin = this.$origin;
-					} else {
-						origin = $global.$mainModule.exports;
-					}
-
-					var method = common.getByPath(taskFnName, origin);
-
-					/**
-						 * Try to look up $function in the global scope.
-						 */
-					if (!method || 'function' != typeof method.value) {
-						method = common.getByPath(taskFnName);
-					}
-
-					if (method && 'function' == typeof method.value) {
-						var fn = method.value;
-						var ctx  = this.$scope || method.scope;
-
-						var args = this.$args;
-						var argsType = Object.typeOf(args);
-
-						if (null == args) {
-							args = [ this ];
-						} else if ('Array' != argsType &&
-								   'Arguments' != argsType) {
-							args = [ args ];
-						}
-
-						try {
-							var returnVal = fn.apply(ctx, args);
-						} catch (e) {
-							failed = e;
-							this.failed(failed);
-						}
-
-						if (taskPromise) {
-							returnVal.then (
-								this.completed.bind (this),
-								this.failed.bind (this)
-							);
-						} else if (!failed) {
-							this.completed(returnVal);
-
-							//								if (isVoid(returnVal)) {
-							//								if (common.isEmpty(returnVal)) {
-							//									this.empty();
-							//								}
-						}
-					} else {
-						failed = taskFnName + ' is not a function';
-						this.failed(failed);
-					}
+				if (fnPath.length == 2) {
+					origin = $global.project.require(fnPath[0]);
+					taskFnName = fnPath[1];
+				} else if (this.$origin) {
+					origin = this.$origin;
 				} else {
-					// TODO: detailed error description
-					this.completed(actualTaskParams.coderef(this));
+					origin = $global.$mainModule.exports;
 				}
 
-				if (failed) throw failed;
+				var method;
+				method = common.getByPath (taskFnName, origin);
+
+				/**
+					 * Try to look up $function in the global scope.
+					 */
+				if (!method || 'function' !== typeof method.value) {
+					method = common.getByPath(taskFnName);
+				}
+
+				if (!method || 'function' !== typeof method.value) {
+					failed = taskFnName + ' is not a function';
+					this.failed(failed);
+				}
+
+				var fn = method.value;
+				var ctx  = this.$scope || method.scope;
+
+				var args = this.$args;
+				var argsType = Object.typeOf(args);
+
+				if (null == args) {
+					args = [ this ];
+				} else if (
+					'Array' != argsType &&
+					'Arguments' != argsType
+				) {
+					args = [ args ];
+				}
+
+//				console.log ('task:', taskClassName, 'function:', taskFnName, 'promise:', taskPromise, 'errback:', taskErrBack);
+
+				if (taskErrBack) {
+					args.push ((function (err) {
+						var cbArgs = [].slice.call (arguments, 1);
+						if (err) {
+							this.failed.apply (this, arguments);
+						};
+						this.completed.apply (this, cbArgs);
+					}).bind(this));
+				}
+
+				try {
+					var returnVal = fn.apply(ctx, args);
+				} catch (e) {
+					failed = e;
+					this.failed(failed);
+				}
+
+				if (taskPromise) {
+					returnVal.then (
+						this.completed.bind (this),
+						this.failed.bind (this)
+					);
+				} else if (taskErrBack) {
+
+				} else if (failed) {
+					throw failed;
+				} else {
+					this.completed(returnVal);
+
+					//								if (isVoid(returnVal)) {
+					//								if (common.isEmpty(returnVal)) {
+					//									this.empty();
+					//								}
+				}
 			}
 		});
 
 		theTask = new xTaskClass ({
 			originalConfig: originalTaskConfig,
-			functionName: taskFnName || taskPromise,
+			functionName: taskFnName || taskPromise || taskErrBack,
 			logTitle:     actualTaskParams.logTitle || actualTaskParams.$logTitle || actualTaskParams.displayName,
 			require:      gen ('checkRequirements', actualTaskParams),
 			important:    actualTaskParams.important || actualTaskParams.$important,
