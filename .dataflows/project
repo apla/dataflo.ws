@@ -70,7 +70,7 @@
 					}],
 					"presenter": {
 						"headers": {
-							"Set-Cookie": "auth=123; expires=Fri Jan 31 2031 00:00:00 GMT; path=/; domain=<$initiator.http.domain>"
+							"Set-Cookie": "auth=123; expires=Fri, 31 Jan 2031 00:00:00 GMT; path=/; domain=<$initiator.http.domain>"
 						}
 					}
 				}, {
