@@ -187,15 +187,20 @@ cacheTask.prototype.toBuffer = function () {
 		self.model.fetch ({to: self.download});
 	};
 
-cacheTask.prototype.finishWith = function (result, method) {
+cacheTask.prototype.finishWith = function (result, method, metaJSON) {
 		var self = this;
 		var model = self.model,
 			ds;
 
+	var meta;
+	if (metaJSON) {
+		meta = JSON.parse (metaJSON);
+	}
+
 		if (model)
 			ds = self.model.dataSource;
 		if (ds && ds.addResultFields) {
-			ds.addResultFields (result);
+			ds.addResultFields (result, meta);
 		}
 
 //		method = method || 'completed';
@@ -251,6 +256,11 @@ cacheTask.prototype.toFile = function () {
 						filePath: self.cacheFilePath
 					});
 				});
+				var metaFile = new io (self.cacheFilePath+'.meta');
+				metaFile.writeFile (JSON.stringify ({
+					code: self.model.dataSource.res.statusCode,
+					headers: self.model.dataSource.res.headers
+				}, null, "\t"));
 			});
 		}
 
@@ -267,10 +277,12 @@ cacheTask.prototype.toFile = function () {
 
 				self.emit ('log', 'file already downloaded from ' + self.url.href + ' to ' + self.cacheFilePath);
 				delete cacheTask.caching[self.cacheFilePath];
-				self.finishWith({
+
+				var metaFile = new io (self.cacheFilePath+'.meta');
+				metaFile.readFile (self.finishWith.bind (self, {
 					fileName: self.cacheFileName,
-					filePath: self.cacheFilePath
-				});
+					filePath: self.cacheFilePath,
+				}), undefined);
 
 				return;
 			}

@@ -261,7 +261,13 @@ util.extend (httpModel.prototype, {
 	 * http model needs to return response headers and status code
 	 * @param {Object} result result fields
 	 */
-	addResultFields: function (result) {
+	addResultFields: function (result, meta) {
+		if (!this.res && meta) {
+			// got headers and status from cached meta
+			result.code    = meta.code;
+			result.headers = meta.headers;
+			return;
+		}
 		result.code    = this.res.statusCode || 500;
 		if (result.stopReason === "timeout")
 			result.code = 504;
