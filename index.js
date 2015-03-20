@@ -78,12 +78,57 @@ function registryLookup (instanceType, instanceName) {
 			}
 		}
 
-		var project = common.getProject();
-		instanceClass = project.getModule (instanceType, fixedName);
+		var project;
+		var project_root;
+
+		if (common.getProject)
+			project = common.getProject();
+
+		if (project)
+			project_root = project.root;
+
+		instanceClass = getModule (instanceType, fixedName, false, project_root);
 	}
 
 	return registry[instanceType][instanceName] = instanceClass;
 };
+
+function getModule (type, name, optional, root) {
+	optional = optional || false;
+	var mod;
+
+	var paths = [
+		path.join('dataflo.ws', type, name)
+	];
+
+	if (root) {
+		paths.push (path.resolve(root.path ? root.path : root, type, name));
+		paths.push (path.resolve(root.path ? root.path : root, 'node_modules', type, name));
+	}
+
+	paths.push (name);
+
+	var taskFound = paths.some (function (modPath) {
+		try {
+			mod = require(modPath);
+			return true;
+		} catch (e) {
+			// assuming format: Error: Cannot find module 'csv2array' {"code":"MODULE_NOT_FOUND"}
+			if (e.toString().indexOf(name + '\'') > 0 && e.code == "MODULE_NOT_FOUND") {
+				return false;
+			} else {
+				console.error ('requirement failed:', paint.error (e.toString()), "in", paint.path (self.root.relative (modPath)));
+				return true;
+			}
+		}
+	});
+
+	if (!mod && !optional)
+		console.error ("module " + type + " " + name + " cannot be used");
+
+	return mod;
+
+}
 
 instanceTypes.forEach(function(instanceType) {
 	registry[instanceType] = {};

@@ -1,18 +1,27 @@
-var crypto       = require ('crypto'),
-	util         = require ('util'),
-	urlUtil      = require ('url'),
-	task         = require ('./base'),
-	path         = require('path'),
-	urlModel     = require ('../model/from-url');
+var crypto   = require ('crypto'),
+	util     = require ('util'),
+	urlUtil  = require ('url'),
+	path     = require ('path'),
+	os       = require ('os'),
+	task     = require ('./base'),
+	urlModel = require ('../model/from-url'),
+	io       = require ('../io/easy');
 
 
 var cacheTask = module.exports = function (config) {
 
 	try {
-		this.cachePath = project.config.cachePath;
+		if (typeof project === "undefined") {
+			// var hash = crypto.createHash('md5').update(sketchFolder).digest('hex');
+			//	console.log(hash); // 9b74c9897bac770ffc029102a200c5de
 
-		if (!project.caching) {
-			project.caching = {};
+			this.cachePath = new io (os.tmpdir()) // path.join (os.tmpdir(), hash.substr (0, 8));
+		} else {
+			this.cachePath = project.root.file_io (project.config.cachePath);
+		}
+
+		if (!cacheTask.caching) {
+			cacheTask.caching = {};
 		}
 	} catch (e) {
 	}
@@ -38,7 +47,7 @@ util.extend (cacheTask.prototype, {
 
 		var shasum = crypto.createHash('sha1');
 		shasum.update(this.url.href);
-		this.cacheFile = project.root.file_io (this.cachePath, shasum.digest('hex'));
+		this.cacheFile = this.cachePath.file_io (shasum.digest('hex'));
 		this.cacheFilePath = this.cacheFile.path;
 		this.cacheFileName = path.basename(this.cacheFile.path);
 
@@ -79,10 +88,10 @@ cacheTask.prototype.initModel = function () {
 
 	};
 cacheTask.prototype.isSameUrlLoading = function () {
-		var self = this;
-		// TODO: another task can download url contents to buffer/file and vice versa
-		// other task is caching requested url
-		var anotherTask = project.caching[self.cacheFilePath];
+	var self = this;
+	// TODO: another task can download url contents to buffer/file and vice versa
+	// other task is caching requested url
+	var anotherTask = cacheTask.caching[self.cacheFilePath];
 
 		if (anotherTask && anotherTask != self) {
 
@@ -98,7 +107,7 @@ cacheTask.prototype.isSameUrlLoading = function () {
 			});
 			return true;
 		} else {
-			project.caching[self.cacheFilePath] = self;
+			cacheTask.caching[self.cacheFilePath] = self;
 		}
 		return false;
 	};
@@ -227,7 +236,7 @@ cacheTask.prototype.toFile = function () {
 				self.clearOperationTimeout();
 				self.cacheFile.chmod (0640, function (err) {
 					// TODO: check for exception (and what's next?)
-					delete project.caching[self.cacheFilePath];
+					delete cacheTask.caching[self.cacheFilePath];
 					// self.res.cacheFilePath = self.cacheFilePath
 					// self.completed (self.res);
 					self.finishWith ({
@@ -250,7 +259,7 @@ cacheTask.prototype.toFile = function () {
 				self.clearOperationTimeout();
 
 				self.emit ('log', 'file already downloaded from ' + self.url.href + ' to ' + self.cacheFilePath);
-				delete project.caching[self.cacheFilePath];
+				delete cacheTask.caching[self.cacheFilePath];
 				self.finishWith({
 					fileName: self.cacheFileName,
 					filePath: self.cacheFilePath
