@@ -130,8 +130,6 @@ httpModel.prototype.handleBodyData = function () {
 
 util.extend (httpModel.prototype, {
 	DefaultParams: {
-		protocol: 'http:',
-		port: 80,
 		method: 'GET'
 	},
 
@@ -218,6 +216,7 @@ util.extend (httpModel.prototype, {
 		params.href = params.href || urlUtils.format(params);
 
 		params.port = params.port || ((this.params.protocol == 'https:') ? 443 : 80);
+		params.protocol = params.protocol || this.params.protocol;
 
 		return params;
 	},
@@ -276,7 +275,7 @@ util.extend (httpModel.prototype, {
 	run: function (params, headers, bodyData) {
 		var self = this;
 
-		var Client = (params.protocol == 'https:') ? HTTPSClient : HTTPClient;
+		var Client = (params.protocol === 'https:') ? HTTPSClient : HTTPClient;
 
 		var requestUrl = params.href;
 
