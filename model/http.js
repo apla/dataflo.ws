@@ -299,6 +299,9 @@ util.extend (httpModel.prototype, {
 				res.redirected = true;
 				self.run (urlUtils.parse (redirected, true), {});
 				this.redirectCount ++;
+
+				req.end ();
+				return;
 			}
 			// if (res.statusCode != 200) {
 			// 	self.modelBase.emit (
