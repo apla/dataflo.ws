@@ -56,37 +56,44 @@ util.extend (cacheTask.prototype, {
 });
 
 cacheTask.prototype.initModel = function () {
-		var self = this;
+	var self = this;
 
-		if (Object.is('String', self.url)) {
-			try {
-				self.url = urlUtil.parse(self.url, true);
-			} catch (e) {
-				self.emitError(e);
-				return;
-			}
+	if (Object.is('String', this.url)) {
+		try {
+			this.url = urlUtil.parse(this.url, true);
+		} catch (e) {
+			this.emitError(e);
+			return;
 		}
+	}
 
-		self.url.headers = self.headers || {};
+	this.url.headers = this.headers || {};
 
-		self.model = new urlModel (self.url, self);
-		self.url = self.model.url;
+	this.model = new urlModel (this.url, this);
+	this.url = this.model.url;
 
-		self.model.on ('data', function (chunks) {
-			self.activityCheck ('model.fetch data');
-		});
+	// TODO: check for data amount periodically, say, in 1 second
+//	this.model.on ('data', function (chunks) {
+//		this.activityCheck ('model.fetch data');
+//	}.bind (this));
+
+	this.model.on ('progress', function (current, total) {
+		this.activityCheck ('model.fetch data');
+		this.emit ('progress', current, total);
+	}.bind (this));
 
 		// self.model.on ('error', function (e, data) {
 		// 	// console.log("%%%%%%%%%%cache failed");
 		// 	self.emitError(e, data);
 		// });
-		self.model.on ('error', function (error) {
+	this.model.on ('error', function (error) {
 //			console.log (error);
-			self.clearOperationTimeout();
-			self.finishWith (error, 'failed');
-		});
+		this.clearOperationTimeout();
+		this.finishWith (error, 'failed');
+	}.bind (this));
 
-	};
+}
+
 cacheTask.prototype.isSameUrlLoading = function () {
 	var self = this;
 	// TODO: another task can download url contents to buffer/file and vice versa

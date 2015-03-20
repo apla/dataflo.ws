@@ -4,8 +4,9 @@ var FTPClient         = require ('node-ftp/ftp'),
 	ftpManager        = require ('./ftp/model-manager');
 
 var pipeProgress = function (config) {
-	this.bytesTotal = 0;
-	this.bytesPass  = 0; // because bytes can be read and written
+	this.bytesToRead = 0;
+	this.bytesRead  = 0;
+	this.bytesWritten = 0;
 	this.lastLogged = 0;
 	util.extend (this, config);
 }
@@ -14,11 +15,11 @@ pipeProgress.prototype.watch = function () {
 	var self = this;
 	if (this.reader && this.readerWatch) {
 		this.reader.on (this.readerWatch, function (chunk) {
-			self.bytesPass += chunk.length;
+			self.bytesRead += chunk.length;
 		});
 	} else if (this.writer && this.writerWatch) {
 		this.writer.on (this.writerWatch, function (chunk) {
-			self.bytesPass += chunk.length;
+			self.bytesWritten += chunk.length;
 		});
 	}
 }

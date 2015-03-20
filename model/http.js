@@ -13,9 +13,10 @@ var HTTPClient, HTTPSClient, followRedirects;
 // - - - - - - -
 
 var pipeProgress = function (config) {
-	this.bytesTotal = 0;
-	this.bytesPass  = 0; // because bytes can be read and written
-	this.lastLogged = 0;
+	this.bytesToRead  = 0;
+	this.bytesRead    = 0;
+	this.bytesWritten = 0;
+	this.lastLogged   = 0;
 	util.extend (this, config);
 };
 
@@ -23,13 +24,27 @@ pipeProgress.prototype.watch = function () {
 	var self = this;
 	if (this.reader && this.readerWatch) {
 		this.reader.on (this.readerWatch, function (chunk) {
-			self.bytesPass += chunk.length;
+			self.bytesRead += chunk.length;
 		});
 	} else if (this.writer && this.writerWatch) {
 		this.writer.on (this.writerWatch, function (chunk) {
-			self.bytesPass += chunk.length;
+			self.bytesWritten += chunk.length;
 		});
 	}
+
+	var readInterval = setInterval (function () {
+		this.emit ('progress', this.bytesRead, this.bytesToRead);
+	}.bind (this), 500);
+
+	this.reader.on ('end', function () {
+		clearInterval (readInterval);
+		this.emit ('progress', this.bytesRead, this.bytesToRead);
+	});
+
+	this.reader.on ('error', function () {
+		clearInterval (readInterval);
+	});
+
 };
 
 /**
@@ -229,7 +244,8 @@ util.extend (httpModel.prototype, {
 		if (!this.isStream) target.to.data = new Buffer('');
 
 		this.progress = new pipeProgress ({
-			writer: target.to
+			writer: target.to,
+			emit: this.modelBase.emit.bind (this.modelBase)
 		});
 
 		// add this for watching into httpModelManager
@@ -311,9 +327,8 @@ util.extend (httpModel.prototype, {
 			// 	return;
 			// }
 
-			// TODO: handle redirect
 			util.extend (self.progress, {
-				bytesTotal: res.headers['content-length'],
+				bytesToRead: res.headers['content-length'],
 				reader: res,
 				readerWatch: "data"
 			});
