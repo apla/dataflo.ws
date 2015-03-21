@@ -563,7 +563,7 @@ task.prepare = function (flow, dataflows, gen, taskParams, idx, array) {
 				// WTF???
 				var fnPath = taskFnName.split('#', 2);
 
-				if (fnPath.length == 2) {
+				if (fnPath.length == 2 && $global.project) {
 					origin = $global.project.require(fnPath[0]);
 					taskFnName = fnPath[1];
 				} else if (this.$origin) {
