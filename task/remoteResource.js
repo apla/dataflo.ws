@@ -24,6 +24,7 @@ var cacheTask = module.exports = function (config) {
 			cacheTask.caching = {};
 		}
 	} catch (e) {
+		console.log (e);
 	}
 
 
@@ -279,10 +280,12 @@ cacheTask.prototype.toFile = function () {
 				delete cacheTask.caching[self.cacheFilePath];
 
 				var metaFile = new io (self.cacheFilePath+'.meta');
-				metaFile.readFile (self.finishWith.bind (self, {
-					fileName: self.cacheFileName,
-					filePath: self.cacheFilePath,
-				}), undefined);
+				metaFile.readFile (function (err, contents) {
+					self.finishWith ({
+						fileName: self.cacheFileName,
+						filePath: self.cacheFilePath,
+					}, 'completed', contents);
+				});
 
 				return;
 			}
