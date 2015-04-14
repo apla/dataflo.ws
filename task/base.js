@@ -527,8 +527,8 @@ task.prepare = function (flow, dataflows, gen, taskParams, idx, array) {
 				timeout:   actualTaskParams.timeout
 			});
 		} catch (e) {
-			console.log ('instance of "'+taskClassName+'" creation failed:');
-			console.log (e.stack);
+			flow.logError ('instance of "'+taskClassName+'" creation failed:');
+			flow.logError (e.stack);
 			throw ('instance of "'+taskClassName+'" creation failed:');
 			flow.ready = false;
 
