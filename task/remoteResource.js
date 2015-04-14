@@ -68,6 +68,10 @@ cacheTask.prototype.initModel = function () {
 		}
 	}
 
+	if (!this.url.href) {
+		this.url.href = urlUtil.format (this.url);
+	}
+
 	this.url.headers = this.headers || {};
 
 	this.model = new urlModel (this.url, this);
