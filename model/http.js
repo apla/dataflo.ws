@@ -422,6 +422,6 @@ util.extend (httpModel.prototype, {
 		if (reason)
 			this.stopReason = reason;
 		if (this.req) this.req.abort();
-		if (this.res) this.res.destroy();
+		if (this.res && this.res.destroy) this.res.destroy();
 	}
 });
