@@ -143,7 +143,9 @@ util.extend (task.prototype, taskStateMethods, {
 
 			this.state = 1;
 
-			setTimeout (this.run.bind(this), this.timeout);
+			var method = this[this.method || 'run'];
+
+			setTimeout (method.bind(this), this.timeout);
 		}
 
 		/**
