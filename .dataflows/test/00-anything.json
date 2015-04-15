@@ -173,6 +173,18 @@
 
 		}]
 	},
+	"test:11-errback-require": {
+		"expect": "ok",
+		"tasks": [{
+			"$nodecb": "fs.stat",
+			"$args": ["non-existing-file.xxx"],
+			"$setOnFail": "errback111"
+		}, {
+			"$function": "console.log",
+			"$args": ["just a function"],
+			"$set": "errback222"
+		}]
+	},
 	"http-initiator": {
 		"expect": "ok",
 		"tasks": [{
