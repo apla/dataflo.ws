@@ -3,7 +3,8 @@ var EventEmitter = require ('events').EventEmitter,
 	dataflows    = require ('./index'),
 	common       = dataflows.common,
 	taskClass    = require ('./task/base'),
-	paint        = dataflows.color;
+	paint        = dataflows.color,
+	tokenInitiator;
 
 var $global = common.$global;
 
@@ -137,6 +138,7 @@ var dataflow = module.exports = function (config, reqParam) {
 
 	var self = this;
 
+	// TODO: copy only required things
 	util.extend (true, this, config); // this is immutable config skeleton
 	util.extend (true, this, reqParam); // this is config fixup
 
@@ -170,22 +172,36 @@ var dataflow = module.exports = function (config, reqParam) {
 
 //	console.log ('config, reqParam', config, reqParam);
 
-	if (!this.tasks || !this.tasks.length) {
-		return;
-	}
-
 	self.ready = true;
 
-	// TODO: optimize usage - find placeholders and check only placeholders
+	var tasks = config.tasks;
 
-	if (!config.tasks || !config.tasks.length) {
+	// TODO: optimize usage - find placeholders and check only placeholders
+	if (config.tasksFrom) {
+		if (!tokenInitiator) tokenInitiator = require ('initiator/token');
+
+		var flowByToken;
+
+		if (
+			!project.config.initiator
+			|| !project.config.initiator.token
+			|| !project.config.initiator.token.flows
+			|| !(flowByToken = project.config.initiator.token.flows[config.tasksFrom])
+			|| !flowByToken.tasks
+		) {
+			this.log ('"tasksFrom" parameter requires to have "initiator/token/flows'+config.tasksFrom+'" configuration in project');
+			this.ready = false;
+		}
+
+		tasks = flowByToken.tasks;
+	} else if (!config.tasks || !config.tasks.length) {
 		config.tasks = [];
 	}
 
 	function createDict () {
 		// TODO: very bad idea: reqParam overwrites flow.data
-		var dict = util.extend(true, self.data, reqParam);
-		dict.global = $global;
+		var dict = util.extend (true, self.data, reqParam);
+		dict.global  = $global;
 		dict.appMain = $mainModule.exports;
 
 		if ($isServerSide) {
@@ -214,7 +230,7 @@ var dataflow = module.exports = function (config, reqParam) {
 	}
 
 
-	this.tasks = config.tasks.map (taskClass.prepare.bind (taskClass, self, dataflows, taskGen));
+	this.tasks = tasks.map (taskClass.prepare.bind (taskClass, self, dataflows, taskGen));
 
 };
 
