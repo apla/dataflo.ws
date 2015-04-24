@@ -97,6 +97,14 @@ function getModule (type, name, optional, root) {
 	optional = optional || false;
 	var mod;
 
+	if (!root) {
+		if (typeof project !== "undefined") {
+			root = project.root;
+		} else {
+			root = path.dirname (require.main.filename);
+		}
+	}
+
 	var paths = [
 		path.join('dataflo.ws', type, name)
 	];
@@ -117,7 +125,13 @@ function getModule (type, name, optional, root) {
 			if (e.toString().indexOf(name + '\'') > 0 && e.code == "MODULE_NOT_FOUND") {
 				return false;
 			} else {
-				console.error ('requirement failed:', paint.error (e.toString()), "in", paint.path (self.root.relative (modPath)));
+				console.error (
+					'requirement failed:',
+					color.error (e.toString()),
+					root
+						? "in " + color.path (root.relative (modPath))
+						: ""
+				);
 				return true;
 			}
 		}
