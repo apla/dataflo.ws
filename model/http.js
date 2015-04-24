@@ -59,8 +59,6 @@ var httpModel = module.exports = function (modelBase, optionalUrlParams) {
 	this.params = {};
 	this.extendParams(this.params, optionalUrlParams, modelBase.url);
 
-	this.headers = {};
-
 	if (this.params.auth) {
 		this.headers.Authorization = 'Basic ' +
 			new Buffer(self.params.auth).toString('base64');
@@ -86,6 +84,12 @@ var httpModel = module.exports = function (modelBase, optionalUrlParams) {
 
 	this.redirectCount = 0;
 	this.cookieJar = new tough.CookieJar (null, false);
+
+	if (optionalUrlParams.proxy) {
+		this.proxy = optionalUrlParams.proxy;
+	}
+
+	this.headers = {};
 
 	if (this.params.headers) {
 		try {
@@ -228,6 +232,8 @@ util.extend (httpModel.prototype, {
 			search: params.search
 		});
 
+		params.proxy = configUrlObj.proxy;
+
 		params.href = params.href || urlUtils.format(params);
 
 		params.port = params.port || ((this.params.protocol == 'https:') ? 443 : 80);
@@ -299,9 +305,21 @@ util.extend (httpModel.prototype, {
 
 		var Client = (params.protocol === 'https:') ? HTTPSClient : HTTPClient;
 
+		var requestParams = params;
+
 		var requestUrl = params.href;
 
-		var req = self.req = Client.request (params, function (res) {
+		if (this.proxy) {
+			requestParams = urlUtils.parse (this.proxy);
+			requestParams.path = params.href;
+			requestParams.headers = {};
+			for (var headerName in headers) {
+				requestParams.headers[headerName] = headers[headerName];
+			}
+			requestParams.headers.host = params.host;
+		}
+
+		var req = self.req = Client.request (requestParams, function (res) {
 
 			self.res = res;
 			res.responseData = new Buffer("");
