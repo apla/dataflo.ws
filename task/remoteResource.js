@@ -77,6 +77,8 @@ cacheTask.prototype.initModel = function () {
 	this.model = new urlModel (this.url, this);
 	this.url = this.model.url;
 
+	this.model.proxy = this.proxy;
+
 	// TODO: check for data amount periodically, say, in 1 second
 //	this.model.on ('data', function (chunks) {
 //		this.activityCheck ('model.fetch data');
