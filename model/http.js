@@ -322,7 +322,7 @@ util.extend (httpModel.prototype, {
 		var req = self.req = Client.request (requestParams, function (res) {
 
 			self.res = res;
-			res.responseData = new Buffer("");
+			res.responseData = new Buffer (0);
 
 			if (res.headers['set-cookie']) {
 				if (res.headers['set-cookie'].constructor != Array) {
@@ -372,7 +372,9 @@ util.extend (httpModel.prototype, {
 			// clean data on redirect
 			res.on ('data', function (chunk) {
 				if (!self.isStream)
-					res.responseData += chunk;
+					res.responseData.length === 0
+						? res.responseData = chunk
+						: res.responseData = Buffer.concat ([res.responseData, chunk]);
 				self.modelBase.emit ('data', chunk);
 			});
 
