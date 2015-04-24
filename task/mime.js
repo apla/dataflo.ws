@@ -26,7 +26,7 @@ util.extend(MimeTask.prototype, {
 		}
 	},
 
-	_onRestult: function (err, mimeType) {
+	_onResult: function (err, mimeType) {
 		if (err) {
 			this.failed(err);
 		} else {
@@ -39,12 +39,12 @@ util.extend(MimeTask.prototype, {
 	},
 
 	detectFile: function () {
-		var filePath = path.resolve($global.project.root.path, this.filePath);
-		this.magic.detectFile(filePath, this._onRestult.bind(this));
+		var filePath = path.resolve ($global.project ? $global.project.root.path : '.', this.filePath);
+		this.magic.detectFile (filePath, this._onResult.bind(this));
 	},
 
 	detectBuffer: function () {
-		this.magic.detect(this.buffer, this._onRestult.bind(this));
+		this.magic.detect(this.buffer, this._onResult.bind(this));
 	}
 });
 
