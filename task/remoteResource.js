@@ -17,6 +17,9 @@ var cacheTask = module.exports = function (config) {
 
 			this.cachePath = new io (os.tmpdir()) // path.join (os.tmpdir(), hash.substr (0, 8));
 		} else {
+			if (!project.config.cachePath) {
+				console.log ('cachePath not defined in project config!');
+			}
 			this.cachePath = project.root.file_io (project.config.cachePath);
 		}
 

@@ -480,6 +480,11 @@ task.prepare = function (flow, dataflows, gen, taskParams, idx, array) {
 
 	if (actualTaskParams.$every) {
 		actualTaskParams.$class = 'every';
+		if (!actualTaskParams.$tasks) {
+			flow.logError ('missing $tasks property for $every task');
+			flow.ready = false;
+			return;
+		}
 		actualTaskParams.$tasks.forEach (function (everyTaskConf, idx) {
 			var taskTemplateName = everyTaskConf.$template;
 			if (taskTemplateName && flow.templates && flow.templates[taskTemplateName]) {

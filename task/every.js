@@ -153,7 +153,8 @@ util.extend(EveryTask.prototype, {
 			var every = {
 				item:  self.$every[item],
 				index: item,
-				data:  self.$every
+				data:  self.$every,
+				length: keys.length
 			};
 			// dict the same between every, so we need to host a local copy
 			var dict = util.extend (true, {}, self.getDict());
