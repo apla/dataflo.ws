@@ -97,7 +97,10 @@ Project.prototype.readInstance = function () {
 	instanceFile.readFile (function (err, data) {
 
 		if (err) {
-			var instanceName = process.env.USER + '@' + process.env.HOSTNAME;
+			var instanceName = [
+				(process.env.USER || process.env.USERNAME),
+				(process.env.HOSTNAME || process.env.COMPUTERNAME)
+			].join ('@');
 			// it is ok to have instance name defined and have no instance
 			// or fixup file because fixup is empty
 			self.instance = instanceName;
