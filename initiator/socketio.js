@@ -81,7 +81,13 @@ util.extend (SocketInitiator.prototype, {
 
 				SocketInitiator.connections[socket.nsp.name] = socket;
 
-				socket.on ('message', this.processMessage.bind (this, flowName, socket));
+				if (this.flows[flowName].events) {
+					Object.keys (this.flows[flowName].events).forEach (function (eventName) {
+						socket.on (eventName, this.processMessage.bind (this, eventName, this.flows[flowName].events[eventName], socket));
+					}.bind (this));
+				} else {
+					socket.on ('message', this.processMessage.bind (this, 'message', this.flows[flowName], socket));
+				}
 
 				socket.on ('disconnect', function () {
 					if (this.verbose) console.log ('Socket server disconnected ' + socket.id);
@@ -95,21 +101,19 @@ util.extend (SocketInitiator.prototype, {
 		this.emit ('ready', this);
 	},
 
-	processMessage: function (flowName, socket, message) {
+	processMessage: function (eventName, flowData, socket, message) {
 
 		var self = this;
 
-		if (this.verbose) console.log ('processMessage', socket.nsp.name, socket.id, message);
+		if (this.verbose) console.log ('processMessage', eventName, socket.nsp.name, socket.id, message);
 
-		this.router (flowName, socket, message);
+		this.router (eventName, flowData, socket, message);
 	},
 
-	defaultRouter: function (flowName, socket, message) {
-
-		var item = this.flows[flowName];
+	defaultRouter: function (eventName, flowData, socket, message) {
 
 		var df = new flow (
-			util.extend (true, {}, item),
+			util.extend (true, {}, flowData),
 			{
 				message: message,
 				socket:  socket

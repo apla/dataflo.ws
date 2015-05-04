@@ -32,8 +32,13 @@ util.extend (SocketIOSender.prototype, {
 			return;
 		}
 
-		connection.send (this.message);
+		var eventName = this.eventName || 'message';
+		if (this.broadcast) {
+			connection.broadcast.emit (eventName, this.message);
+		} else {
+			connection.emit (eventName, this.message);
+		}
 
-		this.completed ();
+		this.completed (true);
 	}
 });
