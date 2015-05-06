@@ -331,7 +331,8 @@ util.extend (dataflow.prototype, {
 				try {
 					task._launch ();
 				} catch (e) {
-					self.logTaskError (task, 'failed to run', e);
+					task.failed (e);
+					// self.logTaskError (task, 'failed to run', e);
 				}
 
 				// sync task support
