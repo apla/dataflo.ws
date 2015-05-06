@@ -82,11 +82,11 @@ SocketInitiator.prototype.listen = function () {
 		}
 
 		Object.keys (this.flows).forEach (function (flowName) {
-			var flowUrl = flowName; // [0] === '/' ? flowName : '/' + flowName;
-			socketIo.of (flowUrl).on ('connection', function (socket) {
+			var flowUrl = flowName[0] === '/' ? flowName : '/' + flowName;
+			var flowConnection = socketIo.of (flowUrl).on ('connection', function (socket) {
 				if (this.verbose) console.log ('new socket.io connection ' + socket.id + ', scope: ' + socket.nsp.name);
 
-				SocketInitiator.connections[socket.nsp.name] = socket;
+				//SocketInitiator.connections[socket.nsp.name] = socket;
 
 				if (this.flows[flowName].events) {
 					Object.keys (this.flows[flowName].events).forEach (function (eventName) {
@@ -98,9 +98,10 @@ SocketInitiator.prototype.listen = function () {
 
 				socket.on ('disconnect', function () {
 					if (this.verbose) console.log ('socket.io client disconnected ' + socket.id);
-					delete SocketInitiator.connections[socket.nsp.name];
+					//delete SocketInitiator.connections[socket.nsp.name];
 				}.bind (this));
 			}.bind (this));
+			SocketInitiator.connections[flowUrl] = flowConnection;
 		}.bind (this));
 
 
