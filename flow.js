@@ -314,7 +314,7 @@ util.extend (dataflow.prototype, {
 			return;
 		}
 
-		this.tasks.map (function (task) {
+		this.tasks.forEach (function (task, idx) {
 
 			if (task.subscribed === void(0)) {
 				self.addEventListenersToTask (task);

@@ -3,7 +3,8 @@ var util			= require ('util'),
 	urlUtils		= require ('url'),
 	querystring     = require ('querystring'),
 	httpManager     = require ('./http/model-manager'),
-	tough           = require ('tough-cookie');
+	tough           = require ('tough-cookie'),
+	path            = require ('path');
 
 var HTTPClient, HTTPSClient, followRedirects;
 
@@ -272,8 +273,14 @@ util.extend (httpModel.prototype, {
 			// got headers and status from cached meta
 			result.code    = meta.code;
 			result.headers = meta.headers;
+			result.url     = meta.url;
+			result.urlFileName = meta.urlFileName;
 			return;
 		}
+
+		result.url = this.url;
+		result.urlFileName = path.basename (this.url);
+
 		result.code    = this.res.statusCode || 500;
 		if (result.stopReason === "timeout")
 			result.code = 504;
@@ -308,6 +315,7 @@ util.extend (httpModel.prototype, {
 		var requestParams = params;
 
 		var requestUrl = params.href;
+		this.url = requestUrl;
 
 		if (this.proxy) {
 			requestParams = urlUtils.parse (this.proxy);
