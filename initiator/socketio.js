@@ -10,18 +10,30 @@ var EventEmitter = require ('events').EventEmitter,
  *
  * Initiates WebSocket server-related dataflows.
  */
-var SocketInitiator = module.exports = function (config) {
+var SocketInitiator = module.exports = function (config, initiators) {
 	// we need to launch socket.io
 
-	var self = this;
+	// initiators start in random order. socket.io
+	// can launch in dependent mode from httpdi,
+	// so we need to start socket.io after httpdi gets initialized
+	process.nextTick (this.init.bind (this, config, initiators));
+}
 
-	if (!config.port) {
-		throw "you must define 'port' key for http initiator";
-	} else {
+SocketInitiator.connections = {};
+
+util.inherits (SocketInitiator, EventEmitter);
+
+SocketInitiator.prototype.init = function (config, initiators) {
+
+	if (config.useHttpServer) {
+		this.httpServer = initiators.http.server;
+	} else if (config.port) {
 		this.port  = config.port;
+	} else {
+		throw "you must define 'port' key or use existing http initiator ('useHttpServer' key) for socket.io";
 	}
 
-	this.opts = {};
+	this.opts = config.opts || {};
 
 	if (config.ssl) {
 		this.opts.key  = fs.readFileSync(config.ssl.key).toString();
@@ -37,37 +49,32 @@ var SocketInitiator = module.exports = function (config) {
 	}
 
 	this.flows  = config.workflows || config.dataflows || config.flows;
-	self.timer  = config.timer;
-	self.router = config.router;
+	this.timer  = config.timer;
+	this.router = config.router;
 
 	// router is function in main module or initiator method
 
-	if (config.router === void 0) {
-		self.router = self.defaultRouter;
+	if (config.router === undefined) {
+		this.router = this.defaultRouter;
 	} else if (process.mainModule.exports[config.router]) {
-		self.router = process.mainModule.exports[config.router];
+		this.router = process.mainModule.exports[config.router];
 	} else if (self[config.router]) {
-		self.router = this[config.router];
+		this.router = this[config.router];
 	} else {
 		throw "we cannot find " + config.router + " router method within initiator or function in main module";
 	}
 
 	// - - - start
 
-	self.listen();
+	this.listen();
+
 }
 
-SocketInitiator.connections = {};
+SocketInitiator.prototype.listen = function () {
 
-util.inherits (SocketInitiator, EventEmitter);
+	var self = this;
 
-util.extend (SocketInitiator.prototype, {
-
-	listen: function () {
-
-		var self = this;
-
-		var socketIo = self.socketIo = SocketIo.listen (self.port, self.opts);
+	var socketIo = self.socketIo = SocketIo (this.httpServer || this.port, this.opts);
 
 		if (!this.verbose) {
 			// have no effect on new socket.io
@@ -77,7 +84,7 @@ util.extend (SocketInitiator.prototype, {
 		Object.keys (this.flows).forEach (function (flowName) {
 			var flowUrl = flowName; // [0] === '/' ? flowName : '/' + flowName;
 			socketIo.of (flowUrl).on ('connection', function (socket) {
-				if (this.verbose) console.log ('Socket server connected ' + socket.id + ', scope: ' + socket.nsp.name);
+				if (this.verbose) console.log ('new socket.io connection ' + socket.id + ', scope: ' + socket.nsp.name);
 
 				SocketInitiator.connections[socket.nsp.name] = socket;
 
@@ -90,27 +97,32 @@ util.extend (SocketInitiator.prototype, {
 				}
 
 				socket.on ('disconnect', function () {
-					if (this.verbose) console.log ('Socket server disconnected ' + socket.id);
+					if (this.verbose) console.log ('socket.io client disconnected ' + socket.id);
 					delete SocketInitiator.connections[socket.nsp.name];
 				}.bind (this));
 			}.bind (this));
 		}.bind (this));
 
-		console.log ('Socket server running on ' + this.port + ' port');
 
-		this.emit ('ready', this);
-	},
+	if (this.httpServer) {
+		console.log ('socket.io server is attached to http initiator');
+	} else {
+		console.log ('socket.io server is running on ' + this.port + ' port');
+	}
 
-	processMessage: function (eventName, flowData, socket, message) {
+	this.emit ('ready', this);
+}
+
+SocketInitiator.prototype.processMessage = function (eventName, flowData, socket, message) {
 
 		var self = this;
 
 		if (this.verbose) console.log ('processMessage', eventName, socket.nsp.name, socket.id, message);
 
 		this.router (eventName, flowData, socket, message);
-	},
+	}
 
-	defaultRouter: function (eventName, flowData, socket, message) {
+SocketInitiator.prototype.defaultRouter = function (eventName, flowData, socket, message) {
 
 		var df = new flow (
 			util.extend (true, {}, flowData),
@@ -129,9 +141,9 @@ util.extend (SocketInitiator.prototype, {
 		if (df.ready) df.run();
 
 		return df;
-	},
+	}
 
-	runPresenter: function (df, state, socket) {
+SocketInitiator.prototype.runPresenter = function (df, state, socket) {
 
 		var self = this;
 
@@ -169,4 +181,4 @@ util.extend (SocketInitiator.prototype, {
 			socket.send('error:'+ JSON.stringify(err));
 		}
 	}
-});
+

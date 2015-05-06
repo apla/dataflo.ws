@@ -26,6 +26,8 @@ module.exports = {
 		var daemonConf = conf.daemon[daemonName];
 		var initiatorTypes = daemonConf.initiator;
 
+		var initiators = {};
+
 		initiatorTypes.forEach(function (initiatorType) {
 			var initiatorConf = conf.initiator[initiatorType];
 			// setters and getters is a flimsy shim for languages
@@ -33,7 +35,7 @@ module.exports = {
 			var initiatorClass = dataflows.initiator(initiatorType);
 
 			if ('function' == typeof initiatorClass) {
-				new initiatorClass(initiatorConf);
+				initiators[initiatorType] = new initiatorClass (initiatorConf, initiators);
 			} else {
 				console.error('Cannot load initiator "%s"', initiatorType);
 			}

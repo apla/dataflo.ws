@@ -62,23 +62,24 @@ var httpdi = module.exports = function httpdIConstructor (config) {
 		this.router = this.defaultRouter;
 	}
 
-	if (this.host  == "auto") {
-		this.detectIP (this.listen);
-	} else {
+	// TODO: use 0.0.0.0 instead of auto
+//	if (this.host  == "auto") {
+//		this.detectIP (this.listen);
+//	} else {
 		this.listen ();
-	}
+//	}
 
-	// - - - OS detected
-
-	this.win = (os.type() == 'Windows_NT');
+	return this;
 };
 
 util.inherits (httpdi, EventEmitter);
 
-httpdi.prototype.ready = function () {
+httpdi.connections = {};
+
+httpdi.prototype.started = function () {
 	// called from server listen
 	var listenHost = this.host ? this.host : '127.0.0.1';
-	var listenPort = this.port == 80 ? '' : ':'+this.port;
+	var listenPort = this.port === 80 ? '' : ':'+this.port;
 	console.log(
 		'http initiator running at',
 		paint.path (
@@ -88,6 +89,10 @@ httpdi.prototype.ready = function () {
 			? "and serving static files from " + paint.path (project.root.relative (this.static.root))
 			: ""
 	);
+
+	httpdi.connections[this.host+":"+this.port] = this.server;
+
+	this.ready = true;
 
 	this.emit ('ready', this.server);
 };
@@ -660,7 +665,7 @@ httpdi.prototype.listen = function () {
 	}
 
 	listenArgs.push (function () {
-		self.ready ();
+		self.started ();
 	});
 
 	this.server.listen.apply (this.server, listenArgs);
