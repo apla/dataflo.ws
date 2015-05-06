@@ -16,7 +16,40 @@ var FileTask = function (cfg) {
 
 util.inherits (FileTask, task);
 
+function mkdirParent (dirPath, mode, callback) {
+	//Call the standard fs.mkdir
+	if (!callback) {
+		callback = mode;
+		mode = undefined;
+	}
+	fs.mkdir(dirPath, mode, function(error) {
+		//When it fail in this way, do the custom steps
+		if (error && error.code === 'ENOENT') {
+			//Create all the parents recursively
+			mkdirParent (path.dirname (dirPath), mode, function (err) {
+				//And then the directory
+				mkdirParent (dirPath, mode, callback);
+			});
+			return;
+		}
+		//Manually run the callback since we used our own callback to do all these
+		callback && callback(error);
+	});
+}
+
 util.extend(FileTask.prototype, {
+	mkdir: function () {
+		var filePath = path.resolve($global.project.root.path, this.filePath);
+		var mode = this.mode;
+		
+		mkdirParent (filePath, mode, function (err) {
+			if (err && err.code !== "EEXIST") {
+				this.failed (err);
+			} else {
+				this.completed (filePath);
+			}
+		}.bind (this));
+	},
 	run: function () {
 		this.read();
 	},
@@ -45,8 +78,6 @@ util.extend(FileTask.prototype, {
 				self.completed(filePath);
 			}
 		});
-	},
-	copy: function () {
 	},
 	_randomName: function () {
 		var fileName = [
@@ -91,49 +122,58 @@ util.extend(FileTask.prototype, {
 			}
 		});
 	},
-
-	rename: function () {
+	copy: function () {
 		var self = this;
 		var src = path.resolve($global.project.root.path, this.filePath);
 		var dst = path.resolve($global.project.root.path, this.to);
 
+		var readStream = fs.createReadStream (src);
+		readStream.on ('open', function (rdid) {
+			// TODO: check for null id
+			readStream.pause();
+			var writeStream = fs.createWriteStream (dst);
+			writeStream.on ('open', function (wrid) {
+				// TODO: check for null id
+				readStream.pipe (writeStream);
+				readStream.resume ();
+			});
+					
+			writeStream.on ('close', self.completed.bind (self, dst));
+			writeStream.on ('error', self.failed.bind (self));
+			// TODO: add handlers for
+		});
+
+		readStream.on ('error', self.failed.bind (self));
+		// TODO: here we need to set timeout
+	},
+	rename: function () {
+		var src = path.resolve($global.project.root.path, this.filePath);
+		var dst = path.resolve($global.project.root.path, this.to);
+		
 		if (this.verbose) {
-			console.log ("copying data from", src, "to", dst);
+			console.log ("rename", src, "to", dst);
 		}
 
 		fs.rename (src, dst, function (err) {
-			if (err.code !== 'EXDEV') {
-				self.failed(err);
-			} else {
-				if (this.verbose) {
-					console.log ("fs boundaries rename error, using copy");
-				}
-				// TODO: move to copy task
-				// rename file between fs boundsries
-				var readStream = fs.createReadStream (src);
-				readStream.on ('open', function (rdid) {
-					// TODO: check for null id
-					readStream.pause();
-					var writeStream = fs.createWriteStream (dst);
-					writeStream.on ('open', function (wrid) {
-						// TODO: check for null id
-						readStream.pipe (writeStream);
-						readStream.resume ();
-					});
-
-					writeStream.on ('error', self.failed.bind (self));
-					// TODO: add handlers for
-				});
-
-				readStream.on ('error', self.failed.bind (self));
-				// TODO: here we need to set timeout
-			}
 			if (err) {
-				self.failed(err);
-			} else {
-				self.completed (dst);
-			}
-		});
+				if (err.code === "EXDEV") {
+			
+					if (this.verbose) {
+						console.log ("fs boundaries rename error, using copy");
+					}
+
+					// rename file between fs boundsries
+					this.copy ();
+					
+					return;
+				}
+				
+				this.failed(err);
+				return;				
+			} 
+			
+			this.completed (dst);
+		}.bind (this));
 	}
 
 });
