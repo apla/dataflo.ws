@@ -77,7 +77,7 @@ util.extend(FileTask.prototype, {
 			}
 			self.failed ();
 		});
-		
+
 	},
 	unlink: function () {
 		var self = this;
@@ -97,10 +97,17 @@ util.extend(FileTask.prototype, {
 		var src = path.resolve($global.project.root.path, this.filePath);
 		var dst = path.resolve($global.project.root.path, this.to);
 
+		if (this.verbose) {
+			console.log ("copying data from", src, "to", dst);
+		}
+
 		fs.rename (src, dst, function (err) {
 			if (err.code !== 'EXDEV') {
 				self.failed(err);
 			} else {
+				if (this.verbose) {
+					console.log ("fs boundaries rename error, using copy");
+				}
 				// TODO: move to copy task
 				// rename file between fs boundsries
 				var readStream = fs.createReadStream (src);
@@ -113,14 +120,18 @@ util.extend(FileTask.prototype, {
 						readStream.pipe (writeStream);
 						readStream.resume ();
 					});
-					// TODO: add handlers for 
+
+					writeStream.on ('error', self.failed.bind (self));
+					// TODO: add handlers for
 				});
+
+				readStream.on ('error', self.failed.bind (self));
 				// TODO: here we need to set timeout
 			}
 			if (err) {
 				self.failed(err);
 			} else {
-				self.completed(filePath);
+				self.completed (dst);
 			}
 		});
 	}
