@@ -505,7 +505,7 @@ task.prepare = function (flow, dataflows, gen, taskParams, idx, array) {
 
 	//		console.log (taskParams);
 
-	var taskClassName = actualTaskParams.className || actualTaskParams.$class || actualTaskParams.task;
+	var taskClassName = actualTaskParams.className || actualTaskParams.$class || actualTaskParams.task || actualTaskParams.task;
 	var taskFnName = actualTaskParams.functionName || actualTaskParams.$function;
 	var taskPromise = actualTaskParams.promise || actualTaskParams.$promise;
 	var taskErrBack = actualTaskParams.errback || actualTaskParams.$errback;
@@ -657,6 +657,10 @@ task.prepare = function (flow, dataflows, gen, taskParams, idx, array) {
 			timeout:      actualTaskParams.timeout
 		});
 
+	} else {
+		flow.logError ("cannot create task from structure:\n", taskParams);
+		flow.logError ('you must define $task, $function or $promise field');
+		// TODO: return something
 	}
 
 	//		console.log (task);
