@@ -269,7 +269,9 @@ cacheTask.prototype.toFile = function () {
 				var metaFile = new io (self.cacheFilePath+'.meta');
 				metaFile.writeFile (JSON.stringify ({
 					code: self.model.dataSource.res.statusCode,
-					headers: self.model.dataSource.res.headers
+					headers: self.model.dataSource.res.headers,
+					url: self.model.url.href,
+					urlFileName: path.basename (self.model.url.href)
 				}, null, "\t"));
 			});
 		}
