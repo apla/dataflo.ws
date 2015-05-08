@@ -162,7 +162,8 @@ EveryTask.prototype.run = function () {
 		// works for arrays and objects
 		var keys = Object.keys (this.$every);
 
-		this.dataflows = keys.map (this.prepareDF.bind (this, everyTasks));
+		this.dataflows = [];
+		keys.map (this.prepareDF.bind (this, everyTasks));
 
 		var concurrency = this.concurrency || 10;
 
@@ -191,6 +192,7 @@ EveryTask.prototype.run = function () {
 		df.on('completed', this._onCompleted.bind(this));
 		df.on('failed', this._onFailed.bind(this));
 
+		this.dataflows.push (df);
 		return df;
 	};
 
