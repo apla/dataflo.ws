@@ -99,7 +99,7 @@ EveryTask.prototype._onCompleted = function (df) {
 	this.onFlowResult();
 
 	if (this.executionList.length) {
-		var df = this.executionList.unshift ();
+		var df = this.executionList.shift ();
 		df.run ();
 	}
 
@@ -110,7 +110,7 @@ EveryTask.prototype._onFailed = function (df) {
 	this.onFlowResult();
 
 	if (this.executionList.length) {
-		var df = this.executionList.unshift ();
+		var df = this.executionList.shift ();
 		df.run ();
 	}
 
@@ -168,8 +168,8 @@ EveryTask.prototype.run = function () {
 
 	var concurrencyMax = this.concurrency || 10;
 	var concurrency =  this.executionList.length < concurrencyMax
-	? this.executionList.length
-	: concurrencyMax;
+		? this.executionList.length
+		: concurrencyMax;
 
 	for (var toRun = 0; toRun < concurrency; toRun++) {
 		var df = this.executionList.shift ();
