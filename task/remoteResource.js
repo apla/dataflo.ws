@@ -315,7 +315,7 @@ cacheTask.prototype.toFile = function () {
 
 cacheTask.prototype.cacheMiss = function () {
 	try {
-		var writeStream = self.cacheFile.writeStream ({
+		var writeStream = this.cacheFile.writeStream ({
 			flags: 'w', // constants.O_CREAT | constants.O_WRONLY
 			mode: 0600
 		});
