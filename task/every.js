@@ -38,7 +38,7 @@ util.extend(EveryTask.prototype, {
 		$collect: '',
 		$set: ''
 	}
-};
+});
 
 EveryTask.prototype.getProperty = function (obj, path) {
 		var val = obj;
