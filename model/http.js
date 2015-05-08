@@ -269,7 +269,18 @@ util.extend (httpModel.prototype, {
 	 * @param {Object} result result fields
 	 */
 	addResultFields: function (result, meta) {
-		if (!this.res && meta) {
+		if (this.res) {
+			result.url = this.url;
+			result.urlFileName = path.basename (this.url);
+
+			result.code    = this.res.statusCode || 500;
+			if (result.stopReason === "timeout")
+				result.code = 504;
+			result.headers = (this.res.headers) ? this.res.headers : {};
+			return;
+		}
+
+		if (meta) {
 			// got headers and status from cached meta
 			result.code    = meta.code;
 			result.headers = meta.headers;
@@ -278,13 +289,6 @@ util.extend (httpModel.prototype, {
 			return;
 		}
 
-		result.url = this.url;
-		result.urlFileName = path.basename (this.url);
-
-		result.code    = this.res.statusCode || 500;
-		if (result.stopReason === "timeout")
-			result.code = 504;
-		result.headers = (this.res.headers) ? this.res.headers : {};
 	},
 	isSuccessResponse: function check () {
 		if (!this.res)

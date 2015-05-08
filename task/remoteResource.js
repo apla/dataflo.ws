@@ -320,6 +320,7 @@ cacheTask.prototype.cacheMiss = function () {
 			mode: 0600
 		});
 	} catch (e) {
+		this.emit ('log', 'cannot open for write: ' + this.cacheFilePath);
 		this.emitError(e);
 		return;
 	}
