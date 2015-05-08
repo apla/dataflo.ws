@@ -113,9 +113,9 @@ EveryTask.prototype._onFailed = function (df) {
 		df.run ();
 	}
 
-},
+};
 
-function unquote(source, dest, origKey) {
+function unquote (source, dest, origKey) {
 		var pattern = /\[([$*][^\]]+)\]/g;
 		var replacement = '{$1}';
 
@@ -142,7 +142,7 @@ function unquote(source, dest, origKey) {
 		};
 
 		recur(source, dest, origKey);
-	}
+	};
 
 EveryTask.prototype.run = function () {
 		var self = this;
@@ -192,7 +192,7 @@ EveryTask.prototype.run = function () {
 		df.on('failed', this._onFailed.bind(this));
 
 		return df;
-	}
+	};
 
 module.exports = EveryTask;
 
