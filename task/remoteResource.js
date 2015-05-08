@@ -320,14 +320,14 @@ cacheTask.prototype.cacheMiss = function () {
 			mode: 0600
 		});
 	} catch (e) {
-		self.emitError(e);
+		this.emitError(e);
 		return;
 	}
 
-	self.emit ('log', 'start caching from ' + self.url.href + ' to ' + self.cacheFilePath);
+	this.emit ('log', 'start caching from ' + this.url.href + ' to ' + this.cacheFilePath);
 
-	self.activityCheck ('model.fetch start');
-	self.model.fetch ({to: writeStream});
+	this.activityCheck ('model.fetch start');
+	this.model.fetch ({to: writeStream});
 }
 
 cacheTask.prototype.run = cacheTask.prototype.toFile;
