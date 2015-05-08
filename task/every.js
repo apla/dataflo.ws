@@ -37,18 +37,19 @@ util.extend(EveryTask.prototype, {
 		$every: [],
 		$collect: '',
 		$set: ''
-	},
+	}
+};
 
-	getProperty: function (obj, path) {
+EveryTask.prototype.getProperty = function (obj, path) {
 		var val = obj;
 		var hasProp = path.split('.').every(function (prop) {
 			val = val[prop];
 			return null != val;
 		});
 		return hasProp ? val : undefined;
-	},
+	};
 
-	onFlowResult: function () {
+EveryTask.prototype.onFlowResult = function () {
 		this.count += 1;
 
 		// TODO: failed dataflows and completed ones must be separated
@@ -76,9 +77,9 @@ util.extend(EveryTask.prototype, {
 				this.completed({ ok: true });
 			}
 		}
-	},
+	};
 
-	_onCompleted: function (df) {
+EveryTask.prototype._onCompleted = function (df) {
 		if (this.$collect || this.$collectArray) {
 			var propertyName = this.$collect || this.$collectArray;
 			var result = this.getProperty(df.data, propertyName);
@@ -95,14 +96,26 @@ util.extend(EveryTask.prototype, {
 		}
 
 		this.onFlowResult();
-	},
 
-	_onFailed: function (df) {
+	if (this.dataflows.length) {
+		var df = this.dataflows.unshift ();
+		df.run ();
+	}
+
+};
+
+EveryTask.prototype._onFailed = function (df) {
 		this.subtaskFail = true;
 		this.onFlowResult();
-	},
 
-	unquote: function unquote(source, dest, origKey) {
+	if (this.dataflows.length) {
+		var df = this.dataflows.unshift ();
+		df.run ();
+	}
+
+},
+
+function unquote(source, dest, origKey) {
 		var pattern = /\[([$*][^\]]+)\]/g;
 		var replacement = '{$1}';
 
@@ -129,9 +142,9 @@ util.extend(EveryTask.prototype, {
 		};
 
 		recur(source, dest, origKey);
-	},
+	}
 
-	run: function () {
+EveryTask.prototype.run = function () {
 		var self = this;
 
 		/**
@@ -144,34 +157,42 @@ util.extend(EveryTask.prototype, {
 		// we face a problem with double interpolated values
 		// and missing functions
 		var everyTasks = util.extend (true, {}, this.originalConfig);
-		this.unquote(everyTasks, everyTasks, '$tasks');
+		unquote (everyTasks, everyTasks, '$tasks');
 
 		// works for arrays and objects
 		var keys = Object.keys (this.$every);
 
-		keys.forEach(function (item) {
-			var every = {
-				item:  self.$every[item],
-				index: item,
-				data:  self.$every,
-				length: keys.length
-			};
-			// dict the same between every, so we need to host a local copy
-			var dict = util.extend (true, {}, self.getDict());
-			dict.every = every;
+		this.dataflows = keys.map (this.prepareDF.bind (this, everyTasks));
 
-			var df = new flow({
-				tasks: everyTasks.$tasks,
-				idPrefix: self.flowId + '>'
-			}, dict);
+		var concurrency = this.concurrency || 10;
 
-			df.on('completed', self._onCompleted.bind(self));
-			df.on('failed', self._onFailed.bind(self));
+		for (var toRun = 0; toRun < concurrency; toRun++) {
+			var df = this.dataflows.unshift ();
+			df.run ();
+		}
+	};
 
-			df.run();
-		});
+	EveryTask.prototype.prepareDF = function (everyTasks, item, keys) {
+		var every = {
+			item:  this.$every[item],
+			index: item,
+			data:  this.$every,
+			length: keys.length
+		};
+		// dict the same between every, so we need to host a local copy
+		var dict = util.extend (true, {}, this.getDict());
+		dict.every = every;
+
+		var df = new flow({
+			tasks: everyTasks.$tasks,
+			idPrefix: this.flowId + '>'
+		}, dict);
+
+		df.on('completed', this._onCompleted.bind(this));
+		df.on('failed', this._onFailed.bind(this));
+
+		return df;
 	}
-});
 
 module.exports = EveryTask;
 
