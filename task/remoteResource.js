@@ -283,40 +283,52 @@ cacheTask.prototype.toFile = function () {
 
 		self.cacheFile.stat (function (err, stats) {
 
-			if (!err && (stats.mode & 0644 ^ 0600)) {
+			if (err || ! (stats.mode & 0644 ^ 0600)) {
+				return self.cacheMiss ();
+			}
+
+			var metaFile = new io (self.cacheFilePath+'.meta');
+			metaFile.readFile (function (err, contents) {
+
+				if (err) {
+					return self.cacheMiss ();
+				}
+
+				try {
+					var js = JSON.parse (contents);
+				} catch (e) {
+					return self.cacheMiss ();
+				}
 
 				self.clearOperationTimeout();
 
 				self.emit ('log', 'file already downloaded from ' + self.url.href + ' to ' + self.cacheFilePath);
 				delete cacheTask.caching[self.cacheFilePath];
 
-				var metaFile = new io (self.cacheFilePath+'.meta');
-				metaFile.readFile (function (err, contents) {
-					self.finishWith ({
-						fileName: self.cacheFileName,
-						filePath: self.cacheFilePath,
-					}, 'completed', contents);
-				});
-
-				return;
-			}
-
-			try {
-				var writeStream = self.cacheFile.writeStream ({
-					flags: 'w', // constants.O_CREAT | constants.O_WRONLY
-					mode: 0600
-				});
-			} catch (e) {
-				self.emitError(e);
-				return;
-			}
-
-			self.emit ('log', 'start caching from ' + self.url.href + ' to ' + self.cacheFilePath);
-
-			self.activityCheck ('model.fetch start');
-			self.model.fetch ({to: writeStream});
+				self.finishWith ({
+					fileName: self.cacheFileName,
+					filePath: self.cacheFilePath,
+				}, 'completed', contents);
+			});
 		});
 	};
+
+cacheTask.prototype.cacheMiss = function () {
+	try {
+		var writeStream = self.cacheFile.writeStream ({
+			flags: 'w', // constants.O_CREAT | constants.O_WRONLY
+			mode: 0600
+		});
+	} catch (e) {
+		self.emitError(e);
+		return;
+	}
+
+	self.emit ('log', 'start caching from ' + self.url.href + ' to ' + self.cacheFilePath);
+
+	self.activityCheck ('model.fetch start');
+	self.model.fetch ({to: writeStream});
+}
 
 cacheTask.prototype.run = cacheTask.prototype.toFile;
 
