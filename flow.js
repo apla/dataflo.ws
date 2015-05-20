@@ -116,6 +116,8 @@ function checkTaskParams (params, dict, prefix, marks) {
 	};
 }
 
+var salt = (Math.random () * 1e6).toFixed(0);
+
 /**
  * @class flow
  * @extends events.EventEmitter
@@ -145,9 +147,7 @@ var dataflow = module.exports = function (config, reqParam) {
 	this.created = new Date().getTime();
 
 	// here we make sure dataflow uid generated
-	// TODO: check for cpu load
-	var salt = (Math.random () * 1e6).toFixed(0);
-	this.id      = this.id || (this.started ^ salt) % 1e6;
+	this.id      = this.id || (++this.lastId ^ salt) % 1e6;
 	if (!this.idPrefix) this.idPrefix = '';
 
 	if (!this.stage) this.stage = 'dataflow';
@@ -240,14 +240,7 @@ function pad(n) {
 	return n < 10 ? '0' + n.toString(10) : n.toString(10);
 }
 
-// one second low resolution timer
-Date.dataflowsLowRes = new Date ();
-Date.dataflowsLowResInterval = setInterval (function () {
-	Date.dataflowsLowRes = new Date ();
-}, 1000);
-
-function timestamp () {
-	var lowRes = Date.dataflowsLowRes;
+function formattedDate (lowRes) {
 	var time = [
 		pad(lowRes.getHours()),
 		pad(lowRes.getMinutes()),
@@ -258,9 +251,45 @@ function timestamp () {
 		pad(lowRes.getMonth() + 1),
 		pad(lowRes.getDate())
 	].join ('-');
-	return [date, time].join(' ');
+	return [date, time].join(' ')
 }
 
+// one second low resolution timer
+// test: http://jsperf.com/low-res-timer
+
+function lowResTimer () {
+	lowResTimer.refCount ++;
+	lowResTimer.dateString = formattedDate (
+		lowResTimer.date = new Date ()
+	);
+
+	lowResTimer.interval = setInterval (function () {
+		lowResTimer.dateString = formattedDate (
+			lowResTimer.date = new Date ()
+		);
+	}, 100);
+}
+
+lowResTimer.refCount = 0;
+
+lowResTimer.free = function () {
+	lowResTimer.refCount --;
+	if (lowResTimer.refCount < 1) {
+		delete lowResTimer.date;
+		delete lowResTimer.dateString;
+		clearInterval (lowResTimer.interval);
+	}
+}
+
+lowResTimer.getDateString = function () {
+	return lowResTimer.dateString || formattedDate (new Date ());
+}
+
+lowResTimer.getDate = function () {
+	return lowResTimer.date || new Date ();
+}
+
+dataflow.lastId = 0;
 
 util.extend (dataflow.prototype, {
 	checkTaskParams: checkTaskParams,
@@ -268,7 +297,27 @@ util.extend (dataflow.prototype, {
 	failed: false,
 	isIdle: true,
 	haveCompletedTasks: false,
+	timerStarted: false,
 
+	getDateString: function () {
+		if (!this.timerStarted) {
+			lowResTimer();
+		}
+		this.timerStarted = true;
+		return lowResTimer.getDateString ();
+	},
+	getDate: function () {
+		if (!this.timerStarted) {
+			lowResTimer();
+		}
+		this.timerStarted = true;
+		return lowResTimer.getDate ();
+	},
+	getDateAndStopTimer: function () {
+		var date = lowResTimer.getDate ();
+		lowResTimer.free();
+		return date;
+	},
 	/**
 	 * @method run Initiators call this method to launch the dataflow.
 	 */
@@ -283,7 +332,7 @@ util.extend (dataflow.prototype, {
 
 	run: function () {
 		if (!this.started)
-			this.started = new Date().getTime();
+			this.started = this.getDate().getTime();
 
 		var self = this;
 
@@ -362,7 +411,7 @@ util.extend (dataflow.prototype, {
 			return;
 		}
 
-		self.stopped = new Date().getTime();
+		self.stopped = this.getDateAndStopTimer().getTime();
 
 		var scarceTaskMessage = 'unsatisfied requirements: ';
 
@@ -420,7 +469,7 @@ util.extend (dataflow.prototype, {
 		var toLog = [].slice.call (arguments);
 		var level = toLog.shift() || 'log';
 		toLog.unshift (
-			timestamp (),
+			this.getDateString (),
 			this.stageMarker[this.stage][0] + this.idPrefix + this.coloredId + this.stageMarker[this.stage][1]
 		);
 
