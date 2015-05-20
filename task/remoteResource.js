@@ -319,6 +319,10 @@ cacheTask.prototype.cacheMiss = function () {
 			flags: 'w', // constants.O_CREAT | constants.O_WRONLY
 			mode: 0600
 		});
+		writeStream.on ('error', function (err) {
+			this.emit ('log', 'write error: ' + err);
+			writeStream.end();
+		});
 	} catch (e) {
 		this.emit ('log', 'cannot open for write: ' + this.cacheFilePath);
 		this.emitError(e);

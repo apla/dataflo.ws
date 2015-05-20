@@ -378,6 +378,7 @@ util.extend (httpModel.prototype, {
 
 			res.on ('error', function (exception) {
 				exception.scope = 'response';
+				if (self.isStream) self.writeStream.end();
 				self.modelBase.emit ('error', exception);
 			});
 
