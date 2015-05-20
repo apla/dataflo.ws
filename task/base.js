@@ -586,15 +586,19 @@ task.prepare = function (flow, dataflows, gen, taskParams, idx, array) {
 					 * Try to look up $function in the global scope.
 					 */
 				if (!method || 'function' !== typeof method.value) {
-					method = common.getByPath(taskFnName);
+					method = common.getByPath (taskFnName);
 				}
 
 				if (!method || 'function' !== typeof method.value) {
+					method = dataflows.task (taskFnName);
+				}
+
+				if (!method || ('function' !== typeof method && 'function' !== typeof method.value)) {
 					failed = taskFnName + ' is not a function';
 					this.failed(failed);
 				}
 
-				var fn = method.value;
+				var fn = 'function' === typeof method ? method : method.value;
 				var ctx  = this.$scope || method.scope;
 
 				var args = this.$args;
