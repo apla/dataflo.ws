@@ -185,7 +185,7 @@ EveryTask.prototype.prepareDF = function (everyTasks, item, idx, keys) {
 		length: keys.length
 	};
 
-	console.log (every);
+	// console.log (every);
 
 	// dict the same between every, so we need to host a local copy
 	var dict = util.extend (true, {}, this.getDict());
