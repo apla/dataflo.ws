@@ -365,6 +365,15 @@ util.extend (dataflow.prototype, {
 
 		this.tasks.forEach (function (task, idx) {
 
+			if (!task) {
+				self.failed = true;
+				self.emit ('failed', self);
+				self.logError ('task undefined');
+			}
+
+			if (self.failed)
+				return;
+
 			if (task.subscribed === void(0)) {
 				self.addEventListenersToTask (task);
 			}
