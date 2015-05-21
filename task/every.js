@@ -98,10 +98,7 @@ EveryTask.prototype._onCompleted = function (df) {
 
 	this.onFlowResult();
 
-	if (this.executionList.length) {
-		var df = this.executionList.shift ();
-		df.run ();
-	}
+	this.runNextFlow();
 
 };
 
@@ -109,12 +106,23 @@ EveryTask.prototype._onFailed = function (df) {
 	this.subtaskFail = true;
 	this.onFlowResult();
 
-	if (this.executionList.length) {
-		var df = this.executionList.shift ();
-		df.run ();
-	}
+	this.runNextFlow();
 
 };
+
+EveryTask.prototype.runNextFlow = function () {
+	var runNext = function () {
+		if (this.executionList.length) {
+			var df = this.executionList.shift ();
+			df.run ();
+		}
+	}.bind (this);
+	if (typeof process === 'undefined') {
+		setTimeout (runNext, 0);
+	} else {
+		process.nextTick (runNext);
+	}
+}
 
 function unquote (source, dest, origKey) {
 	var pattern = /\[([$*][^\]]+)\]/g;
@@ -167,9 +175,7 @@ EveryTask.prototype.run = function () {
 	keys.map (this.prepareDF.bind (this, everyTasks));
 
 	var concurrencyMax = this.concurrency || 10;
-	var concurrency =  this.executionList.length < concurrencyMax
-		? this.executionList.length
-		: concurrencyMax;
+	var concurrency =  Math.min (this.executionList.length, concurrencyMax);
 
 	for (var toRun = 0; toRun < concurrency; toRun++) {
 		var df = this.executionList.shift ();
