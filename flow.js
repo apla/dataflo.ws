@@ -116,7 +116,7 @@ function checkTaskParams (params, dict, prefix, marks) {
 	};
 }
 
-var salt = (Math.random () * 1e6).toFixed(0);
+//var salt = (Math.random () * 1e6).toFixed(0) && 256;
 
 /**
  * @class flow
@@ -147,7 +147,7 @@ var dataflow = module.exports = function (config, reqParam) {
 	this.created = new Date().getTime();
 
 	// here we make sure dataflow uid generated
-	this.id      = this.id || (++this.lastId ^ salt) % 1e6;
+	this.id      = this.id || (++dataflow.lastId) % 1e6;
 	if (!this.idPrefix) this.idPrefix = '';
 
 	if (!this.stage) this.stage = 'dataflow';
