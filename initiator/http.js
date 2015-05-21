@@ -123,7 +123,7 @@ httpdi.prototype.runPrepare = function (df, request, response) {
 				var presenter = self.createPresenter({}, request, response, 'failed');
 //				var presenter = self.createPresenter(cDF, 'failed');
 				if (presenter)
-					presenter.run ();
+					presenter.runDelayed ();
 				return;
 			}
 
@@ -155,18 +155,18 @@ httpdi.prototype.runPrepare = function (df, request, response) {
 			currentDf.nextDf = dfChain[i+1];
 
 			currentDf.on('completed', function(cDF) {
-				setTimeout(cDF.nextDf.run.bind (cDF.nextDf), 0);
+				setTimeout(cDF.nextDf.runDelayed.bind (cDF.nextDf), 0);
 			});
 
 			currentDf.on('failed', function(cDF) {
 				var presenter = self.createPresenter(cDF, request, response, 'failed');
 				if (presenter)
-					presenter.run ();
+					presenter.runDelayed ();
 			});
 
 		}
 
-		dfChain[0].run();
+		dfChain[0].runDelayed();
 
 	} else {
 
@@ -317,7 +317,7 @@ httpdi.prototype.createFlow = function (cfg, req, res) {
 	df.on('completed', function (df) {
 		var presenter = self.createPresenter(df, req, res, 'completed');
 		if (presenter) {
-			presenter.run ();
+			presenter.runDelayed ();
 		}
 	});
 
@@ -325,7 +325,7 @@ httpdi.prototype.createFlow = function (cfg, req, res) {
 
 		var presenter = self.createPresenter(df, req, res, 'failed');
 		if (presenter) {
-			presenter.run ();
+			presenter.runDelayed ();
 		}
 
 	});
@@ -335,7 +335,7 @@ httpdi.prototype.createFlow = function (cfg, req, res) {
 	if (cfg.prepare) {
 		self.runPrepare(df, req, res);
 	} else {
-		df.run();
+		df.runDelayed();
 	}
 
 	return df;

@@ -48,7 +48,7 @@ fsWatchI.prototype.listen = function () {
 				filename: filename
 			};
 
-			df.run();
+			df.runDelayed ();
 
 			if (iConfig.verbose || cfg.verbose) {
 				console.log(

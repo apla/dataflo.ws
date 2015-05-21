@@ -54,8 +54,8 @@ util.extend (tokenInitiator.prototype, {
 		);
 
 		self.emit ("detected", dfRequire, df);
-		if (dfConf.autoRun || dfConf.autoRun == void 0 || dfRequire.autoRun || dfRequire.autoRun == void 0)
-			df.run ();
+		if (dfConf.autoRun || dfConf.autoRun === undefined || dfRequire.autoRun || dfRequire.autoRun === undefined)
+			df.runDelayed ();
 
 		if (!df) {
 			self.emit ("unknown", dfRequire);

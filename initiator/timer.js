@@ -46,7 +46,7 @@ timeri.prototype.ready = function () {
 
 			}
 
-			wf.run ();
+			wf.runDelayed ();
 
 		};
 

@@ -139,7 +139,7 @@ SocketInitiator.prototype.defaultRouter = function (eventName, flowData, socket,
 
 		this.emit ("detected", message, socket);
 
-		if (df.ready) df.run();
+		if (df.ready) df.runDelayed ();
 
 		return df;
 	}
