@@ -259,6 +259,7 @@ function formattedDate (lowRes) {
 
 function lowResTimer () {
 	lowResTimer.refCount ++;
+//	console.log ('low res timer refcount++', lowResTimer.refCount);
 	lowResTimer.dateString = formattedDate (
 		lowResTimer.date = new Date ()
 	);
@@ -277,6 +278,7 @@ lowResTimer.refCount = 0;
 
 lowResTimer.free = function () {
 	lowResTimer.refCount --;
+//	console.log ('low res timer refcount--', lowResTimer.refCount);
 	if (lowResTimer.refCount < 1) {
 		delete lowResTimer.date;
 		delete lowResTimer.dateString;
