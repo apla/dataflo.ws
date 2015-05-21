@@ -116,7 +116,7 @@ function checkTaskParams (params, dict, prefix, marks) {
 	};
 }
 
-//var salt = (Math.random () * 1e6).toFixed(0) && 256;
+var pid = (typeof process !== undefined) ? (process.pid << 16) : 0;
 
 /**
  * @class flow
@@ -144,25 +144,43 @@ var dataflow = module.exports = function (config, reqParam) {
 	util.extend (true, this, config); // this is immutable config skeleton
 	util.extend (true, this, reqParam); // this is config fixup
 
-	this.created = new Date().getTime();
+	this.created = this.getDate ();
 
 	// here we make sure dataflow uid generated
-	this.id      = this.id || (++dataflow.lastId) % 1e6;
-	if (!this.idPrefix) this.idPrefix = '';
+
+	var idLength = 8;
+	if (this.idPrefix) {
+		this.id = this.id || ++dataflow.lastId;
+		idLength = 4;
+	} else {
+		this.idPrefix = '';
+		this.id = this.id || (pid | (++dataflow.lastId));
+	}
 
 	if (!this.stage) this.stage = 'dataflow';
 
 	//if (!this.stageMarkers[this.stage])
 	//	console.error ('there is no such stage marker: ' + this.stage);
 
-	var idString = ""+this.id;
-	while (idString.length < 6) {idString = '0' + idString};
-	this.coloredId = [
+	var idString = this.id.toString(16);
+
+	while (idString.length < idLength) {idString = '0' + idString};
+	var idChunks = [
 		"" + idString[0] + idString[1],
 		"" + idString[2] + idString[3],
-		"" + idString[4] + idString[5]
-	].map (function (item) {
-		if ($isServerSide) return "\x1B[0;3" + (parseInt(item) % 8)  + "m" + item + "\x1B[0m";
+	];
+	if (idLength === 8) {
+		idChunks.push (
+			"" + idString[4] + idString[5],
+			"" + idString[6] + idString[7]
+		);
+	}
+	this.coloredId = idChunks.map (function (item) {
+		if ($isServerSide) {
+			return "\x1B[0;3" + (parseInt(item, 16) % 8)  + "m" + item + "\x1B[0m";
+		} else {
+
+		}
 		return item;
 	}).join ('');
 
