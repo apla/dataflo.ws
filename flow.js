@@ -487,7 +487,7 @@ util.extend (dataflow.prototype, {
 		);
 
 		// TODO: also check for bad clients (like ie9)
-		if ($isPhoneGap) {
+		if ($isCordova) {
 			toLog.shift();
 			toLog = [toLog.join (' ')];
 		}

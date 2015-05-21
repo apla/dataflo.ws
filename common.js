@@ -164,7 +164,7 @@ try {
 		global.$mainModule   = process.mainModule;
 		global.$scope        = 'process.mainModule';
 		global.$stash        = {};
-		global.$isPhoneGap   = false;
+		global.$isCordova    = false;
 		global.$global       = global;
 	} else {
 		throw 'WTF?';
@@ -177,10 +177,10 @@ try {
 	window.$stash        = {};
 	window.$global       = window;
 	try {
-		if (window.PhoneGap || window.Cordova || window.cordova) window.$isPhoneGap = true;
+		if (window.PhoneGap || window.Cordova || window.cordova) window.$isCordova = true;
 	} catch (e) {
 		console.log (e);
-		window.$isPhoneGap = false;
+		window.$isCordova = false;
 	}
 }
 
