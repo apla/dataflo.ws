@@ -268,6 +268,9 @@ function lowResTimer () {
 			lowResTimer.date = new Date ()
 		);
 	}, 100);
+	// Probably bug in nodejs
+	if (lowResTimer.interval.unref)
+		lowResTimer.interval.unref();
 }
 
 lowResTimer.refCount = 0;
