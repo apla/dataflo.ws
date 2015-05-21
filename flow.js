@@ -324,9 +324,9 @@ util.extend (dataflow.prototype, {
 	runDelayed: function () {
 		var self = this;
 		if ($isClientSide) {
-			setTimeout (function () {self.run ();}, 0);
+			setTimeout (this.run.bind (this), 0);
 		} else if ($isServerSide) {
-			process.nextTick (function () {self.run ()});
+			process.nextTick (this.run.bind (this));
 		}
 	},
 
@@ -334,119 +334,120 @@ util.extend (dataflow.prototype, {
 		if (!this.started)
 			this.started = this.getDate().getTime();
 
-		var self = this;
+		var flow = this;
 
-		if (self.stopped)
+		if (flow.stopped)
 			return;
 		/* @behrad following was overriding already set failed status by failed tasks */
-//		self.failed = false;
-		self.isIdle = false;
-		self.haveCompletedTasks = false;
+//		flow.failed = false;
+		flow.isIdle = false;
+		flow.haveCompletedTasks = false;
 
-//		self.log ('dataflow run');
+//		flow.log ('dataflow run');
 
+		var taskStateNames = taskClass.prototype.stateNames;
 		this.taskStates = [0, 0, 0, 0, 0, 0, 0];
 
 		// check task states
 
 		if (!this.tasks) {
-			self.emit ('failed', self);
-			self.logError (this.stage + ' failed immediately due empty task list');
-			self.isIdle = true;
+			flow.emit ('failed', flow);
+			flow.logError (this.stage + ' failed immediately due empty task list');
+			flow.isIdle = true;
 			return;
 		}
 
 		if (!this.ready) {
-			self.emit ('failed', self);
-			self.logError (this.stage + ' failed immediately due unready state');
-			self.isIdle = true;
+			flow.emit ('failed', flow);
+			flow.logError (this.stage + ' failed immediately due unready state');
+			flow.isIdle = true;
 			return;
 		}
 
 		this.tasks.forEach (function (task, idx) {
 
 			if (!task) {
-				self.failed = true;
-				self.emit ('failed', self);
-				self.logError ('task undefined');
+				flow.failed = true;
+				// flow.emit ('failed', flow);
+				flow.logError (flow.stage + ' task undefined');
+				flow.taskStates[taskStateNames.failed]++;
+				return;
 			}
 
-			if (self.failed)
-				return;
-
 			if (task.subscribed === void(0)) {
-				self.addEventListenersToTask (task);
+				flow.addEventListenersToTask (task);
 			}
 
 			task.checkState ();
 
-			self.taskStates[task.state]++;
+			flow.taskStates[task.state]++;
 
 //			console.log ('task.className, task.state\n', task, task.state, task.isReady ());
 
-			if (task.isReady ()) {
-				self.logTask (task, 'started');
+			if (task.isReady () && !flow.failed) {
+				flow.logTask (task, 'started');
 				try {
 					task._launch ();
 				} catch (e) {
 					task.failed (e);
-					// self.logTaskError (task, 'failed to run', e);
+					// flow.logTaskError (task, 'failed to run', e);
 				}
 
 				// sync task support
 				if (!task.isReady()) {
-					self.taskStates[task.stateNames.ready]--;
-					self.taskStates[task.state]++;
+					flow.taskStates[task.stateNames.ready]--;
+					flow.taskStates[task.state]++;
 				}
 			}
 		});
 
-		var taskStateNames = taskClass.prototype.stateNames;
 
+		if (!flow.failed) {
 		if (this.taskStates[taskStateNames.ready] || this.taskStates[taskStateNames.running]) {
 			// it is save to continue, wait for running/ready task
 			// console.log ('have running tasks');
 
-			self.isIdle = true;
+			flow.isIdle = true;
 
 			return;
-		} else if (self.haveCompletedTasks) {
+		} else if (flow.haveCompletedTasks) {
 			// console.log ('have completed tasks');
 			// stack will be happy
-			self.runDelayed();
+			flow.runDelayed();
 
-			self.isIdle = true;
+			flow.isIdle = true;
 
 			return;
 		}
+		}
 
-		self.stopped = this.getDateAndStopTimer().getTime();
+		flow.stopped = this.getDateAndStopTimer().getTime();
 
 		var scarceTaskMessage = 'unsatisfied requirements: ';
 
 		// TODO: display scarce tasks unsatisfied requirements
 		if (this.taskStates[taskStateNames.scarce]) {
-			self.tasks.map (function (task, idx) {
+			flow.tasks.map (function (task, idx) {
 				if (task.state != taskStateNames.scarce && task.state != taskStateNames.skipped)
 					return;
 				if (task.important) {
 					task.failed (idx + " important task didn't start");
-					self.taskStates[taskStateNames.scarce]--;
-					self.taskStates[task.state]++;
-					self.failed = true;
+					flow.taskStates[taskStateNames.scarce]--;
+					flow.taskStates[task.state]++;
+					flow.failed = true;
 					scarceTaskMessage += '(important) ';
 				}
 
 				if (task.state == taskStateNames.scarce || task.state == taskStateNames.failed)
 					scarceTaskMessage += idx + ' ' + (task.logTitle) + ' => ' + task.unsatisfiedRequirements.join (', ') + '; ';
 			});
-			self.log (scarceTaskMessage);
+			flow.log (scarceTaskMessage);
 		}
 
-		if (self.verbose) {
+		if (flow.verbose) {
 			var requestDump = '???';
 			try {
-				requestDump = JSON.stringify (self.request)
+				requestDump = JSON.stringify (flow.request)
 			} catch (e) {
 				if ((""+e).match (/circular/))
 					requestDump = 'CIRCULAR'
@@ -458,18 +459,18 @@ util.extend (dataflow.prototype, {
 		if (this.failed) {
 			// dataflow stopped and failed
 
-			self.emit ('failed', self);
+			flow.emit ('failed', flow);
 			var failedtasksCount = this.taskStates[taskStateNames.failed]
-			self.logError (this.stage + ' failed in ' + (self.stopped - self.started) + 'ms; failed ' + failedtasksCount + ' ' + (failedtasksCount == 1 ? 'task': 'tasks') +' out of ' + self.tasks.length);
+			flow.logError (this.stage + ' failed in ' + (flow.stopped - flow.started) + 'ms; failed ' + failedtasksCount + ' ' + (failedtasksCount == 1 ? 'task': 'tasks') +' out of ' + flow.tasks.length);
 
 		} else {
 			// dataflow stopped and not failed
 
-			self.emit ('completed', self);
-			self.log (this.stage + ' complete in ' + (self.stopped - self.started) + 'ms');
+			flow.emit ('completed', flow);
+			flow.log (this.stage + ' complete in ' + (flow.stopped - flow.started) + 'ms');
 		}
 
-		self.isIdle = true;
+		flow.isIdle = true;
 
 	},
 	stageMarker: {prepare: "[]", dataflow: "()", presentation: "{}"},
