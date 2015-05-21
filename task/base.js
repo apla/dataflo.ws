@@ -492,7 +492,7 @@ task.prepare = function (flow, dataflows, gen, taskParams, idx, array) {
 				util.extend (true, newEveryTaskConf, everyTaskConf);
 				util.extend (true, everyTaskConf, newEveryTaskConf);
 				delete everyTaskConf.$template;
-				console.log (everyTaskConf, actualTaskParams.$tasks[idx]);//everyTaskConf.$tasks
+				// console.log (everyTaskConf, actualTaskParams.$tasks[idx]);//everyTaskConf.$tasks
 			}
 
 		});
