@@ -502,14 +502,16 @@ util.extend (dataflow.prototype, {
 		var toLog = [].slice.call (arguments);
 		var level = toLog.shift() || 'log';
 		toLog.unshift (
-			this.getDateString (),
 			this.stageMarker[this.stage][0] + this.idPrefix + this.coloredId + this.stageMarker[this.stage][1]
 		);
 
 		// TODO: also check for bad clients (like ie9)
 		if ($isCordova) {
-			toLog.shift();
 			toLog = [toLog.join (' ')];
+		} else {
+			toLog.unshift (
+				this.getDateString ()
+			);
 		}
 
 		console[level].apply (console, toLog);

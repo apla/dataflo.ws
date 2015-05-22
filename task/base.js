@@ -644,10 +644,10 @@ task.prepare = function (flow, dataflows, gen, taskParams, idx, array) {
 				} else {
 					this.completed(returnVal);
 
-					//								if (isVoid(returnVal)) {
-					//								if (common.isEmpty(returnVal)) {
-					//									this.empty();
-					//								}
+					//	if (isVoid(returnVal)) {
+					//		if (common.isEmpty(returnVal)) {
+					//			this.empty();
+					//		}
 				}
 			}
 		});

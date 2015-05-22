@@ -43,7 +43,7 @@ module.exports = {
 			console.log(
 				'Failed:    ' + casesResult.fail.length + ' of ' + cases.length
 				+ (casesResult.fail.length === 0 ? '': ': ')
-				+ casesResult.fail.map (paint.error).join (', ')
+				+ casesResult.fail.map (function (c) {return paint.error (c)}).join (', ')
 			);
 
 			// process.kill();
