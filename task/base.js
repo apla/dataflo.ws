@@ -607,8 +607,9 @@ task.prepare = function (flow, dataflows, gen, taskParams, idx, array) {
 				if (null == args) {
 					args = [ this ];
 				} else if (
-					'Array' != argsType &&
-					'Arguments' != argsType
+					originalTaskConfig.$args &&
+					Object.typeOf (originalTaskConfig.$args) != 'Array' &&
+					Object.typeOf (originalTaskConfig.$args) != 'Arguments'
 				) {
 					args = [ args ];
 				}
