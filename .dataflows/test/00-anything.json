@@ -185,6 +185,44 @@
 			"$set": "errback222"
 		}]
 	},
+	"test:12-every-collect": {
+		"expect": "ok",
+		"tasks": [{
+			"$every": [1, 2, 4],
+			"$tasks": [{
+				"$function": "dataObject",
+				"$set": "object"
+			}],
+			"$collect": "object",
+			"$set": "object"
+		}, {
+			"$function": "console.log",
+			"$args": "{$object}"
+		}, {
+			"$every": [1, 2, 4],
+			"$tasks": [{
+				"$function": "dataObject",
+				"$set": "object"
+			}],
+			"$collect": "object.a",
+			"$set": "objecta"
+		}, {
+			"$function": "console.log",
+			"$args": "{$objecta}"
+		}, {
+			"$function": "JSON.stringify",
+			"description": "null in args test",
+			"$args": ["{$objecta}", null, "\t"]
+		}, {
+			"$function": "throwUnlessEqual",
+			"$args": ["{$objecta.0.0}", "b"],
+			"$important": true
+		}, {
+			"$function": "throwUnlessEqual",
+			"$args": ["{$object.0.a.1}", "c"],
+			"$important": true
+		}]
+	},
 	"http-initiator": {
 		"expect": "ok",
 		"tasks": [{
