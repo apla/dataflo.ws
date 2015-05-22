@@ -50,7 +50,9 @@ function checkTaskParams (params, dict, prefix, marks) {
 	var modifiedParams;
 	var failedParams = [];
 
-	if (Object.is('Array', params)) { // params is array
+	if (params === null || params === undefined) {
+		// nothing
+	} else if (Object.is('Array', params)) { // params is array
 
 		modifiedParams = [];
 
