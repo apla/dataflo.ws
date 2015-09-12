@@ -118,7 +118,7 @@ function checkTaskParams (params, dict, prefix, marks) {
 	};
 }
 
-var pid = (typeof process !== undefined) ? (process.pid << 16) : 0;
+var pid = (typeof process !== "undefined") ? (process.pid << 16) : 0;
 
 /**
  * @class flow
@@ -551,7 +551,7 @@ util.extend (dataflow.prototype, {
 	logError: function (msg, options) {
 		// TODO: fix by using console.error
 		this._log ('error', paint.error (
-			util.inspect (msg).replace (/(^'|'$)/g, "").replace (/\\'/, "'"),
+			util.inspect (msg).replace (/(^'|'$)/g, "").replace (/\\'/g, "'").replace (/\\n/g, "\n"),
 			util.inspect (options || '').replace (/(^'|'$)/g, "").replace (/\\'/, "'")
 		));
 	},
