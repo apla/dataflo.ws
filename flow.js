@@ -1,6 +1,6 @@
 var EventEmitter = require ('events').EventEmitter,
 	util         = require ('util'),
-	dataflows    = require ('./index'),
+	dataflows    = require ('./'),
 	common       = dataflows.common,
 	taskClass    = require ('./task/base'),
 	paint        = dataflows.color,
@@ -502,7 +502,7 @@ util.extend (dataflow.prototype, {
 			// dataflow stopped and not failed
 
 			flow.emit ('completed', flow);
-			flow.log (this.stage + ' complete in ' + (flow.stopped - flow.started) + 'ms');
+			flow.log (this.stage + ' completed in ' + (flow.stopped - flow.started) + 'ms');
 		}
 
 		flow.isIdle = true;

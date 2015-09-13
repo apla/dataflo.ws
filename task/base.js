@@ -8,7 +8,8 @@ define (function (require, exports, module) {
 
 var EventEmitter = require ('events').EventEmitter,
 	util         = require ('util'),
-	common       = require ('../common');
+	dataflows    = require ('../'),
+	common       = dataflows.common;
 
 var taskStateList = [
 	'scarce', 'ready', 'running', 'idle',
@@ -87,10 +88,11 @@ for (var stateNum = 0; stateNum < taskStateList.length; stateNum++) {
  * it may declare itself {@link #failed}.
  * Used in custom {@link #method} methods.
  */
-
-var task = module.exports = function (config) {
+function task (config) {
 
 }
+
+module.exports = task;
 
 util.inherits (task, EventEmitter);
 
@@ -113,8 +115,100 @@ util.extend (task.prototype, taskStateMethods, {
 		method.call (this);
 	},
 
+	run: function () {
+		var failed = false;
+
+		/**
+		 * Apply $function to $args in $scope.
+		 */
+		var origin = null;
+		// WTF???
+		var taskFnName = this.functionName;
+		var fnPath = taskFnName.split('#', 2);
+
+		if (fnPath.length == 2 && $global.project) {
+			origin = $global.project.require(fnPath[0]);
+			taskFnName = fnPath[1];
+		} else if (this.$origin) {
+			origin = this.$origin;
+		} else {
+			origin = $global.$mainModule.exports;
+		}
+
+		var method;
+		method = common.getByPath (taskFnName, origin);
+
+		/**
+		 * Try to look up $function in the global scope.
+		 */
+		if (!method || 'function' !== typeof method.value) {
+			method = common.getByPath (taskFnName);
+		}
+
+		if (!method || 'function' !== typeof method.value) {
+			method = dataflows.task (taskFnName);
+		}
+
+		if (!method || ('function' !== typeof method && 'function' !== typeof method.value)) {
+			failed = taskFnName + ' is not a function';
+			this.failed(failed);
+		}
+
+		var fn = 'function' === typeof method ? method : method.value;
+		var ctx  = this.$scope || method.scope;
+
+		var args = this.$args;
+		var argsType = Object.typeOf(args);
+
+		if (null == args) {
+			args = [ this ];
+		} else if (
+			this.originalConfig.$args &&
+			Object.typeOf (this.originalConfig.$args) != 'Array' &&
+			Object.typeOf (this.originalConfig.$args) != 'Arguments'
+		) {
+			args = [ args ];
+		}
+
+		// console.log ('task:', taskClassName, 'function:', taskFnName, 'promise:', taskPromise, 'errback:', taskErrBack);
+
+		if (this.type === "errback") {
+			args.push ((function (err) {
+				var cbArgs = [].slice.call (arguments, 1);
+				if (err) {
+					this.failed.apply (this, arguments);
+				};
+				this.completed.apply (this, cbArgs);
+			}).bind(this));
+		}
+
+		try {
+			var returnVal = fn.apply(ctx, args);
+		} catch (e) {
+			failed = e;
+			this.failed(failed);
+		}
+
+		if (this.type === "promise") {
+			returnVal.then (
+				this.completed.bind (this),
+				this.failed.bind (this)
+			);
+		} else if (this.type === "errback") {
+
+		} else if (failed) {
+			throw failed;
+		} else {
+			this.completed(returnVal);
+
+			//	if (isVoid(returnVal)) {
+			//		if (common.isEmpty(returnVal)) {
+			//			this.empty();
+			//		}
+		}
+	},
+
 	/**
-	 * @method _cancel
 	 * Cancels the running task. The task is registered as attempted
 	 * to run.
 	 *
@@ -167,10 +261,20 @@ util.extend (task.prototype, taskStateMethods, {
 		this.originalConfig = config.originalConfig;
 		this.flowId       = config.flowId;
 		this.getDict      = config.getDict;
+		this.type         = config.type;
 
 		this.method       = config.method;
 		if (this.className && !this.method)
 			this.method   = 'run';
+
+		var idxLog = (config.idx < 10 ? " " : "") + config.idx;
+		if ($isServerSide) {
+			idxLog = "\x1B[0;3" + (parseInt(config.idx) % 8)  + "m" + idxLog + "\x1B[0m";
+		}
+
+		// idx is a task index within flow config
+		this.dfTaskNo     = config.idx;
+		this.dfTaskLogNum = idxLog;
 
 		if (!this.logTitle) {
 			if (this.className) {
@@ -460,13 +564,7 @@ util.extend (task.prototype, taskStateMethods, {
 task.prepare = function (flow, dataflows, gen, taskParams, idx, array) {
 	var theTask;
 
-	var idxLog = (idx < 10 ? " " : "") + idx;
-	if ($isServerSide) {
-		idxLog = "\x1B[0;3" + (parseInt(idx) % 8)  + "m" + idxLog + "\x1B[0m";
-	}
 	var actualTaskParams = {
-		dfTaskNo: idx,
-		dfTaskLogNum: idxLog
 	};
 	var taskTemplateName = taskParams.$template;
 	if (taskTemplateName && flow.templates && flow.templates[taskTemplateName]) {
@@ -503,25 +601,23 @@ task.prepare = function (flow, dataflows, gen, taskParams, idx, array) {
 
 	// check for data persistence in flow.templates[taskTemplateName], taskParams
 
-	//		console.log (taskParams);
+	// console.log (taskParams);
 
-	var taskClassName = actualTaskParams.className || actualTaskParams.$class || actualTaskParams.task || actualTaskParams.task;
+	var taskClassName = actualTaskParams.className || actualTaskParams.$class || actualTaskParams.task;
 	var taskFnName = actualTaskParams.functionName || actualTaskParams.$function;
 	var taskPromise = actualTaskParams.promise || actualTaskParams.$promise;
 	var taskErrBack = actualTaskParams.errback || actualTaskParams.$errback;
 
-//	console.log ('task:', taskClassName, 'function:', taskFnName, 'promise:', taskPromise, 'errback:', taskErrBack);
+	//	console.log ('task:', taskClassName, 'function:', taskFnName, 'promise:', taskPromise, 'errback:', taskErrBack);
 
 	if (taskClassName && taskFnName)
 		flow.logError ('defined both className and functionName, using className');
 
 	if (taskClassName) {
-		var xTaskClass;
-
-		xTaskClass = dataflows.task (taskClassName);
 
 		try {
-			theTask = new xTaskClass ({
+			var taskModule = dataflows.task (taskClassName);
+			theTask = new taskModule ({
 				originalConfig: originalTaskConfig,
 				className: taskClassName,
 				method:    actualTaskParams.method || actualTaskParams.$method,
@@ -529,156 +625,59 @@ task.prepare = function (flow, dataflows, gen, taskParams, idx, array) {
 				important: actualTaskParams.important || actualTaskParams.$important,
 				flowId:    flow.coloredId,
 				getDict:   gen ('createDict'),
-				timeout:   actualTaskParams.timeout
+				timeout:   actualTaskParams.timeout,
+				idx:       idx
 			});
 		} catch (e) {
 			flow.logError ('instance of "'+taskClassName+'" creation failed:');
 			flow.logError (e.stack);
-			throw ('instance of "'+taskClassName+'" creation failed:');
+			// throw ('instance of "'+taskClassName+'" creation failed:');
 			flow.ready = false;
-
 		}
 
 	} else if (taskFnName || taskPromise || taskErrBack) {
-
-		//	flow.log ((taskParams.functionName || taskParams.logTitle) + ': initializing task from function');
 
 		var xTaskClass = function (config) {
 			this.init (config);
 		};
 
+		var taskType;
+
 		if (taskPromise) {
 			// functions and promises similar, but function return value, promise promisepromise promise
 			taskFnName = taskPromise;
+			taskType = "promise";
 		}
 
 		if (taskErrBack) {
 			// functions and promises similar, but function return value, promise promisepromise promise
 			taskFnName = taskErrBack;
+			taskType = "errback";
 		}
 
 		util.inherits (xTaskClass, task);
 
-		util.extend (xTaskClass.prototype, {
-			run: function () {
-				var failed = false;
-
-				/**
-					 * Apply $function to $args in $scope.
-					 */
-				var origin = null;
-				// WTF???
-				var fnPath = taskFnName.split('#', 2);
-
-				if (fnPath.length == 2 && $global.project) {
-					origin = $global.project.require(fnPath[0]);
-					taskFnName = fnPath[1];
-				} else if (this.$origin) {
-					origin = this.$origin;
-				} else {
-					origin = $global.$mainModule.exports;
-				}
-
-				var method;
-				method = common.getByPath (taskFnName, origin);
-
-				/**
-					 * Try to look up $function in the global scope.
-					 */
-				if (!method || 'function' !== typeof method.value) {
-					method = common.getByPath (taskFnName);
-				}
-
-				if (!method || 'function' !== typeof method.value) {
-					method = dataflows.task (taskFnName);
-				}
-
-				if (!method || ('function' !== typeof method && 'function' !== typeof method.value)) {
-					failed = taskFnName + ' is not a function';
-					this.failed(failed);
-				}
-
-				var fn = 'function' === typeof method ? method : method.value;
-				var ctx  = this.$scope || method.scope;
-
-				var args = this.$args;
-				var argsType = Object.typeOf(args);
-
-				if (null == args) {
-					args = [ this ];
-				} else if (
-					originalTaskConfig.$args &&
-					Object.typeOf (originalTaskConfig.$args) != 'Array' &&
-					Object.typeOf (originalTaskConfig.$args) != 'Arguments'
-				) {
-					args = [ args ];
-				}
-
-//				console.log ('task:', taskClassName, 'function:', taskFnName, 'promise:', taskPromise, 'errback:', taskErrBack);
-
-				if (taskErrBack) {
-					args.push ((function (err) {
-						var cbArgs = [].slice.call (arguments, 1);
-						if (err) {
-							this.failed.apply (this, arguments);
-						};
-						this.completed.apply (this, cbArgs);
-					}).bind(this));
-				}
-
-				try {
-					var returnVal = fn.apply(ctx, args);
-				} catch (e) {
-					failed = e;
-					this.failed(failed);
-				}
-
-				if (taskPromise) {
-					returnVal.then (
-						this.completed.bind (this),
-						this.failed.bind (this)
-					);
-				} else if (taskErrBack) {
-
-				} else if (failed) {
-					throw failed;
-				} else {
-					this.completed(returnVal);
-
-					//	if (isVoid(returnVal)) {
-					//		if (common.isEmpty(returnVal)) {
-					//			this.empty();
-					//		}
-				}
-			}
-		});
-
 		theTask = new xTaskClass ({
 			originalConfig: originalTaskConfig,
 			functionName: taskFnName || taskPromise || taskErrBack,
+			type:         taskType,
 			logTitle:     actualTaskParams.logTitle || actualTaskParams.$logTitle || actualTaskParams.displayName,
 			require:      gen ('checkRequirements', actualTaskParams),
 			important:    actualTaskParams.important || actualTaskParams.$important,
-			timeout:      actualTaskParams.timeout
+			timeout:      actualTaskParams.timeout,
+			idx:          idx
 		});
 
 	} else {
 		flow.logError ("cannot create task from structure:\n", taskParams);
 		flow.logError ('you must define $task, $function or $promise field');
 		// TODO: return something
+		flow.ready = false;
 	}
 
-	//		console.log (task);
-
 	return theTask;
+}
 
-};
-
-/**
- * @method EmitError
- * Implementation-specific.
- * When an unexpected error occurs, the task is automatically {@link #failed}.
- */
 task.prototype.EmitError = task.prototype.failed;
 
 return task;

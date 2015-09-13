@@ -1,0 +1,163 @@
+{
+	"test:00-expansion": {
+		"expect": "ok",
+		"description": "basic 'every' task test",
+		"tasks": [{
+			"$function": "console.log",
+			"$args": ["123"]
+		}, {
+			"$every": [2, 1, 2],
+			"$tasks": [{
+				"$function": "dfThrowUnlessEqual",
+				"$args": [
+					"[*every.index]",
+					"[*every.item]"
+				]
+			}]
+		}]
+	},
+	"test:01-origin": "<test/01-origin>",
+	"test:02-every": {
+		"expect": "fail",
+		"description": "basic 'every' task test",
+		"tasks": [{
+			"$every": [2, 1, 2],
+			"$tasks": [{
+				"$function": "dfThrowUnlessEqual",
+				"$args": [
+					"[*every.index]",
+					"[*every.item]"
+				]
+			}]
+		}]
+	},
+	"test:03-every": {
+		"expect": "ok",
+		"tasks": [{
+			"$every": [0, 1, 2],
+			"$tasks": [{
+				"$function": "dfThrowUnlessEqual",
+				"$args": [
+					"[*every.index]",
+					"[*every.item]"
+				]
+			}]
+		}]
+	},
+	"test:03-every-object": {
+		"expect": "ok",
+		"tasks": [{
+			"$every": {"a": "a", "b": "b", "c": "c"},
+			"$tasks": [{
+				"$function": "dfThrowUnlessEqual",
+				"$args": [
+					"[*every.index]",
+					"[*every.item]"
+				],
+				"$set": "numbers"
+			}],
+			"$collect": "numbers",
+			"$set": "numbers"
+		}, {
+			"$function": "console.log",
+			"$args": ["{$numbers}"]
+		}]
+	},
+	"test:08-every-double-expansion": {
+		"expect": "ok",
+		"tasks": [{
+			"$every": [0, 1, 2],
+			"$tasks": [{
+				"$function": "dfThrowUnlessEqual",
+				"$args": [
+					"[*every.index]",
+					"[*every.item]"
+				]
+			}]
+		}]
+	},
+	"test:09-promise": {
+		"expect": "ok",
+		"tasks": [{
+			"$promise": "dfGetPromise",
+			"$args": [500, 111, true, "<- last parameter define successful execution"],
+			"$set": "promise111"
+		}, {
+			"$promise": "dfGetPromise",
+			"$args": [500, 111, false, "<- last parameter define unsuccessful execution"],
+			"$setOnFail": "promise222"
+		}, {
+			"$function": "dfThrowUnlessEqual",
+			"$args": ["{$promise111}", "{$promise222}"],
+			"$important": true
+
+		}]
+	},
+	"test:10-errback": {
+		"expect": "ok",
+		"tasks": [{
+			"$errback": "dfErrback",
+			"$args": [500, 111, true, "<- last parameter define successful execution"],
+			"$set": "errback111"
+		}, {
+			"$errback": "dfErrback",
+			"$args": [500, 111, false, "<- last parameter define unsuccessful execution"],
+			"$setOnFail": "errback222"
+		}, {
+			"$function": "dfThrowUnlessEqual",
+			"$args": ["{$errback111}", "{$errback222}"],
+			"$important": true
+
+		}]
+	},
+	"test:11-errback-require": {
+		"expect": "ok",
+		"tasks": [{
+			"$nodecb": "fs.stat",
+			"$args": ["non-existing-file.xxx"],
+			"$setOnFail": "errback111"
+		}, {
+			"$function": "console.log",
+			"$args": ["just a function"],
+			"$set": "errback222"
+		}]
+	},
+	"test:12-every-collect": {
+		"expect": "ok",
+		"tasks": [{
+			"$every": [1, 2, 4],
+			"$tasks": [{
+				"$function": "dfDataObject",
+				"$set": "object"
+			}],
+			"$collect": "object",
+			"$set": "object"
+		}, {
+			"$function": "console.log",
+			"$args": "{$object}"
+		}, {
+			"$every": [1, 2, 4],
+			"$tasks": [{
+				"$function": "dfDataObject",
+				"$set": "object"
+			}],
+			"$collect": "object.a",
+			"$set": "objecta"
+		}, {
+			"$function": "console.log",
+			"$args": "{$objecta}"
+		}, {
+			"$function": "JSON.stringify",
+			"description": "null in args test",
+			"$args": ["{$objecta}", null, "\t"]
+		}, {
+			"$function": "dfThrowUnlessEqual",
+			"$args": ["{$objecta.0.0}", "b"],
+			"$important": true
+		}, {
+			"$function": "dfThrowUnlessEqual",
+			"$args": ["{$object.0.a.1}", "c"],
+			"$important": true
+		}]
+	}
+}

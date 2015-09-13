@@ -1,0 +1,65 @@
+{
+	"test:04-template-merge": {
+		"expect": "ok",
+		"tasks": [{
+			"$template": "jsonParseAndMerge",
+			"$args": ["{\"a\":\"b\"}"]
+		}, {
+			"$template": "jsonParseAndMerge",
+			"$args":     ["{\"c\":\"d\"}"],
+			"require":   "{$result}"
+		}, {
+			"$function": "dfThrowUnlessDefined",
+			"$args": ["{$result.a}"]
+		}, {
+			"$function": "dfThrowUnlessDefined",
+			"$args": ["{$result.c}"]
+		}]
+	},
+	"test:05-template-set": {
+		"expect": "ok",
+		"tasks": [{
+			"$template": "jsonParseAndSet",
+			"$args": ["{\"a\":\"b\"}"]
+		}, {
+			"$template": "jsonParseAndSet",
+			"$args":     ["{\"c\":\"d\"}"],
+			"require":   "{$result}"
+		}, {
+			"$function": "dfThrowNow",
+			"$args": ["{$result.a}"]
+		}, {
+			"$function": "dfThrowUnlessDefined",
+			"$args": ["{$result.c}"]
+		}]
+	},
+	"test:06-template-set-important": {
+		"expect": "fail",
+		"tasks": [{
+			"$template": "jsonParseAndSet",
+			"$args": ["{\"a\":\"b\"}"]
+		}, {
+			"$template": "jsonParseAndSet",
+			"$args":     ["{\"c\":\"d\"}"],
+			"require":   "{$result}"
+		}, {
+			"$function": "dfThrowNow",
+			"// 1 ": "this task must fail because unsatisfied dependencies of result.a",
+			"// 2 ": "which replaced by second JSON parse task. task state is skipped, but $important fail skipped task",
+			"$args": ["{$result.a}"],
+			"$important": true
+		}, {
+			"$function": "dfThrowUnlessDefined",
+			"$args": ["{$result.c}"]
+		}]
+	},
+	"test:07-every-template": {
+		"expect": "ok",
+		"tasks": [{
+			"$every": [0, 1, 2],
+			"$tasks": [{
+				"$template": "indexEqItem"
+			}]
+		}]
+	}
+}
