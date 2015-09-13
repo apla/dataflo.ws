@@ -32,10 +32,7 @@ for (var stateNum = 0; stateNum < taskStateList.length; stateNum++) {
 }
 
 /**
- * @class task.task
- * @extends events.EventEmitter
- *
- * Tasks are atomic synchronous/asynchronous entities that configure
+ * Tasks are code containers atomic synchronous/asynchronous entities that configure
  * what must be done, what prerequisitives must be satisfied before doing it,
  * and, optionally, where to store the task's result.
  *
@@ -52,7 +49,12 @@ for (var stateNum = 0; stateNum < taskStateList.length; stateNum++) {
  * A sequence of task configs
  * within the *dataflo.ws* concept. `task` objects are instantiated
  * by `dataflow` internally.
- *
+ * @module {Task} Task
+ */
+
+/**
+ * @class
+ * @extends events.EventEmitter
  * @cfg {String} className (required) The name of a module-exported class
  * to be instantiated as an asynchronous task.
  *
@@ -78,15 +80,16 @@ for (var stateNum = 0; stateNum < taskStateList.length; stateNum++) {
  *
  * @cfg {Function|String|String[]} require Lists requirements to check.
  *
+ * @cfg {Boolean} important If the task is marked important,
+ * it may declare itself {@link #failed}.
+ * Used in custom {@link #method} methods.
+ *
  * Implementations might provide either a function that checks whether
  * the requirements are satisfied or an identifier or a list of identifiers,
  * representing required objects.
  *
  * @returns {Boolean} If `require` is callable, it must return a boolean value.
  *
- * @cfg {Boolean} important If the task is marked important,
- * it may declare itself {@link #failed}.
- * Used in custom {@link #method} methods.
  */
 function task (config) {
 
@@ -217,7 +220,8 @@ util.extend (task.prototype, taskStateMethods, {
 	 * If the {@link #retries} limit allows, attempt to run the task
 	 * after a delay ({@link #timeout}).
 	 *
-	 * Publishes {@link #event-cancel}.
+	 * Emits {@link #event_cancel}.
+	 * @method _cancel
 	 */
 	_cancel: function (value) {
 
@@ -243,8 +247,8 @@ util.extend (task.prototype, taskStateMethods, {
 		}
 
 		/**
-		 * @event cancel
 		 * Published on task cancel.
+		 * @event cancel
 		 */
 		this.emit ('cancel', value);
 
@@ -311,9 +315,11 @@ util.extend (task.prototype, taskStateMethods, {
 	},
 
 	/**
-	 * @method completed
-	 * Publishes {@link #event-complete} with the result object
+	 *
+	 * Emits {@link #event_complete} with the result object
 	 * that will go into the {@link #produce} field of the dataflow.
+	 *
+	 * @method completed
 	 *
 	 * @param {Object} result The product of the task.
 	 */
@@ -350,9 +356,9 @@ util.extend (task.prototype, taskStateMethods, {
 		}
 
 		/**
-		 * @event complete
 		 * Published upon task completion.
 		 *
+		 * @event complete
 		 * @param {task.task} task
 		 * @param {Object} result
 		 */
@@ -360,21 +366,22 @@ util.extend (task.prototype, taskStateMethods, {
 	},
 
 	/**
-	 * @method skipped
+	 *
 	 * Skips the task with a given result.
 	 *
-	 * Publishes {@link #event-skip}.
+	 * Emits {@link #event_skip}.
 	 *
+	 * @method skipped
 	 * @param {Object} result Substitutes the tasks's complete result.
-
+	 *
 	 */
 	skipped: function (result) {
 		this.state = 6;
 
 		/**
-		 * @event skip
 		 * Triggered when the task is {@link #skipped}.
 
+		 * @event skip
 		 * @param {task.task} task
 		 * @param {Object} result
 		 */
@@ -382,12 +389,12 @@ util.extend (task.prototype, taskStateMethods, {
 	},
 
 	/**
-	 * @method empty
 	 * Run when the task has been completed correctly,
 	 * but the result is a non-value (null or empty).
 	 *
-	 * Publishes {@link #event-empty}.
+	 * Emits {@link #event_empty}.
 	 *
+	 * @method empty
 	 */
 	empty: function () {
 		this.state = 6; // completed
@@ -395,9 +402,9 @@ util.extend (task.prototype, taskStateMethods, {
 	},
 
 	/**
-	 * @method mapFields
 	 * Translates task configuration from custom field-naming cheme.
 	 *
+	 * @method mapFields
 	 * @param {Object} item
 	 */
 	mapFields: function (item) {
@@ -412,9 +419,9 @@ util.extend (task.prototype, taskStateMethods, {
 	},
 
 	/**
-	 * @method checkState
 	 * Checks requirements and updates the task state.
 	 *
+	 * @method checkState
 	 * @return {Number} The new state code.
 	 */
 	checkState: function () {
@@ -506,21 +513,21 @@ util.extend (task.prototype, taskStateMethods, {
 	 * - `complete`
 	 * - `failed`
 	 * - `skipped`
-	* - `empty`
+	 * - `empty`
 	 */
 	stateNames: taskStateNames,
 
 	/**
-	 * @method failed
-	 * Emits an {@link #event-error}.
+	 * Emits an {@link #event_error}.
 	 *
 	 * Cancels (calls {@link #method-cancel}) the task if it was ready
-	 * or running; or just emits {@link #event-cancel} if not.
+	 * or running; or just emits {@link #event_cancel} if not.
 	 *
 	 * Sets the status to `failed`.
 	 *
 	 * Sidenote: when a task fails the whole dataflow, that it belongs to, fails.
 	 *
+	 * @method failed
 	 * @return {Boolean} Always true.
 	 * @param {Error} Error object.
 
@@ -530,8 +537,9 @@ util.extend (task.prototype, taskStateMethods, {
 		this.state = 5;
 
 		/**
-		 * @event error
+
 		 * Emitted on task fail and on internal errors.
+		 * @event error
 		 * @param {Error} e Error object.
 		 */
 		this.emit('error', e);
@@ -546,21 +554,18 @@ util.extend (task.prototype, taskStateMethods, {
 
 });
 
-	/**
-	 * @method prepare
-	 * Prepare task class to run, handle errors, workaround for a $every tasks.
-	 *
-	 * @return {Task}.
-	 * @param {Flow} flow for task.
-	 * @param {DataFlows} dataflows object.
-	 * @param {Function} generator for params dictionary and check requirements.
-	 * @param {Integer} index in task array for that flow.
-	 * @param {Array} task array.
+/**
+ * Prepare task class to run, handle errors, workaround for a $every tasks.
+ *
+ * @method prepare
+ * @return {Task}.
+ * @param {Flow} flow for task.
+ * @param {DataFlows} dataflows object.
+ * @param {Function} generator for params dictionary and check requirements.
+ * @param {Integer} index in task array for that flow.
+ * @param {Array} task array.
 
-	 */
-
-
-
+ */
 task.prepare = function (flow, dataflows, gen, taskParams, idx, array) {
 	var theTask;
 
