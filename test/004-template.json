@@ -61,5 +61,15 @@
 				"$template": "indexEqItem"
 			}]
 		}]
+	},
+	"test:08-every-template": {
+		"expect": "fail",
+		"description": "if template doesn't exist, we should expect fail",
+		"tasks": [{
+			"$every": [0, 1, 2],
+			"$tasks": [{
+				"$template": "indexEqItemXXX"
+			}]
+		}]
 	}
 }

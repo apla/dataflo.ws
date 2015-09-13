@@ -16,7 +16,6 @@
 			}]
 		}]
 	},
-	"test:01-origin": "<test/01-origin>",
 	"test:02-every": {
 		"expect": "fail",
 		"description": "basic 'every' task test",
@@ -113,7 +112,7 @@
 	"test:11-errback-require": {
 		"expect": "ok",
 		"tasks": [{
-			"$nodecb": "fs.stat",
+			"$errback": "fs.stat",
 			"$args": ["non-existing-file.xxx"],
 			"$setOnFail": "errback111"
 		}, {
