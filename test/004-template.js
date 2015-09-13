@@ -17,6 +17,31 @@ var tests = [];
 
 var dataflows = require ("./004-template.json");
 
+var templates = {
+	"jsonParseAndMerge": {
+		"$origin":    "{$global.JSON}",
+		"$function":  "parse",
+		"$mergeWith": "result"
+	},
+	"jsonParseAndSet": {
+		"$origin":    "{$global.JSON}",
+		"$function":  "parse",
+		"$set":       "result"
+	},
+	"indexEqItem": {
+		"$function": "throwUnlessEqual",
+		"$args": [
+			"[*every.index]",
+			"[*every.item]"
+		]
+	},
+	"testHttpResource": {
+		"$class":"remoteResource",
+		"$method": "toBuffer"
+	}
+};
+
+
 describe ("running every", function () {
 	Object.keys (dataflows).forEach (function (token) {
 		var item = dataflows[token];
@@ -26,12 +51,13 @@ describe ("running every", function () {
 				util.extend (true, {}, item),
 				{
 					// dataflow parameters
+					templates: templates
 				}
 			);
 
 			if (!df.ready) {
 				console.log ("dataflow not ready");
-				assert (item.expect === "fail" ? true : false);
+				assert (item.expect === "no-dataflow" ? true : false);
 				done ();
 				return;
 			}
