@@ -152,11 +152,11 @@ var dataflow = module.exports = function (config, reqParam) {
 
 	var idLength = 8;
 	if (this.idPrefix) {
-		this.id = this.id || ++dataflow.lastId;
+		this.id = this.id || dataflow.nextId ();
 		idLength = 4;
 	} else {
 		this.idPrefix = '';
-		this.id = this.id || (pid | (++dataflow.lastId));
+		this.id = this.id || (pid | dataflow.nextId ());
 	}
 
 	if (!this.stage) this.stage = 'dataflow';
@@ -255,6 +255,16 @@ var dataflow = module.exports = function (config, reqParam) {
 };
 
 util.inherits (dataflow, EventEmitter);
+
+var seq = 0;
+
+dataflow.nextId = function () {
+	seq++;
+	if (seq > 65535) {
+		seq = 0;
+	}
+	return seq;
+}
 
 function pad(n) {
 	return n < 10 ? '0' + n.toString(10) : n.toString(10);
