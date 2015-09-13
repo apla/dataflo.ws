@@ -172,7 +172,12 @@ EveryTask.prototype.run = function () {
 	var keys = Object.keys (this.$every);
 
 	this.executionList = [];
-	keys.map (this.prepareDF.bind (this, everyTasks));
+	try {
+		keys.map (this.prepareDF.bind (this, everyTasks));
+	} catch (e) {
+		this.failed ();
+		return;
+	}
 
 	var concurrencyMax = this.concurrency || 10;
 	var concurrency =  Math.min (this.executionList.length, concurrencyMax);
@@ -197,13 +202,17 @@ EveryTask.prototype.prepareDF = function (everyTasks, item, idx, keys) {
 	var dict = util.extend (true, {}, this.getDict());
 	dict.every = every;
 
-	var df = new flow({
+	var df = new flow ({
 		tasks: everyTasks.$tasks,
 		idPrefix: this.flowId + '>'
 	}, dict);
 
-	df.on('completed', this._onCompleted.bind(this));
-	df.on('failed', this._onFailed.bind(this));
+	if (!df.ready) {
+		throw "subflow not ready";
+	}
+
+	df.on ('completed', this._onCompleted.bind (this));
+	df.on ('failed', this._onFailed.bind (this));
 
 	this.executionList.push (df);
 	return df;
