@@ -180,6 +180,7 @@ util.extend (task.prototype, taskStateMethods, {
 				var cbArgs = [].slice.call (arguments, 1);
 				if (err) {
 					this.failed.apply (this, arguments);
+					return;
 				};
 				this.completed.apply (this, cbArgs);
 			}).bind(this));
@@ -655,7 +656,7 @@ task.prepare = function (flow, dataflows, gen, taskParams, idx, array) {
 		}
 
 		if (taskErrBack) {
-			// functions and promises similar, but function return value, promise promisepromise promise
+			// nodestyled callbacks
 			taskFnName = taskErrBack;
 			taskType = "errback";
 		}
