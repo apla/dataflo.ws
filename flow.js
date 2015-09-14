@@ -359,9 +359,9 @@ util.extend (dataflow.prototype, {
 	runDelayed: function () {
 		var self = this;
 		if ($isClientSide) {
-			setTimeout (this[this.method || 'run'].bind (this), 0);
+			setTimeout (this.run.bind (this), 0);
 		} else if ($isServerSide) {
-			process.nextTick (this[this.method || 'run'].bind (this));
+			process.nextTick (this.run.bind (this));
 		}
 	},
 

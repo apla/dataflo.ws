@@ -115,7 +115,16 @@ util.extend (task.prototype, taskStateMethods, {
 
 			return;
 		}
+
 		method.call (this);
+
+		if (this.timeout) {
+			this.timeoutId = setTimeout (function () {
+				this.state = 5;
+				this.emit ('log', 'timeout is over for task');
+				this._cancel();
+			}.bind (this), this.timeout);
+		}
 	},
 
 	run: function () {
@@ -232,7 +241,7 @@ util.extend (task.prototype, taskStateMethods, {
 
 		this.state = 5;
 
-		if (this.cancel) this.cancel.apply (arguments);
+		if (this.cancel) this.cancel.apply (this, arguments);
 
 		this.clearOperationTimeout();
 
@@ -242,9 +251,9 @@ util.extend (task.prototype, taskStateMethods, {
 
 			this.state = 1;
 
-			var method = this[this.method || 'run'];
+			setTimeout (this._launch.bind (this), this.delay || 0);
 
-			setTimeout (method.bind(this), this.timeout);
+			return;
 		}
 
 		/**
@@ -461,10 +470,9 @@ util.extend (task.prototype, taskStateMethods, {
 	 * @private
 	 */
 	clearOperationTimeout: function() {
-
 		if (this.timeoutId) {
 			clearTimeout (this.timeoutId);
-			this.timeoutId = 0;
+			this.timeoutId = undefined;
 		}
 
 	},
@@ -610,7 +618,7 @@ task.prepare = function (flow, dataflows, gen, taskParams, idx, array) {
 	// console.log (taskParams);
 
 	var taskClassName = actualTaskParams.className || actualTaskParams.$class || actualTaskParams.task;
-	var taskFnName = actualTaskParams.functionName || actualTaskParams.$function;
+	var taskFnName = actualTaskParams.functionName || actualTaskParams.$function || actualTaskParams.fn;
 	var taskPromise = actualTaskParams.promise || actualTaskParams.$promise;
 	var taskErrBack = actualTaskParams.errback || actualTaskParams.$errback;
 
@@ -632,6 +640,7 @@ task.prepare = function (flow, dataflows, gen, taskParams, idx, array) {
 				flowId:    flow.coloredId,
 				getDict:   gen ('createDict'),
 				timeout:   actualTaskParams.timeout,
+				retries:   actualTaskParams.retries,
 				idx:       idx
 			});
 		} catch (e) {
@@ -671,6 +680,7 @@ task.prepare = function (flow, dataflows, gen, taskParams, idx, array) {
 			require:      gen ('checkRequirements', actualTaskParams),
 			important:    actualTaskParams.important || actualTaskParams.$important,
 			timeout:      actualTaskParams.timeout,
+			retries:      actualTaskParams.retries,
 			idx:          idx
 		});
 
