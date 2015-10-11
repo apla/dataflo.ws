@@ -1,6 +1,9 @@
-var assert = require('assert');
+var path   = require ('path');
+var assert = require ('assert');
 
 var common = require ('../common');
+
+var baseName = path.basename (__filename, path.extname (__filename));
 
 var data = {
 	boolExp: "{$data.bool}",
@@ -33,7 +36,7 @@ var dict = {
 	arr: ['a', 'b'],
 };
 
-describe ('interpolate', function () {
+describe (baseName + ' interpolate', function () {
 
 	it ('expandBoolean', function() {
 		var result = data.boolExp.interpolate (dict);
@@ -82,19 +85,19 @@ describe ('interpolate', function () {
 
 	it ('expandIndexed', function() {
 		var result = data.indexedExp.interpolate (dict);
-		console.log(result);
+		// console.log(result);
 		assert.deepEqual (result, { record: 'a' });
 	})
 
 	it ('expandIndexedZeroProp', function() {
 		var result = data.indexedZeroPropExp.interpolate (dict);
-		console.log(result);
+		// console.log(result);
 		assert.equal (result, 'a');
 	})
 
 	it ('expandIndexedNonZeroProp', function() {
 		var result = data.indexedNonZeroPropExp.interpolate (dict);
-		console.log(result);
+		// console.log(result);
 		assert.equal (result, 'b');
 	})
 });

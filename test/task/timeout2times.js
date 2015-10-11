@@ -10,32 +10,35 @@ var okTask = module.exports = function (config) {
 
 util.inherits (okTask, task);
 
-// not suitable for real work
-var times = 0;
-var timerId = null;
+var timerHandles = {};
 
 util.extend (okTask.prototype, {
 
 	start: function (args) {
 		var timeout = this.$args.timeout || 100;
-		if (times < this.$args.times) {
-			times ++;
+
+		if (!timerHandles[this.id]) {
+			timerHandles[this.id] = {times: 0};
+		}
+
+		var handle = timerHandles[this.id];
+
+		if (handle.times < this.$args.times) {
+			handle.times ++;
 		} else {
 			timeout = 0;
 		}
 
-		timerId = setTimeout (function () {
+		handle.timerId = setTimeout (function () {
 			this.completed (true);
+			delete timerHandles[this.id];
 		}.bind (this), timeout);
 
 	},
 
 	cancel: function (args) {
-		clearTimeout (timerId);
-	},
-
-	reset: function () {
-		times = 0;
-		this.completed (true);
+		var handle = timerHandles[this.id];
+		if (handle)
+			clearTimeout (handle.timerId);
 	}
 });

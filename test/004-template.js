@@ -1,6 +1,9 @@
 var assert   = require('assert');
 
 var util     = require ('util');
+var path     = require ('path');
+
+var baseName = path.basename (__filename, path.extname (__filename));
 
 var df     = require ("../");
 var flow   = require ("../flow");
@@ -41,8 +44,9 @@ var templates = {
 	}
 };
 
+// var testOnly = "test:08-every-template";
 
-describe ("running every", function () {
+describe (baseName + " running templates", function () {
 	Object.keys (dataflows).forEach (function (token) {
 		var item = dataflows[token];
 
@@ -60,12 +64,9 @@ describe ("running every", function () {
 
 			var df = new flow ({
 				tasks: item.tasks,
-				templates: templates
+				templates: templates,
+				logger: "VERBOSE" in process.env ? undefined : function () {}
 			});
-
-			console.log (Object.keys (require.cache).filter (function (modulePath) {
-				if (modulePath.match ('every')) return true;
-			}));
 
 			if (!df.ready) {
 				console.log ("dataflow not ready");

@@ -1,9 +1,12 @@
-var assert   = require('assert');
+var path   = require ('path');
+var assert = require ('assert');
 
 var common   = require ('../common');
 var dataflow = require ('../flow');
 
 clearInterval (global.currentDateInterval);
+
+var baseName = path.basename (__filename, path.extname (__filename));
 
 var checkTaskParams  = dataflow.prototype.checkTaskParams;
 var taskRequirements = dataflow.prototype.taskRequirements;
@@ -46,10 +49,10 @@ var dict = {
 	arr: ['a', 'b'],
 };
 
-describe ('check task requirements', function () {
+describe (baseName + ' check task requirements', function () {
 	it ('expandFailNoThrow', function() {
 		var result = checkTaskParams (data, dict);
-		console.log (result);
+		// console.log (result);
 		assert.strictEqual (result.modified.arrayExtExp[1], 123);
 		assert.deepEqual (result.failed, [
 			"checkFalse.falseExp",

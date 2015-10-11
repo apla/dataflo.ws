@@ -1,15 +1,11 @@
 var assert   = require('assert');
 
 var util     = require ('util');
+var path     = require ('path');
 
-var df     = require ("../");
+var baseName = path.basename (__filename, path.extname (__filename));
+
 var flow   = require ("../flow");
-
-// dirty, but works
-// TODO: need to rewrite
-require ("./common");
-
-var verbose = true;
 
 var tests = [];
 
@@ -17,17 +13,29 @@ var tests = [];
 
 var dataflows = require ("./003-every.json");
 
-describe ("running every", function () {
+// var testOnly = "test:00-expansion";
+
+describe (baseName + " running every", function () {
 	Object.keys (dataflows).forEach (function (token) {
 		var item = dataflows[token];
-		it (item.description || token, function (done) {
+		var method = it;
 
-			var df = new flow (
-				util.extend (true, {}, item),
-				{
-					// dataflow parameters
-				}
-			);
+		if (typeof testOnly !== "undefined" && testOnly) {
+			if (testOnly === token) {
+				method = it.only;
+			} else {
+				return;
+			}
+		}
+
+		method (item.description ? item.description + ' ('+token+')' : token, function (done) {
+
+			var df = new flow ({
+				tasks: item.tasks,
+				logger: "VERBOSE" in process.env ? undefined : function () {}
+			}, {
+				// dataflow parameters
+			});
 
 			if (!df.ready) {
 				console.log ("dataflow not ready");

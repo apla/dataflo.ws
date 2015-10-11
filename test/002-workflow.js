@@ -1,13 +1,12 @@
-var assert   = require('assert');
-
 var util     = require ('util');
+var path     = require ('path');
+
+var assert   = require ('assert');
 
 var df     = require ("../");
 var flow   = require ("../flow");
 
-// console.log (df);
-
-var verbose = true;
+var baseName = path.basename (__filename, path.extname (__filename));
 
 var tests = [];
 
@@ -142,13 +141,17 @@ var dataflows = [{
 
 }];
 
-describe ("running dataflow", function () {
+describe (baseName + " running dataflow", function () {
 	dataflows.map (function (item) {
 		it (item.description, function (done) {
 
 			var df = new flow (
-				util.extend (true, {}, item.config),
-				{request: item.request}
+				{
+					tasks: item.config.tasks,
+					logger: "VERBOSE" in process.env ? undefined : function () {}
+				}, {
+					request: item.request
+				}
 			);
 
 			if (!df.ready) {
@@ -165,6 +168,11 @@ describe ("running dataflow", function () {
 
 			df.on ('failed', function () {
 				assert (item.failed === true);
+				done ();
+			});
+
+			df.on ('exception', function () {
+				assert (item.exception === true);
 				done ();
 			});
 

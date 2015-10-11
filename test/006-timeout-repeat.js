@@ -1,6 +1,9 @@
 var assert   = require('assert');
 
 var util     = require ('util');
+var path     = require ('path');
+
+var baseName = path.basename (__filename, path.extname (__filename));
 
 var df     = require ("../");
 var flow   = require ("../flow");
@@ -26,17 +29,41 @@ var dataflows = {
 			"retries": 5,
 			"$setOnFail": "errback111"
 		}]
+	},
+	"test:15-timeout-repeat": {
+		"expect": "fail",
+		"tasks": [{
+			"task": "./test/task/timeout2times",
+			"$method": "start",
+			"$args": {"timeout": 100, "times": 3},
+			"timeout": 50,
+			"retries": 2,
+			"$setOnFail": "errback111"
+		}]
 	}
 };
 
-describe ("running every", function () {
+describe (baseName + " running timeout repeat", function () {
 	Object.keys (dataflows).forEach (function (token) {
 		var item = dataflows[token];
-		it.only (item.description || token, function (done) {
+		var method = it;
+
+		if (typeof testOnly !== "undefined" && testOnly) {
+			if (testOnly === token) {
+				method = it.only;
+			} else {
+				return;
+			}
+		}
+
+		method (item.description ? item.description + ' ('+token+')' : token, function (done) {
 
 			var df = new flow (
-				util.extend (true, {}, item),
 				{
+					tasks: item.tasks,
+					// templates: templates,
+					logger: "VERBOSE" in process.env ? undefined : function () {}
+				}, {
 					// dataflow parameters
 				}
 			);
@@ -55,6 +82,11 @@ describe ("running every", function () {
 
 			df.on ('failed', function () {
 				assert (item.expect === "fail" ? true : false);
+				done ();
+			});
+
+			df.on ('exception', function () {
+				assert (item.expect === "exception" ? true : false);
 				done ();
 			});
 
