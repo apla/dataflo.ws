@@ -274,12 +274,15 @@ util.extend (task.prototype, taskStateMethods, {
 		this.functionName = config.functionName;
 		this.originalConfig = config.originalConfig;
 		this.flowId       = config.flowId;
+		this.flowLogId    = config.flowLogId;
 		this.getDict      = config.getDict;
 		this.type         = config.type;
 
 		this.method       = config.method;
 		if (this.className && !this.method)
 			this.method   = 'run';
+
+		this.id = "" + this.flowId + ":" + config.idx;
 
 		var idxLog = (config.idx < 10 ? " " : "") + config.idx;
 		if ($isServerSide) {
@@ -637,7 +640,8 @@ task.prepare = function (flow, dataflows, gen, taskParams, idx, array) {
 				method:    actualTaskParams.method || actualTaskParams.$method,
 				require:   gen ('checkRequirements', actualTaskParams),
 				important: actualTaskParams.important || actualTaskParams.$important,
-				flowId:    flow.coloredId,
+				flowLogId: flow.coloredId,
+				flowId:    flow.id,
 				getDict:   gen ('createDict'),
 				timeout:   actualTaskParams.timeout,
 				retries:   actualTaskParams.retries,
@@ -679,6 +683,8 @@ task.prepare = function (flow, dataflows, gen, taskParams, idx, array) {
 			logTitle:     actualTaskParams.logTitle || actualTaskParams.$logTitle || actualTaskParams.displayName,
 			require:      gen ('checkRequirements', actualTaskParams),
 			important:    actualTaskParams.important || actualTaskParams.$important,
+			flowLogId:    flow.coloredId,
+			flowId:       flow.id,
 			timeout:      actualTaskParams.timeout,
 			retries:      actualTaskParams.retries,
 			idx:          idx

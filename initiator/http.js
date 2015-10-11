@@ -114,7 +114,7 @@ httpdi.prototype.runPrepare = function (df, request, response) {
 
 		prepareCfg.forEach(function(p, index, arr) {
 
-			var innerDfConfig = prepare[p];
+			var innerDfConfig = util.extend (true, {}, prepare[p]);
 
 			if (!innerDfConfig || !innerDfConfig.tasks) {
 				console.error (paint.error('request canceled:'), 'no prepare task named "'+p+'"');
@@ -127,13 +127,14 @@ httpdi.prototype.runPrepare = function (df, request, response) {
 				return;
 			}
 
+			innerDfConfig.stage = 'prepare';
+
 			innerDfConfig.idPrefix = df.coloredId + '>';
 
 			var innerDf = new flow(innerDfConfig, {
 				request: request,
-				response: response,
-				stage: 'prepare'}
-			);
+				response: response
+			});
 
 			dfChain.push(innerDf);
 

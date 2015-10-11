@@ -45,15 +45,27 @@ var templates = {
 describe ("running every", function () {
 	Object.keys (dataflows).forEach (function (token) {
 		var item = dataflows[token];
-		it (item.description || token, function (done) {
 
-			var df = new flow (
-				util.extend (true, {}, item),
-				{
-					// dataflow parameters
-					templates: templates
-				}
-			);
+		var method = it;
+
+		if (typeof testOnly !== "undefined" && testOnly) {
+			if (testOnly === token) {
+				method = it.only;
+			} else {
+				return;
+			}
+		}
+
+		method (item.description ? item.description + ' ('+token+')' : token, function (done) {
+
+			var df = new flow ({
+				tasks: item.tasks,
+				templates: templates
+			});
+
+			console.log (Object.keys (require.cache).filter (function (modulePath) {
+				if (modulePath.match ('every')) return true;
+			}));
 
 			if (!df.ready) {
 				console.log ("dataflow not ready");

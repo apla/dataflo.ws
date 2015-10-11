@@ -129,13 +129,10 @@ var pid = (typeof process !== "undefined") ? (process.pid << 16) : 0;
  * notifies subscribers (inititators).
  *
  * @cfg {Object} config (required) dataflow configuration.
- * @cfg {String} config.$class (required) Class to instantiate
- * (alias of config.className).
- * @cfg {String} config.$function (required) Synchronous function to be run
- * (instead of a class). Alias of functionName.
- * @cfg {String} config.$set Path to the property in which the produced data
- * will be stored.
- * @cfg {String} config.$method Method to be run after the class instantiation.
+ * @cfg {String} config.tasks (required) tasks in that dataflow.
+ * @cfg {String} config.templates task templates
+ * @cfg {String} config.data data for tasks.
+ * @cfg {String} config.stage default is dataflow.
  * @cfg {Object} reqParam (required) dataflow parameters.
  */
 var dataflow = module.exports = function (config, reqParam) {
@@ -143,14 +140,16 @@ var dataflow = module.exports = function (config, reqParam) {
 	var self = this;
 
 	// TODO: copy only required things
-	util.extend (true, this, config); // this is immutable config skeleton
-	util.extend (true, this, reqParam); // this is config fixup
+	// util.extend (true, this, config); // this is immutable config skeleton
+	// util.extend (true, this, reqParam); // this is config fixup
 
 	this.created = this.getDate ();
 
 	// here we make sure dataflow uid generated
 
 	var idLength = 8;
+	// idPrefix is used for dataflows running winthing other dataflows, like `every` task
+	if ("idPrefix" in config) this.idPrefix = config.idPrefix;
 	if (this.idPrefix) {
 		this.id = this.id || dataflow.nextId ();
 		idLength = 4;
@@ -159,6 +158,7 @@ var dataflow = module.exports = function (config, reqParam) {
 		this.id = this.id || (pid | dataflow.nextId ());
 	}
 
+	if ("stage" in config) this.stage = config.stage;
 	if (!this.stage) this.stage = 'dataflow';
 
 	//if (!this.stageMarkers[this.stage])
@@ -186,7 +186,10 @@ var dataflow = module.exports = function (config, reqParam) {
 		return item;
 	}).join ('');
 
+	// TODO: legacy, it is better to remove data.data
 	this.data = this.data || { data: {} };
+
+	this.templates = config.templates || {};
 
 //	console.log ('!!!!!!!!!!!!!!!!!!!' + this.data.keys.length);
 
@@ -381,7 +384,7 @@ util.extend (dataflow.prototype, {
 //		flow.log ('dataflow run');
 
 		var taskStateNames = taskClass.prototype.stateNames;
-		this.taskStates = [0, 0, 0, 0, 0, 0, 0];
+		this.taskStates = [0, 0, 0, 0, 0, 0, 0, 0];
 
 		// check task states
 
@@ -404,7 +407,7 @@ util.extend (dataflow.prototype, {
 			if (!task) {
 				flow.failed = true;
 				// flow.emit ('failed', flow);
-				flow.logError (flow.stage + ' task undefined');
+				flow.logError (flow.stage + ' task is undefined');
 				flow.taskStates[taskStateNames.failed]++;
 				return;
 			}
@@ -421,9 +424,13 @@ util.extend (dataflow.prototype, {
 
 			if (task.isReady () && !flow.failed) {
 				flow.logTask (task, 'started');
+				// TODO: add zones/domains
+				// dataflows.zone.run (function () {/* here is task code */}, function () {/* here is error handler */});
 				try {
 					task._launch ();
 				} catch (e) {
+					// TODO: set task state to exception
+					// on exception we should fail instantly
 					task.failed (e);
 					// flow.logTaskError (task, 'failed to run', e);
 				}
@@ -550,7 +557,7 @@ util.extend (dataflow.prototype, {
 			'error',
 			task.dfTaskLogNum,
 			task.logTitle,
-			'(' + task.state + ') ',
+			'(' + task.state + ')',
 			paint.error (
 				util.inspect (msg).replace (/(^'|'$)/g, "").replace (/\\'/, "'"),
 				util.inspect (options || '').replace (/(^'|'$)/g, "").replace (/\\'/, "'")
