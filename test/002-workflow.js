@@ -1,36 +1,15 @@
-var test     = require('utest');
 var assert   = require('assert');
 
 var util     = require ('util');
 
-var common   = require ('../common');
-var flow = require ('../flow');
+var df     = require ("../");
+var flow   = require ("../flow");
 
-clearInterval ($stash.currentDateInterval);
+// console.log (df);
 
 var verbose = true;
 
 var tests = [];
-
-var failure = function (desc) {
-	return function () {
-		test (desc, {'failure test': function () {
-			if (verbose) console.log ('failure, ' + desc);
-			assert.equal (true, false);
-		}});
-	}
-}
-
-var ok = function (desc) {
-	return function () {
-		var tests = {};
-		tests[desc + 'ok test'] = function () {
-			if (verbose) console.log ('ok, ' + desc);
-			assert.equal (true, true);
-		};
-		test (desc, tests);
-	};
-}
 
 //process.on('uncaughtException', failure ('unhadled exception'));
 
@@ -45,8 +24,8 @@ var dataflows = [{
 	request: {
 		test: true
 	},
-	completed: failure ('non-existent-task'),
-	failed: ok ('non-existent-task')
+	completed: false,
+	failed: true
 }, {
 	description: "one completed and one skipped task",
 	config: {
@@ -62,8 +41,8 @@ var dataflows = [{
 	request: {
 		test: true
 	},
-	failed: failure ('complete + skipped task'),
-	completed: ok ('complete + skipped task')
+	failed: false,
+	completed: true
 }, {
 	description: "two skipped tasks",
 	config: {
@@ -78,8 +57,8 @@ var dataflows = [{
 	request: {
 		test: true
 	},
-	failed: failure ('skipped + skipped task'),
-	completed: ok ('skipped + skipped task')
+	failed: false,
+	completed: true
 }, {
 	description: "it's ok to skip some tasks if requirements not satisfied",
 	config: {
@@ -95,8 +74,8 @@ var dataflows = [{
 	request: {
 		test: true
 	},
-	failed: failure ('complete + skipped by requirements task'),
-	completed: ok ('complete + skipped by requirements task')
+	failed: false,
+	completed: true
 }, {
 	description: "skipped important task",
 	config: {
@@ -113,8 +92,8 @@ var dataflows = [{
 	request: {
 		test: true
 	},
-	failed: ok ('skipped important task'),
-	completed: failure ('skipped important task')
+	failed: true,
+	completed: false
 }, {
 	description: "important task decide itself fail or skip",
 	config: {
@@ -127,8 +106,8 @@ var dataflows = [{
 	request: {
 		test: true
 	},
-	failed: ok ('failed itself important task'),
-	completed: failure ('failed itself important task')
+	failed: true,
+	completed: false
 }, {
 	description: "fail task",
 	config: {
@@ -140,8 +119,8 @@ var dataflows = [{
 	request: {
 		test: true
 	},
-	failed: ok ('fail task'),
-	completed: failure ('fail task')
+	failed: true,
+	completed: false
 }, {
 	description: "fail task is skipped by requirements",
 	config: {
@@ -157,11 +136,47 @@ var dataflows = [{
 	request: {
 		test: true
 	},
-	failed: failure ('fail task'),
-	completed: ok ('fail task')
+	failed: true,
+	completed: false
 //}, {
 
 }];
+
+describe ("running dataflow", function () {
+	dataflows.map (function (item) {
+		it (item.description, function (done) {
+
+			var df = new flow (
+				util.extend (true, {}, item.config),
+				{request: item.request}
+			);
+
+			if (!df.ready) {
+				console.log ("dataflow not ready");
+				assert (item.failed === true);
+				done ();
+				return;
+			}
+
+			df.on ('completed', function () {
+				assert (item.completed === true);
+				done ();
+			});
+
+			df.on ('failed', function () {
+				assert (item.failed === true);
+				done ();
+			});
+
+			if (item.autoRun || item.autoRun == void 0)
+				df.run();
+
+		});
+	});
+});
+
+
+return;
 
 var started = new Date ();
 
@@ -244,26 +259,6 @@ repeat.times (function () {
 
 	if (dependentConfig.autoRun || dependentConfig.autoRun == void 0)
 		dependentDf.run();
-
-
-	dataflows.map (function (item) {
-
-		var df = new flow (
-			util.extend (true, {}, item.config),
-			{request: item.request}
-		);
-
-		if (!df.ready)
-			return item.failed ();
-
-		df.on ('completed', item.completed);
-
-		df.on ('failed', item.failed);
-
-		if (item.autoRun || item.autoRun == void 0)
-			df.run();
-
-	});
 
 });
 

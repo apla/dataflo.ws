@@ -1,4 +1,3 @@
-var test   = require('utest');
 var assert = require('assert');
 
 var common = require ('../common');
@@ -34,65 +33,68 @@ var dict = {
 	arr: ['a', 'b'],
 };
 
-test('interpolate', {
-	'expandBoolean': function() {
+describe ('interpolate', function () {
+
+	it ('expandBoolean', function() {
 		var result = data.boolExp.interpolate (dict);
 		assert.strictEqual (result, true);
-	},
+	})
 
-	'expandString': function() {
+	it ('expandString', function() {
 		var result = data.stringExp.interpolate (dict);
 		assert.strictEqual (result, "string");
-	},
-	'expandString2': function() {
+	})
+
+	it ('expandString2', function() {
 		assert.throws (function () {
 			var result = data.stringExp2.interpolate (dict);
 		});
-	},
-	'expandString3': function() {
+	})
+
+	it ('expandString3', function() {
 		var result = data.stringExp3.interpolate (dict);
 		assert.strictEqual (result, "}");
-	},
+	})
 
-	'expandNumber': function() {
+	it ('expandNumber', function() {
 		var result = data.numberExp.interpolate (dict);
 		assert.strictEqual (result, 123);
-	},
+	})
 
-	'expandInline': function() {
+	it ('expandInline', function() {
 		var result = data.inlineExp.interpolate (dict);
 		assert.strictEqual (result, "string-123");
-	},
+	})
 
-	'expandArray': function() {
+	it ('expandArray', function() {
 		var result = data.arrayExp.interpolate (dict);
 		assert.deepEqual (result, ['a', 'b']);
-	},
+	})
 
-	'expandObject': function() {
+	it ('expandObject', function() {
 		var result = data.objectExp.interpolate (dict);
 		assert.deepEqual (result, {
 			bool: true,
 			string: "string",
 			number: 123
 		});
-	},
+	})
 
-	'expandIndexed': function() {
+	it ('expandIndexed', function() {
 		var result = data.indexedExp.interpolate (dict);
 		console.log(result);
 		assert.deepEqual (result, { record: 'a' });
-	},
+	})
 
-	'expandIndexedZeroProp': function() {
+	it ('expandIndexedZeroProp', function() {
 		var result = data.indexedZeroPropExp.interpolate (dict);
 		console.log(result);
 		assert.equal (result, 'a');
-	},
+	})
 
-	'expandIndexedNonZeroProp': function() {
+	it ('expandIndexedNonZeroProp', function() {
 		var result = data.indexedNonZeroPropExp.interpolate (dict);
 		console.log(result);
 		assert.equal (result, 'b');
-	}
+	})
 });

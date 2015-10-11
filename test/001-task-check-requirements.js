@@ -1,4 +1,3 @@
-var test     = require('utest');
 var assert   = require('assert');
 
 var common   = require ('../common');
@@ -47,8 +46,8 @@ var dict = {
 	arr: ['a', 'b'],
 };
 
-test('check task requirements', {
-	'expandFailNoThrow': function() {
+describe ('check task requirements', function () {
+	it ('expandFailNoThrow', function() {
 		var result = checkTaskParams (data, dict);
 		console.log (result);
 		assert.strictEqual (result.modified.arrayExtExp[1], 123);
@@ -61,7 +60,7 @@ test('check task requirements', {
 
 			"exception.nothing"
 		]);
-	}
+	})
 });
 
 
