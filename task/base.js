@@ -604,6 +604,7 @@ task.prepare = function (flow, dataflows, gen, taskParams, idx, array) {
 			var taskTemplateName = everyTaskConf.$template;
 			if (taskTemplateName && flow.templates && flow.templates[taskTemplateName]) {
 				var newEveryTaskConf = util.extend (true, {}, flow.templates[taskTemplateName]);
+				// WTF???
 				util.extend (true, newEveryTaskConf, everyTaskConf);
 				util.extend (true, everyTaskConf, newEveryTaskConf);
 				delete everyTaskConf.$template;
@@ -611,6 +612,10 @@ task.prepare = function (flow, dataflows, gen, taskParams, idx, array) {
 			}
 
 		});
+
+		actualTaskParams.flowConfig = {
+			logger: flow.logger
+		};
 	}
 
 	//		var originalTaskConfig = JSON.parse(JSON.stringify(actualTaskParams));

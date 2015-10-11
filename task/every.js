@@ -202,10 +202,11 @@ EveryTask.prototype.prepareDF = function (everyTasks, item, idx, keys) {
 	var dict = util.extend (true, {}, this.getDict());
 	dict.every = every;
 
-	var df = new flow ({
-		tasks: everyTasks.$tasks,
-		idPrefix: this.flowId + '>'
-	}, dict);
+	var flowConfig = util.extend (true, {}, this.flowConfig);
+	flowConfig.tasks = everyTasks.$tasks;
+	flowConfig.idPrefix = this.flowLogId + '>';
+
+	var df = new flow (flowConfig, dict);
 
 	if (!df.ready) {
 		throw "subflow not ready";

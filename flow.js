@@ -161,6 +161,10 @@ var dataflow = module.exports = function (config, reqParam) {
 	if ("stage" in config) this.stage = config.stage;
 	if (!this.stage) this.stage = 'dataflow';
 
+	if (config.logger) {
+		this.logger = this._log = config.logger;
+	}
+
 	//if (!this.stageMarkers[this.stage])
 	//	console.error ('there is no such stage marker: ' + this.stage);
 
