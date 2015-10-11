@@ -13,7 +13,9 @@ var tests = [];
 
 var dataflows = require ("./003-every.json");
 
-// var testOnly = "test:00-expansion";
+//var testOnly = "test:02-every";
+
+var verbose = false;
 
 describe (baseName + " running every", function () {
 	Object.keys (dataflows).forEach (function (token) {
@@ -23,6 +25,7 @@ describe (baseName + " running every", function () {
 		if (typeof testOnly !== "undefined" && testOnly) {
 			if (testOnly === token) {
 				method = it.only;
+				verbose = true;
 			} else {
 				return;
 			}
@@ -32,7 +35,7 @@ describe (baseName + " running every", function () {
 
 			var df = new flow ({
 				tasks: item.tasks,
-				logger: "VERBOSE" in process.env ? undefined : function () {}
+				logger: verbose || "VERBOSE" in process.env ? undefined : function () {}
 			}, {
 				// dataflow parameters
 			});

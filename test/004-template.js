@@ -32,7 +32,7 @@ var templates = {
 		"$set":       "result"
 	},
 	"indexEqItem": {
-		"$function": "throwUnlessEqual",
+		"$function": "dfThrowUnlessEqual",
 		"$args": [
 			"[*every.index]",
 			"[*every.item]"
@@ -45,6 +45,7 @@ var templates = {
 };
 
 // var testOnly = "test:08-every-template";
+var verbose = false;
 
 describe (baseName + " running templates", function () {
 	Object.keys (dataflows).forEach (function (token) {
@@ -55,6 +56,7 @@ describe (baseName + " running templates", function () {
 		if (typeof testOnly !== "undefined" && testOnly) {
 			if (testOnly === token) {
 				method = it.only;
+				verbose = true;
 			} else {
 				return;
 			}
@@ -65,7 +67,7 @@ describe (baseName + " running templates", function () {
 			var df = new flow ({
 				tasks: item.tasks,
 				templates: templates,
-				logger: "VERBOSE" in process.env ? undefined : function () {}
+				logger: verbose || "VERBOSE" in process.env ? undefined : function () {}
 			});
 
 			if (!df.ready) {

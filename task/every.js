@@ -56,10 +56,10 @@ EveryTask.prototype.onFlowResult = function () {
 	// TODO: failed dataflows and completed ones must be separated
 	// so, every task must fail only when one or more dataflows is failed
 	// otherwise, we need to emit empty
-	// if (this.subtaskFail) {
-	// 	this.failed ('Task failed');
-	// 	return;
-	// }
+	if (this.subtaskFail) {
+		this.failed ('Task failed');
+		return;
+	}
 
 	if (this.count >= Object.keys (this.$every).length) {
 		if (this.$collect || this.$collectArray) {

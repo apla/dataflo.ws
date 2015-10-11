@@ -43,6 +43,8 @@ var dataflows = {
 	}
 };
 
+var verbose = false;
+
 describe (baseName + " running timeout repeat", function () {
 	Object.keys (dataflows).forEach (function (token) {
 		var item = dataflows[token];
@@ -51,6 +53,7 @@ describe (baseName + " running timeout repeat", function () {
 		if (typeof testOnly !== "undefined" && testOnly) {
 			if (testOnly === token) {
 				method = it.only;
+				verbose = true;
 			} else {
 				return;
 			}
@@ -62,7 +65,7 @@ describe (baseName + " running timeout repeat", function () {
 				{
 					tasks: item.tasks,
 					// templates: templates,
-					logger: "VERBOSE" in process.env ? undefined : function () {}
+					logger: verbose || "VERBOSE" in process.env ? undefined : function () {}
 				}, {
 					// dataflow parameters
 				}

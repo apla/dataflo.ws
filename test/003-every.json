@@ -6,7 +6,7 @@
 			"$function": "console.log",
 			"$args": ["123"]
 		}, {
-			"$every": [2, 1, 2],
+			"$every": [0, 1, 2],
 			"$tasks": [{
 				"$function": "dfThrowUnlessEqual",
 				"$args": [
@@ -53,13 +53,13 @@
 					"[*every.index]",
 					"[*every.item]"
 				],
-				"$set": "numbers"
+				"$set": "letters"
 			}],
-			"$collect": "numbers",
-			"$set": "numbers"
+			"$collect": "letters",
+			"$set": "letters"
 		}, {
 			"$function": "console.log",
-			"$args": ["{$numbers}"]
+			"$args": ["{$letters}"]
 		}]
 	},
 	"test:08-every-double-expansion": {
