@@ -7,8 +7,8 @@ var task   = require ('./base'),
 // TODO: write a message
 
 var presenters = {},
-	defaultTemplateDir = (project && project.config && project.config.templateDir) || 'share/presentation',
-	isWatched = (project && project.config && project.config.debug);
+	defaultTemplateDir = (typeof project !== "undefined" && project.config && project.config.templateDir) || 'share/presentation',
+	isWatched = (typeof project !== "undefined" && project.config && project.config.debug);
 
 /**
  * @class task.presenterTask
