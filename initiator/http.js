@@ -374,7 +374,7 @@ httpdi.prototype.initFlow = function (wfConfig, req) {
 };
 
 // hierarchical router
-// TODO: igzakt match + pathInfo
+// TODO: igzakt match
 // TODO: dirInfo, fileName, fileExtension, fullFileName
 httpdi.prototype.hierarchical = function (req, res) {
 	var pathName = req.url.pathname;
@@ -388,6 +388,7 @@ httpdi.prototype.hierarchical = function (req, res) {
 
 	var capture = [];
 	this.hierarchical.tree = this;
+	this.hierarchical.path = [];
 	var routeFinder = this.hierarchical.findByPath.bind (this.hierarchical);
 	if (memoize)
 		routeFinder = memoize (routeFinder);
@@ -395,9 +396,14 @@ httpdi.prototype.hierarchical = function (req, res) {
 		null, pathParts, 0, capture
 	);
 
+	var pathPartsRemains = pathParts.slice (this.hierarchical.checkedLevel + 1);
+
+	// console.log (this.hierarchical.path, this.hierarchical.checkedLevel, pathParts, pathPartsRemains);
+
 	if (config) {
 		req.capture = capture;
-		return this.createFlow(config, req, res);
+		req.pathInfo = pathPartsRemains.join ('/');
+		return this.createFlow (config, req, res);
 	}
 
 	return null;
@@ -427,44 +433,46 @@ httpdi.prototype.hierarchical.findByPath = function (
 	if (!tree)
 		tree = this.tree;
 	var list = tree.workflows || tree.dataflows || tree.flows;
-	var checkedLevel = level;
+	this.checkedLevel = level;
 	var branch = null;
 
 	// exact match
 	this.walkList(
 		list, pathParts, level,
 		function (tree, pathFragment, index) {
-			// console.print('PATH', tree.path, 'FRAGMENT', pathFragment);
+			// console.log ('PATH', tree.path, 'FRAGMENT', pathFragment);
 			if (tree.path == pathFragment) {
-				checkedLevel = index;
+				this.checkedLevel = index;
 				branch = tree;
+				this.path.push (tree.path);
 				return true;
 			}
 			return false;
-		}
+		}.bind (this)
 	);
 
 	// pattern match
 	!branch && this.walkList(
 		list, pathParts, level,
 		function (tree, pathFragment, index) {
-			// console.print('PATTERN', tree.pattern, 'FRAGMENT', pathFragment);
+			// console.log ('PATTERN', tree.pattern, 'FRAGMENT', pathFragment);
 			var match = tree.pattern && pathFragment.match(tree.pattern);
 			if (match) {
-				checkedLevel = index;
+				this.checkedLevel = index;
 				branch = tree;
 				capture.push.apply(capture, match.slice(1));
+				this.path.push (tree.path);
 				return true;
 			}
 			return false;
-		}
+		}.bind (this)
 	);
 
-	if ((branch && branch.static && checkedLevel >= 0) || checkedLevel >= pathParts.length - 1) {
+	if ((branch && branch.static && this.checkedLevel >= 0) || this.checkedLevel >= pathParts.length - 1) {
 		return branch;
 	} else {
 		return branch && this.findByPath(
-			branch, pathParts, checkedLevel + 1, capture
+			branch, pathParts, this.checkedLevel + 1, capture
 		);
 	}
 };
