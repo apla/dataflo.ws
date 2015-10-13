@@ -100,7 +100,7 @@ httpdi.prototype.started = function () {
 
 	this.ready = true;
 
-	this.emit ('ready', this.server);
+	this.emit ('ready');
 };
 
 httpdi.prototype.runPrepare = function (df, request, response) {
