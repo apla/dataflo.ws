@@ -46,7 +46,13 @@ var httpdi = module.exports = function httpdIConstructor (config) {
 	if (config.static) {
 		this.static = config.static === true ? {} : config.static;
 		// - change static root by path
-		this.static.root    = project.root.fileIO (this.static.root || 'www');
+		if (typeof project !== "undefined") {
+			this.static.root    = project.root.fileIO (this.static.root || 'www');
+		} else {
+			var io = require (path.join (__dirname, '../io/easy'));
+			this.static.root    = new io (this.static.root || 'www');
+		}
+
 		this.static.index   = this.static.index || "index.html";
 		this.static.headers = this.static.headers || {};
 	}
@@ -86,7 +92,7 @@ httpdi.prototype.started = function () {
 			'http://'+listenHost+listenPort+'/'
 		),
 		this.static
-			? "and serving static files from " + paint.path (project.root.relative (this.static.root))
+		? "and serving static files from " + paint.path (this.static.root.path) // project.root.relative (this.static.root)
 			: ""
 	);
 
@@ -532,11 +538,7 @@ httpdi.prototype.handleStatic = function (req, res) {
 
 	var isIndex  = /\/$/.test(req.url.pathname) ? self.static.index : '';
 
-	var pathName = path.join (
-		self.static.root.path,
-		path.join('.', req.url.pathname),
-		isIndex
-	);
+	var fileObject = self.static.root.fileIO (req.url.pathname.substr (1), isIndex);
 
 	console.log ('filesys ', req.method, req.url.pathname, isIndex ? '=> '+ isIndex : '');
 
@@ -546,19 +548,20 @@ httpdi.prototype.handleStatic = function (req, res) {
 	// 	contentType = 'text/html';
 	// 	charset = 'utf-8';
 	// } else
+	// TODO: maybe use extension based mapping, mime is slow because we need to read
+	// and analyze magic numbers
 	if (mime && mime.lookup) {
-		contentType = mime.lookup (pathName);
+		contentType = mime.lookup (fileObject.path);
 		// The logic for charset lookups is pretty rudimentary.
 		if (contentType.match (/^text\//))
 			charset = mime.charsets.lookup(contentType, 'utf-8');
 		if (charset) contentType += '; charset='+charset;
 	} else if (!contentType) {
 		console.error(
-			'sorry, there is no content type for %s', pathName
+			'sorry, there is no content type for %s', fileObject.path
 		);
 	}
 
-	var file = project.root.fileIO(pathName);
 	var fileOptions = {flags: "r"};
 
 	var statusCode = 200;
@@ -588,7 +591,7 @@ httpdi.prototype.handleStatic = function (req, res) {
 		}
 	}
 
-	file.readStream (fileOptions, function (readStream, stats) {
+	fileObject.readStream (fileOptions, function (readStream, stats) {
 
 		if (!stats) {
 			self.createFlowByCode (404, req, res);
@@ -619,7 +622,7 @@ httpdi.prototype.handleStatic = function (req, res) {
 				'Date': self.httpDate (stats.mtime),
 			};
 
-			if (project.config.debug) {
+			if (typeof project !== "undefined" && project.config.debug) {
 				headersExtend['Cache-Control'] = 'no-store, no-cache';
 			}
 
