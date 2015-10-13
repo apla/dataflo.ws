@@ -103,12 +103,11 @@ httpdi.prototype.started = function () {
 	this.emit ('ready');
 };
 
-httpdi.prototype.runPrepare = function (df, request, response) {
+httpdi.prototype.runPrepare = function (df, request, response, prepareCfg) {
 
 	var self = this;
 
-	var prepareCfg = df.prepare,
-		prepare    = this.prepare;
+	var prepare    = this.prepare;
 
 	if (prepare) {
 
@@ -259,6 +258,7 @@ httpdi.prototype.createPresenter = function (df, request, response, state) {
 				"presenter";
 			presenter.$important = true;
 		}
+
 		tasks.push (presenter);
 	}
 
@@ -306,17 +306,33 @@ httpdi.prototype.createFlow = function (cfg, req, res) {
 	}
 
 	// task MUST contain tasks or presenter
-	if (!cfg.tasks && !cfg.presenter)
-		return;
+	if (!cfg.tasks) {
+		if (!cfg.presenter) {
+			return;
+		} else {
+			var df = {
+				//id:,
+				data: {},
+				//error: ,
+				presenter: cfg.presenter
+			};
+			var presenter = self.createPresenter(df, req, res, 'completed');
+			if (presenter) {
+				presenter.runDelayed ();
+				self.emit('detected', req, res, presenter);
+				return presenter;
+			}
+		}
+	}
 
-	try {
-		var df = new flow(
-			util.extend (true, {}, cfg),
-			{ request: req, response: res }
-		);
-	} catch (e) {
-		console.error ('dataflow failed', req.method, req.url.pathname);
-		throw e;
+
+	var df = new flow(
+		util.extend (true, {}, cfg),
+		{ request: req, response: res }
+	);
+
+	if (cfg.presenter) {
+		df.presenter = cfg.presenter;
 	}
 
 	console.log ('dataflow', req.method, req.url.pathname, df.coloredId);
@@ -329,7 +345,6 @@ httpdi.prototype.createFlow = function (cfg, req, res) {
 	});
 
 	df.on('failed', function (df) {
-
 		var presenter = self.createPresenter(df, req, res, 'failed');
 		if (presenter) {
 			presenter.runDelayed ();
@@ -340,7 +355,7 @@ httpdi.prototype.createFlow = function (cfg, req, res) {
 	self.emit('detected', req, res, df);
 
 	if (cfg.prepare) {
-		self.runPrepare(df, req, res);
+		self.runPrepare(df, req, res, cfg.prepare);
 	} else {
 		df.runDelayed();
 	}
