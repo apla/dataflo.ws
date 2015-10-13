@@ -118,7 +118,7 @@ function checkTaskParams (params, dict, prefix, marks) {
 	};
 }
 
-var pid = (typeof process !== "undefined") ? (process.pid << 16) : 0;
+var pid = (typeof process !== "undefined") ? ((process.pid & 0x7fff) << 16) : 0;
 
 /**
  * @class flow
