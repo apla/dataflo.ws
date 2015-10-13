@@ -22,7 +22,7 @@ util.extend (postTask.prototype, {
 		var self = this;
 
 		if (self.request.method != 'POST' && self.request.method != 'PUT') {
-			self.emit ('log', 'http method is', self.request.method);
+			self.emit ('log', 'http method is ' + self.request.method || "GET");
 			return self.skipped ();
 		}
 

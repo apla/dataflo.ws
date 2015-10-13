@@ -1,4 +1,19 @@
 var functions = {
+	dfHandleGet: function (params) {
+		// http server test:
+		// 1) just request, check for User-Agent
+		// 2) get request with query string
+		// 3) post request
+		if (params.cookieAndRedirect) {
+			return true;
+		}
+		// if (checkCookie) {
+
+		// }
+	},
+	dfShowBuffer: function (buf) {
+		console.log (buf.toString ());
+	},
 	dfThrowUnlessEqual: function () {
 		var msg = arguments[2] || '';
 		if (arguments[0] == arguments[1]) {

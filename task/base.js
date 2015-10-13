@@ -6,6 +6,8 @@ if (typeof define === "undefined")
 
 define (function (require, exports, module) {
 
+"use strict";
+
 var EventEmitter = require ('events').EventEmitter,
 	util         = require ('util'),
 	dataflows    = require ('../'),
@@ -13,7 +15,7 @@ var EventEmitter = require ('events').EventEmitter,
 
 var taskStateList = [
 	'scarce', 'ready', 'running', 'idle',
-	'complete', 'failed', 'skipped'
+	'complete', 'failed', 'skipped', 'exception'
 ];
 
 var taskStateNames = {};
