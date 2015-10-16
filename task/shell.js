@@ -1,7 +1,7 @@
 var spawn = require ('child_process').spawn,
 	fs    = require ('fs'),
-	task  = require('dataflo.ws/task/base'),
-	util  = require('util');
+	task  = require ('./base'),
+	util  = require ('util');
 
 /**
  * Run shell script
@@ -30,7 +30,7 @@ util.extend(shellTask.prototype, {
 		if (!this.strictEnv) {
 			for (var k in process.env) {
 				env[k] = process.env[k];
-			}	
+			}
 		}
 		for (k in self.env) {
 			env[k] = self.env[k];
