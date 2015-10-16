@@ -562,7 +562,7 @@ util.extend (task.prototype, taskStateMethods, {
 			this._cancel (data || e)
 		else
 			this.emit ('cancel', data || e);
-		return true;
+		return;
 	}
 
 
