@@ -68,8 +68,8 @@ module.exports = {
 				if (!fs.existsSync (confDir))
 					fs.mkdirSync (confDir);
 				// TODO: add detection of stub variables
-				if (!fs.existsSync (path.resolve (confDir, 'project')))
-				fs.writeFileSync (path.resolve (confDir, 'project'),
+				if (!fs.existsSync (path.resolve (confDir, 'project')) && !fs.existsSync (path.resolve (confDir, 'project.json')))
+				fs.writeFileSync (path.resolve (confDir, 'project.json'),
 					JSON.stringify (this.defaultConfig, null, "\t"), {flag: "wx"}
 				);
 

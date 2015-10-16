@@ -29,7 +29,7 @@ var Project = function (rootPath) {
 
 	this.on ('legacy-checked', this.checkConfig.bind(this));
 	this.on ('config-checked', this.readInstance.bind(this));
-	this.on ('instantiated', this.loadConfig.bind(this));
+	this.on ('instantiated', this.findAndLoad.bind(this, "project"));
 
 	this.checkLegacy ();
 
@@ -143,7 +143,7 @@ Project.prototype.logUnpopulated = function(varPaths) {
 		"you can run",
 		paint.dataflows ("config set <variable> <value>"),
 		"to define individual variable\nor edit",
-		paint.path (".dataflows/"+this.instance+"/fixup"),
+		paint.path (".dataflows/"+this.instance+"/"+path.basename (this.fixupFile)),
 		"to define all those vars at once"
 	);
 	// console.log (this.logUnpopulated.list);
@@ -335,14 +335,55 @@ Project.prototype.interpolateVars = function (error) {
 
 }
 
-Project.prototype.loadConfig = function () {
+/**
+ * Find and load configuration files with predefined names, like project and fixup
+ * @param {String} type affect what type of config to load — project or fixup
+ */
+Project.prototype.findAndLoad = function (type, cb) {
+
+	var dirToRead;
+	if (type === "project") {
+		dirToRead = this.configDir;
+	} else {
+		dirToRead = path.join (this.configDir, this.instance);
+	}
+
+	fs.readdir (dirToRead, function (err, files) {
+		var configFileName;
+		files.some (function (fileName) {
+			if (path.basename (fileName, path.extname (fileName)) === type) {
+				configFileName = fileName;
+				return true;
+			}
+		});
+
+		// TODO: check for supported formats after migration to conf-fu
+
+		if (configFileName && type === "project") {
+			this.loadConfig (new io (path.join (dirToRead, configFileName)));
+			return;
+		} else if (type === "fixup" && cb) {
+			cb (new io (path.join (dirToRead, configFileName || "fixup.json")));
+			return;
+		}
+
+		var message = "Can't find "+type+" config in " + this.configDir + " folder. Please relaunch `dataflows init`";
+		console.error (paint.dataflows(), paint.error (message));
+		// process.kill ();
+		this.emit ('error', message);
+
+	}.bind (this));
+	// var configFile = this.root.fileIO (path.join(this.configDir, 'project'))
+}
+
+Project.prototype.loadConfig = function (configFile) {
 
 	var self = this;
 
-	var configFile = this.root.fileIO (path.join(this.configDir, 'project'))
+	// var configFile = this.root.fileIO (path.join(this.configDir, 'project'))
 	configFile.readFile (function (err, data) {
 		if (err) {
-			var message = "Can't access "+self.configDir+"/project file. Create one and define project id";
+			var message = "Can't access "+configFile.path+" file. Create one and define project id";
 			console.error (paint.dataflows(), paint.error (message));
 			// process.kill ();
 			self.emit ('error', message);
@@ -383,31 +424,32 @@ Project.prototype.loadConfig = function () {
 				return;
 			}
 
-			self.fixupFile = path.join(self.configDir, self.instance, 'fixup');
-
-			self.root.fileIO (self.fixupFile).readFile (function (err, data) {
-				var fixupConfig = {};
-				if (err) {
-					console.error (
-						"Config fixup file unavailable ("+paint.path (path.join(self.configDir, self.instance, 'fixup'))+")",
-						"Please run", paint.dataflows ('init')
-					);
-				} else {
-					var parsedFixup = self.parseConfig (data, self.fixupFile);
-					if (parsedFixup.object) {
-						self.fixupConfig = fixupConfig = parsedFixup.object;
+			self.findAndLoad ("fixup", function (fixupFile) {
+				self.fixupFile = fixupFile.path;
+				fixupFile.readFile (function (err, data) {
+					var fixupConfig = {};
+					if (err) {
+						console.error (
+							"Config fixup file unavailable ("+paint.path (self.fixupFile)+")",
+							"Please run", paint.dataflows ('init')
+						);
 					} else {
-						var message = 'Config fixup cannot be parsed:';
-						console.error (message, paint.error (parsedFixup.error));
-						self.emit ('error', message + ' ' + parsedFixup.error.toString());
-						process.kill ();
+						var parsedFixup = self.parseConfig (data, self.fixupFile);
+						if (parsedFixup.object) {
+							self.fixupConfig = fixupConfig = parsedFixup.object;
+						} else {
+							var message = 'Config fixup cannot be parsed:';
+							console.error (message, paint.error (parsedFixup.error));
+							self.emit ('error', message + ' ' + parsedFixup.error.toString());
+							process.kill ();
+						}
 					}
-				}
 
-				util.extend (true, self.config, fixupConfig);
+					util.extend (true, self.config, fixupConfig);
 
-				self.interpolateVars ();
+					self.interpolateVars ();
 
+				});
 			});
 		});
 	});
