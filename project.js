@@ -6,10 +6,10 @@ var util = require ('util');
 
 var EventEmitter = require ('events').EventEmitter;
 
-var dataflows = require ('./index');
+var dataflows = require ('./');
 var io        = require ('./io/easy');
-var paint     = require ('./color');
-var common    = require ('./common');
+var paint     = dataflows.color;
+var common    = dataflows.common;
 
 // var fsm = StateMachine.create({
 //   events: [

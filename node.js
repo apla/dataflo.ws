@@ -38,7 +38,7 @@ for (var staticFn in DF) {
 	}
 }
 
-NodeDF.color  = color;
+NodeDF.color = DF.color = color;
 
 NodeDF.registry = DF.registry;
 
