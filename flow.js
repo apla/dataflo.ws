@@ -6,7 +6,7 @@ var EventEmitter = require ('events').EventEmitter,
 	paint        = dataflows.color,
 	tokenInitiator;
 
-var $global = common.$global;
+// var $global = common.$global;
 
 var taskStateNames = taskClass.prototype.stateNames;
 
@@ -228,7 +228,7 @@ var dataflow = module.exports = function (config, reqParam) {
 	function createDict () {
 		// TODO: very bad idea: reqParam overwrites flow.data
 		var dict = util.extend (true, self.data, reqParam);
-		dict.global  = $global;
+		// dict.global  = $global;
 		dict.appMain = $mainModule.exports;
 
 		if ($isServerSide) {
