@@ -17,7 +17,7 @@ function color () {
 	if (!colorNames)
 		return str;
 
-	var color_attrs = colorNames.split("+");
+	var color_attrs = colorNames.constructor === Array ? colorNames : colorNames.split("+");
 	var strPrefix = "", strPostfix = "";
 	for (var i = 0, attr; attr = color_attrs[i]; i++) {
 		strPrefix  += "\033[" + uColors[attr][0] + "m";
@@ -28,13 +28,20 @@ function color () {
 	return ansi_str;
 }
 
+var colorMod = "bold|italic|underline|inverse".split ("|");
+
 var colorList = "black|red|green|yellow|blue|magenta|cyan|white";
 
-colorList.split ('|').forEach (function (colorName) {
-	if (isNode ()) {
-		uColors[colorName+'_bg'] = [uColors[colorName][0] + 10, 49];
+for (var colorName in uColors) {
+	if (!colorMod.indexOf (colorName)) {
+		if (isNode ()) {
+			uColors[colorName+'_bg'] = [uColors[colorName][0] + 10, 49];
+		}
 	}
 	color[colorName] = color.bind (color, colorName);
-});
+}
+//colorList.split ('|').forEach (function (colorName) {
+//
+//});
 
 module.exports = color;
