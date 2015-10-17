@@ -11,7 +11,6 @@ define (function (require, exports, module) {
 	var INITIATOR_PATH = 'initiator';
 
 	var common = require ('./common'),
-		flow   = require ('./flow'),
 		color  = {};
 
 	color.error     = function (message) {return message}
@@ -22,11 +21,15 @@ define (function (require, exports, module) {
 
 	}
 
+	module.exports = DF;
+
 	DF.registry = {};
 
 	DF.common = common;
-	DF.flow   = flow;
 	DF.color  = color;
+
+//	var flow  = require ('./flow');
+//	DF.flow   = flow;
 
 	DF.instanceTypes = [ 'initiator', 'task' ];
 
@@ -63,7 +66,5 @@ define (function (require, exports, module) {
 
 		DF.registry[instanceType][instanceName] = instanceClass;
 	};
-
-	module.exports = DF;
 
 });
