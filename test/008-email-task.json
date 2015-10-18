@@ -1,0 +1,110 @@
+{
+	"mail": {
+		"transports": {
+			"smtp-local": {
+				"host": "127.0.0.1",
+				"port": 50425,
+				"auth": {
+					"user": "testuser",
+					"pass": "testpass"
+				},
+				"ignoreTLS": true
+			}
+		}
+	},
+	"templates": {
+		"task": {
+			"jsonParseAndMerge": {
+				"$origin":    "{$global.JSON}",
+				"$function":  "parse",
+				"$mergeWith": "result"
+			},
+			"jsonParseAndSet": {
+				"$origin":    "{$global.JSON}",
+				"$function":  "parse",
+				"$set":       "result"
+			},
+			"indexEqItem": {
+				"$function": "throwUnlessEqual",
+				"$args": [
+					"[*every.index]",
+					"[*every.item]"
+				]
+			},
+			"testHttpResource": {
+				"$class":"remoteResource",
+				"$method": "toBuffer"
+			}
+		}
+	},
+	"tests": {
+		"login-and-send": {
+			"expect": "ok",
+			"skip": true,
+			"tasks": [{
+				"task": "mail",
+				"transport": "test",
+				"fields": {
+					"from": "from@valid.sender",
+					"to": ["to1@valid.recipient", "to2@valid.recipient", "to@invalid.recipient"],
+					"subject": "test",
+					"text": "uuu"
+				}
+			}, {
+				"task": "mail",
+				"transport": {
+					"host": "localhost",
+					"port": 50425,
+					"auth": {
+						"user": "testuser",
+						"pass": "testpass"
+					},
+					"ignoreTLS": true
+
+				},
+				"fields": {
+					"from": "from@valid.sender",
+					"to": ["to1@valid.recipient", "to2@valid.recipient", "to@invalid.recipient"],
+					"subject": "test",
+					"text": "uuu"
+				}
+			}]
+		},
+		"envelopes": {
+			"expect": "ok",
+			"tasks": [{
+				"task": "mail",
+				"transport": "test",
+				"fields": {
+					"from": "from@valid.sender",
+					"to": ["to1@valid.recipient", "to2@valid.recipient", "to@invalid.recipient"],
+					"subject": "test",
+					"text": "uuu"
+				}
+			}, {
+				"task": "mail",
+				"transport": "test",
+				"fields": {
+					"from": "from@valid.sender",
+					"subject": "test",
+					"text": "uuu"
+				},
+				"recipients": ["to1@valid.recipient", "to2@valid.recipient", "to@invalid.recipient"]
+			}]
+		},
+		"wrong-transport-config": {
+			"expect": "fail",
+			"description": "this task must fail because of transport as string",
+			"tasks": [{
+				"task": "mail",
+				"transport": "smtp",
+				"fields": {
+					"from": "from@valid.sender",
+					"to": ["to1@valid.recipient", "to2@valid.recipient", "to@invalid.recipient"],
+					"subject": "test",
+					"text": "uuu"
+				}
+			}]
+		}
+	}
+}

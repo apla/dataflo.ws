@@ -1,9 +1,10 @@
 var
 	util        = require('util'),
-	path			= require('path'),
-	nodemailer	= require('nodemailer'),
-	emailTemplates	= require('email-templates'),
-	task        = require('./base');
+	path        = require('path'),
+	nodemailer  = require('nodemailer'),
+	emailTemplates = require('email-templates'),
+	task        = require('./base'),
+	dataflows   = require ('../');
 
 /**
  * Batch sending of emails
@@ -16,20 +17,21 @@ var
  * present and all emails are forwarded to smtp transport for sending.
  *
  * The task is failed or skipped (depends on @cfg {Boolean} important) if there are problems
- * with template/contents or recepients list.
+ * with template/contents or recipients list.
  *
  *
- *	@cfg {Object} email - basic email data, may be fully or partially generated from template
- * and list of recepients
+ *	@cfg {Object} fields - email fields to send. If we're using recipients list
+ *  email fields structure will be used as defaults
  *
- * email = {
+ * fields = {
  *		from: {String}, // optional, defaults to consumerConfig value : sender OR SMTP.auth.user
  *		to: {String}, // can be also named "email"
  *		cc: {String},
  *		bcc: {String},
  *		subject: {String},
- *		text: {String},
- *		html : {String},
+ *		text: {String}, // text template
+ *		html : {String}, // html template
+ *  	attachments: {Array}
  *	}
  *
  *
@@ -41,150 +43,197 @@ var
  *	! template OR text OR html OR subject MUST be provided
  *
  *
- * @cfg {Array} recepients - list for batch sending
+ * @cfg {Array} recipients - list for batch sending
  *
- *	recepients = ["<email>", "<email>",...]
- *	recepients = [{
+ *	recipients = ["<email>", "<email>",...]
+ *	recipients = [{
  *		email: {String}, // can be named "to" or otherwise (see below) substitutes email.to
  *		// name,... - other fields used in template
  *	}]
  *
- * @cfg {String} emailField - if present recepients[emailField] whill be taken as email.to
+ * @cfg {String} emailField - if present recipients[emailField] whill be taken as email.to
  *
- *	! email.to OR recepients MUST be provided
+ *	! email.to OR recipients MUST be provided
  *
 */
 
+// mail task need two things to get configured: transports and templates
+// without dataflows project you need to pass whole transport configuration
+// in transport key and can use full paths for templates (absolute or within current dir)
 
 var
-	mailConfig = project.config.consumerConfig.mail,
-	transport = nodemailer.createTransport("SMTP", mailConfig.SMTP),
+	mailConfig,
 	templatesDir = 'templates/email';
 
-var
-	render = {
-		simple :  function (email, recepient, callback) {
-			callback && callback(null, email);
-		},
-		template : function (template, templateName) {
-			return function (email, recepient, callback) {
-				template(templateName, recepient, function(err, html, text) {
-					if (!err) {
-						util.extend(email, {
-							text: text,
-							html: html
-						});
-						callback && callback(null, email);
-					} else callback(err);
-				});
-			};
-		}
-	};
+if ('project' in dataflows) {
+	// TODO: use pathToVar to avoid try/catch
+	mailConfig = dataflows.config.service.mail;
+}
+
+
+function resolveTemplate (transConf) {
+
+}
+
 
 
 var mailTask = module.exports = function (config) {
 
-	this.request = config.request;
-	this.init(config);
+	this.init (config);
 
 };
 
 util.inherits (mailTask, task);
 
-util.extend (mailTask.prototype, {
-	run: function () {
+mailTask.prototype.run = function () {
 
-		var self = this;
+	var
+		fields     = this.fields,
+		recipients = this.recipients,
+		emails     = [];
 
-		var
-			err = false;
-			email = self.email,
-			recepients = self.recepients,
-			template = self.template;
-
-		if (!email && !template) {
-
-			return self._err('Neither email object nor template not provided');
-
-		} else {
-
+	if (!recipients || recipients.length === 0) {
+		var email = this.checkFields (fields);
+		if (!email) {
+			return;
+		}
+		emails.push (email);
+	} else {
+		for (var recId = 0; recId < recipients.length; recId ++) {
+			var email = this.checkFields (recipients[recId], fields);
 			if (!email) {
-				email = {
-					to: null,
-					from: null,
-					subject: ""
-				};
+				return;
 			}
+			emails.push (email);
+		}
+	}
 
-			email.to = email.to || email.email;
-			email.sender = email.sender || email.from;
+	var transport = this.resolveTransport (this.transport);
+	if (!transport)
+		return;
 
-			if (!email.to && !recepients) return self._err('email.to OR recepients MUST be provided');
-			if (!email.subject && !email.text && !template)	return self._err('email.subject OR email.text OR template MUST be provided');
-			if (!email.sender) email.sender = mailConfig.sender || mailConfig.from|| mailConfig.SMTP.auth.user;
+	this.transporter = this.createTransport (transport);
 
-			// normalize recepients
-			if (!recepients) {
-				recepients = [{
-					email : email.to
-				}];
-			} else {
-				if (!recepients.push) recepients = [recepients];
-				recepients = recepients.map(function (item) {
-					if (typeof(item) !== 'object') item = {
-						email : item
-					};
-					return item;
-				});
+	var sentCount = 0;
+
+	emails.forEach (function (email, idx) {
+
+		this.transporter.use ('compile', this.render.bind (this));
+
+		this.transporter.sendMail (email, function (error, response) {
+			if (error)
+				return this.failed (error);
+
+			this.emit ('log', 'OK: Email sent to ' + email.to);
+
+			sentCount ++;
+
+			if (sentCount === emails.length) {
+				this.completed ();
 			}
+		}.bind (this));
 
-			if (self.verbose) self.emit('log', 'Starting email job');
-			console.log('Template ', template, ' Recepients ', recepients);
+	}.bind (this));
 
-			self._prepareRender(
-				template,
-				function () {
-					if (self.verbose) self.emit('log', 'Render ready');
-					self._batchSend(email, recepients);
-				}
-			);
+}
+
+/**
+ * Check for all required fields to be present for email
+ * @param   {Object|String} fields   envelope fields like from, to and so on; assume `to` if string provided
+ * @param   {Object}        defaults envelope template
+ * @returns {Object}        envelope with fields
+ */
+mailTask.prototype.checkFields = function (fields, defaults) {
+
+	var email = {};
+
+	if (fields.constructor === String) {
+		fields = {to: fields};
+	}
+
+	if (defaults)
+	for (var f in defaults) {
+		email[f] = defaults[f];
+	}
+
+	for (var f in fields) {
+		email[f] = fields[f];
+	}
+
+	email.to   = email.email  || email.to;
+	email.from = email.sender || email.from;
+
+	if (!email.to || !email.from || !email.subject)
+		return this.failed ('from, to and subject must be provided');
+	if (!email.text && !email.html)
+		return this.failed ('text or html template must be provided');
+
+	return email;
+}
+
+/**
+ * Creating transports for nodemail
+ * @param   {String} transport configuration, can be plain
+ *                             (like {service: "gmail"}, or for plugin —
+ *                             {plugin: "ses", config: <config object>})
+ * @returns {Object} transporter
+ */
+mailTask.prototype.createTransport = function (transport) {
+	// TODO: create all needed transports from project config in app start
+	// to ensure every plugin will be loaded
+
+	if (transport === "test") {
+		return nodemailer.createTransport ({
+			name: 'testsend',
+			version: '1',
+			send: function(data, callback) {
+				callback();
+			}
+		});
+	}
+
+	if (transport.plugin) {
+		var transPlugin = require (transport.plugin);
+		return nodemailer.createTransport (transPlugin (transport.config));
+	}
+
+	return nodemailer.createTransport (transport);
+}
+
+/**
+ * Resolve transport by config key
+ * @param   {String|Object} transConf key to resolve transport in config or complete transport configuration
+ * @returns {Object}        transport configuration
+ */
+mailTask.prototype.resolveTransport = function (transConf) {
+	// you can use transport string only if dataflows project configuration defined
+	if (transConf === "test") {
+		return transConf;
+	} else if (transConf.constructor === String) {
+		if (!mailConfig) {
+			return this.failed ("you must supply transport configuration via dataflows.config");
 		}
-	},
 
-	_err : function (msg, type) {
-		var self = this;
-		type = type || 'error';
+		return mailConfig.transports[transConf];
+	}
 
-		self.emit('warn', msg);
+	return transConf;
+}
 
-		if (self.type === 'error')
-			if (self.important) self.failed(msg);	else self.skipped(msg);
 
-	},
+mailTask.prototype.render = function (mail, done) {
 
-	_prepareRender : function (templateName, callback, errback) {
-		var self = this;
+	// TODO: use renderer
+	console.log ("STILL NO RENDERER FOR EMAIL");
 
-		if (self.verbose) self.emit('log', 'Preparing render');
-		if (!templateName) {
-			self._render = render.simple;
-			if (self.verbose) self.emit('log', 'Render simple');
-			callback && callback();
-		} else {
-			if (self.verbose) self.emit('log', 'Render template - getting');
-			emailTemplates(templatesDir, function (err, template) {
-				if (typeof(template) !== 'function') err = 'Incorrect template' + template;
-				if (err) self._err(err);
-					else {
-						if (self.verbose) self.emit('log', 'Render template - OK');
-						self._render = render.template(template, templateName);
-						callback && callback();
-					}
-			});
-		}
-	},
+	if (!mail || !mail.data || !mail.data.html || mail.data.text) {
+		return done();
+	}
 
-	_batchSend : function (email, recepients) {
+	done();
+}
+
+mailTask.prototype._batchSend = function (email, recipients) {
 		var self = this,
 			emailField = self.emailField || "email";
 
@@ -193,11 +242,11 @@ util.extend (mailTask.prototype, {
 
 		var sendMail = function (err, email) { self._sendMail(err, email); };
 
-		for (var i = 0; i < recepients.length; i++) {
-			var recepient = recepients[i];
-			email.to = recepient[emailField] || recepient.email || recepient.to;
+		for (var i = 0; i < recipients.length; i++) {
+			var recipient = recipients[i];
+			email.to = recipient[emailField] || recipient.email || recipient.to;
 			if (!email.to || email.length < 6 || email.to.indexOf('@')<0) continue; // ugly skip bad emails
-			self._render(email, recepient, sendMail);
+			self._render(email, recipient, sendMail);
 		}
 
 		// TODO: track individual mail delivery if needed, for example if 'important' flag is set
@@ -205,9 +254,9 @@ util.extend (mailTask.prototype, {
 		self.emit('log', 'Emails sent to transport. Actual sending not guaranteed. See further log.');
 		self.completed(true);
 
-	},
+	}
 
-	_sendMail : function (err, email) {
+mailTask.prototype._sendMail = function (err, email) {
 		var self = this;
 
 		if (err) return self._err(err, 'warning');
@@ -219,4 +268,3 @@ util.extend (mailTask.prototype, {
 		});
 	}
 
-});
