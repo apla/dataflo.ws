@@ -1,13 +1,15 @@
 {
 	"name": "dataflo.ws",
 	"description": "Zero-code JSON config-based dataflow engine for Node, PhoneGap and browser.",
-	"version": "0.66.1",
+	"version": "0.67.0",
 	"keywords": [
 		"flow-based-programming",
 		"workflow",
 		"dataflow"
 	],
-	"bin": { "dataflows": "bin/dataflows" },
+	"bin": {
+		"dataflows": "bin/dataflows"
+	},
 	"repository": {
 		"type": "git",
 		"url": "git://github.com/apla/dataflo.ws.git"
@@ -24,12 +26,16 @@
 	},
 	"preferGlobal": true,
 	"devDependencies": {
-		"utest": "*",
-		"ayepromise": "*"
+		"ayepromise": "*",
+		"mocha": "*"
+	},
+	"scripts": {
+		"test": "NODE_PATH=..:$NODE_PATH /usr/bin/env mocha --reporter list",
+		"make-docs": "NODE_PATH=..:$NODE_PATH /usr/bin/env mr-doc -s ./ -o docs/ -n 'dataflo.ws'"
 	},
 	"homepage": "https://github.com/apla/dataflo.ws",
 	"author": "https://github.com/apla/",
-	"main": "index.js",
+	"main": "node.js",
 	"directories": {
 		"example": "example",
 		"test": "test"
@@ -40,9 +46,10 @@
 	"dist": {
 		"shasum": "dae79e14e13bcca90a09487af54e95a08d9e72b2"
 	},
-	"scripts": {
-		"test": "exit 0"
-	},
 	"license": "GPLv3",
-	"readmeFilename": "README.md"
+	"readmeFilename": "README.md",
+	"peerDependencies": {
+		"conf-fu": "^0.5.4",
+		"commop": "^1.2.0"
+	}
 }

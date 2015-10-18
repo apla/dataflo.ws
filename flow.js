@@ -4,6 +4,7 @@ var EventEmitter = require ('events').EventEmitter,
 	common       = dataflows.common,
 	taskClass    = require ('./task/base'),
 	paint        = dataflows.color,
+	confFu       = require ('conf-fu'),
 	tokenInitiator;
 
 // var $global = common.$global;
@@ -652,4 +653,4 @@ util.extend (dataflow.prototype, {
 });
 
 // legacy
-dataflow.isEmpty = common.isEmpty;
+dataflow.isEmpty = confFu.isEmpty;

@@ -10,6 +10,14 @@ var EventEmitter = require ('events').EventEmitter,
 	util         = require ('util'),
 	flow         = require ('../flow');
 
+/**
+ * @class initiator.token
+ * @extends events.EventEmitter
+ *
+ * This is a basic initiator. Actually, this initiator launch dataflow when
+ * control code is calling this initiator directly.
+ */
+
 var tokenInitiator = module.exports = function (config) {
 	var self = this;
 
@@ -18,52 +26,49 @@ var tokenInitiator = module.exports = function (config) {
 
 util.inherits (tokenInitiator, EventEmitter);
 
-util.extend (tokenInitiator.prototype, {
-	prepare: function () {
-		this.emit ('ready');
+tokenInitiator.prototype.prepare = function () {
+	this.emit ('ready');
+}
 
-	},
+tokenInitiator.prototype.process = function (token, dfRequire) {
 
-	process: function (token, dfRequire) {
+	var self = this;
 
-		var self = this;
+	var dfConf;
 
-		var dfConf;
+	if (self.flows.constructor === Array) {
+		self.flows.map (function (item) {
 
-		if (self.flows.constructor === Array) {
-			self.flows.map (function (item) {
+			var match = (token == item.token);
 
-				var match = (token == item.token);
-
-				if (match) { //exact match
-					dfConf = item;
-				}
-			});
-		} else { // assume object
-			dfConf = self.flows[token];
-		}
-
-		if (!dfConf) {
-			self.emit ("unknown", dfRequire);
-			return;
-		}
-
-		var df = new flow (
-			util.extend (true, {}, dfConf),
-			dfRequire
-		);
-
-		self.emit ("detected", dfRequire, df);
-		if (dfConf.autoRun || dfConf.autoRun === undefined || dfRequire.autoRun || dfRequire.autoRun === undefined)
-			df.runDelayed ();
-
-		if (!df) {
-			self.emit ("unknown", dfRequire);
-			return;
-		}
-
-		return df;
+			if (match) { //exact match
+				dfConf = item;
+			}
+		});
+	} else { // assume object
+		dfConf = self.flows[token];
 	}
-});
+
+	if (!dfConf) {
+		self.emit ("unknown", dfRequire);
+		return;
+	}
+
+	var df = new flow (
+		util.extend (true, {}, dfConf),
+		dfRequire
+	);
+
+	self.emit ("detected", dfRequire, df);
+	if (dfConf.autoRun || dfConf.autoRun === undefined || dfRequire.autoRun || dfRequire.autoRun === undefined)
+		df.runDelayed ();
+
+	if (!df) {
+		self.emit ("unknown", dfRequire);
+		return;
+	}
+
+	return df;
+}
 
 });
