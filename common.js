@@ -88,7 +88,9 @@ util.extend = function extend () {
 		if (!obj || !Object.is('Object', obj) || obj.nodeType || obj.setInterval)
 			return false;
 		var has_own_constructor = hasOwnProperty.call(obj, "constructor");
-		var has_is_property_of_method = hasOwnProperty.call(obj.constructor.prototype, "isPrototypeOf");
+		var has_is_property_of_method;
+		if (obj.constructor)
+			has_is_property_of_method = hasOwnProperty.call(obj.constructor.prototype, "isPrototypeOf");
 		// Not own constructor property must be Object
 		if (obj.constructor && !has_own_constructor && !has_is_property_of_method)
 			return false;
