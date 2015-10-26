@@ -32,7 +32,7 @@ describe (baseName + " running http initiator tests", function () {
 
 	after(function() {
 		// runs after all tests in this block
-		// httpDaemon.server.close();
+		httpDaemon.server.close();
 	});
 
 	Object.keys (config.tests).forEach (function (token) {

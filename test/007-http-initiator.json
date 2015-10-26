@@ -4,7 +4,7 @@
 			"port": "50299",
 			"domain": "127.0.0.1",
 			"static": {
-				"root": "./example"
+				"root": "./test"
 			},
 
 			"prepare": 	{
@@ -116,7 +116,7 @@
 				"$important": true
 			}, {
 				"$template": "testHttpResource",
-				"url": "http://{$initiator.http.domain}:{$initiator.http.port}/index.html",
+				"url": "http://{$initiator.http.domain}:{$initiator.http.port}/000-string.interpolate.js",
 				"successCodes": "2xx",
 				"$set": "indexPage"
 			}, {
