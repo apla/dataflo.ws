@@ -4,6 +4,8 @@ var paint     = dataflows.color;
 var fs        = require ('fs');
 var path      = require ('path');
 
+var project = require ('dataflo.ws/project');
+
 module.exports = {
 	launchContext: function () {
 	},
@@ -62,7 +64,7 @@ module.exports = {
 				console.log (paint.dataflows(), 'initalizing project in ', paint.path (this.args._[0] || '.', '('+projectPath+')'));
 
 				var confDir      = path.resolve (projectPath, '.dataflows');
-				var instanceName = process.env.USER + '@' + process.env.HOSTNAME;
+				var instanceName = project.prototype.generatedInstance ();
 				var confFixup    = path.resolve (confDir, instanceName);
 
 				if (!fs.existsSync (confDir))

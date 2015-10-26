@@ -2,6 +2,7 @@
 
 var path = require ('path');
 var fs   = require ('fs');
+var os   = require ('os');
 var util = require ('util');
 
 var EventEmitter = require ('events').EventEmitter;
@@ -83,6 +84,12 @@ Project.prototype.checkConfig = function (cb) {
 	});
 };
 
+Project.prototype.generatedInstance = function () {
+	return [
+		(process.env.USER || process.env.USERNAME),
+		(process.env.HOSTNAME || process.env.COMPUTERNAME || os.hostname())
+	].join ('@');
+}
 
 Project.prototype.readInstance = function () {
 	var self = this;
@@ -97,10 +104,7 @@ Project.prototype.readInstance = function () {
 	instanceFile.readFile (function (err, data) {
 
 		if (err) {
-			var instanceName = [
-				(process.env.USER || process.env.USERNAME),
-				(process.env.HOSTNAME || process.env.COMPUTERNAME)
-			].join ('@');
+			var instanceName = self.generatedInstance ();
 			// it is ok to have instance name defined and have no instance
 			// or fixup file because fixup is empty
 			self.instance = instanceName;
