@@ -2,7 +2,7 @@ var util    = require ('util');
 var uColors = util.inspect.colors;
 
 function isNode () {
-	if (typeof process !== 'undefined' && process.argv[0] === "node")
+	if (typeof process !== 'undefined') // && process.argv[0].lastIndexOf ("node") === process.argv[0].length - 4)
 		return true;
 	return false;
 }
@@ -28,20 +28,16 @@ function color () {
 	return ansi_str;
 }
 
-var colorMod = "bold|italic|underline|inverse".split ("|");
 
-var colorList = "black|red|green|yellow|blue|magenta|cyan|white";
 
 for (var colorName in uColors) {
-	if (!colorMod.indexOf (colorName)) {
+	// real colors like black and red have 39 as second array element
+	if (uColors[colorName][1] === 39) {
 		if (isNode ()) {
 			uColors[colorName+'_bg'] = [uColors[colorName][0] + 10, 49];
 		}
 	}
 	color[colorName] = color.bind (color, colorName);
 }
-//colorList.split ('|').forEach (function (colorName) {
-//
-//});
 
 module.exports = color;
