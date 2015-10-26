@@ -2,7 +2,7 @@ var
 	util        = require('util'),
 	path        = require('path'),
 	nodemailer  = require('nodemailer'),
-	emailTemplates = require('email-templates'),
+	// emailTemplates = require('email-templates'),
 	task        = require('./base'),
 	dataflows   = require ('../');
 
