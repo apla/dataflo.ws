@@ -228,7 +228,18 @@ util.extend (presenterTask.prototype, {
 		if (!result) {
 			this.response.end();
 		} else if (result instanceof stream) {
-			result.pipe(this.response);
+			result.pipe (this.response);
+
+			result.on ('error', function (err) {
+				// console.log (err);
+				this.failed (err);
+			}.bind (this));
+
+			result.on ('close', function () {
+				this.completed();
+			}.bind (this));
+
+			return;
 		} else {
 			this.response.end(result);
 		}
