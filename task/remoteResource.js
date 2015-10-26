@@ -35,6 +35,9 @@ var cacheTask = module.exports = function (config) {
 
 	this.init (config);
 
+	if (!this.timeout)
+		this.timeout = 10000;
+
 };
 
 util.inherits (cacheTask, task);
