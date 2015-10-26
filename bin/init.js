@@ -93,7 +93,7 @@ module.exports = {
 			return;
 		} else if (conf && !project.instance) {
 			var confDir      = project.configDir;
-			var instanceName = process.env.USER + '@' + process.env.HOSTNAME
+			var instanceName = project.prototype.generatedInstance ();
 			var confFixup    = path.resolve (confDir, instanceName);
 
 			fs.writeFileSync (
