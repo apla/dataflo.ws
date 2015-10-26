@@ -1,18 +1,14 @@
 var util    = require ('util');
 var uColors = util.inspect.colors;
 
-function isNode () {
-	if (typeof process !== 'undefined') // && process.argv[0].lastIndexOf ("node") === process.argv[0].length - 4)
-		return true;
-	return false;
-}
+var isNode = typeof process !== 'undefined'; // && process.argv[0].lastIndexOf ("node") === process.argv[0].length - 4)
 
 function color () {
 	var args = [].slice.apply (arguments);
 	var colorNames = args.shift();
 	var str = args.join (' ');
 
-	if (!isNode())
+	if (!isNode)
 		return str;
 	if (!colorNames)
 		return str;
@@ -27,8 +23,6 @@ function color () {
 
 	return ansi_str;
 }
-
-
 
 for (var colorName in uColors) {
 	// real colors like black and red have 39 as second array element
