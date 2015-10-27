@@ -27,7 +27,7 @@ function color () {
 for (var colorName in uColors) {
 	// real colors like black and red have 39 as second array element
 	if (uColors[colorName][1] === 39) {
-		if (isNode ()) {
+		if (isNode) {
 			uColors[colorName+'_bg'] = [uColors[colorName][0] + 10, 49];
 		}
 	}

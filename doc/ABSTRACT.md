@@ -180,11 +180,13 @@ every task has its own state and requirements. all task states:
 *   completed - the task completed without errors
 *   error - the task completed with errors
 *   skipped - the task is skipped, because another execution branch is selected (see below)
+*   exception - somewhere exception was thrown
 
 
 ### flow ###
 
-the flow module checks for task requirements and switches task state to `ready`. if any  running slots are available, the flow starts task exectution.
+the flow module checks for task requirements and switches task state to `ready`.
+if any  running slots are available, the flow starts task exectution.
 
 
 how to write your own task
@@ -197,7 +199,8 @@ first of all, we need to load a task base class along with fs node module:
 	var task         = require ('task/base'),
 		fs           = require ('fs');
 
-next, we need to write a constructor of our class. a constructor receives all of task parameters and must call this.init (config) after all preparations.
+next, we need to write a constructor of our class. a constructor receives all
+of task parameters and must call this.init (config) after all preparations.
 
 	var statTask = module.exports = function (config) {
 		this.path = config.path;
