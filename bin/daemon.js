@@ -1,5 +1,11 @@
-var dataflows = require('dataflo.ws');
-var minimist  = require('minimist');
+var path    = require ('path');
+var cluster = require ('cluster');
+var os      = require ('os');
+
+var numCPUs = os.cpus().length;
+
+var dataflows = require ('dataflo.ws');
+var minimist  = require ('commop/lib/minimist');
 
 module.exports = {
 	launchContext: function () {

@@ -1,7 +1,7 @@
 var dataflows = require ('dataflo.ws');
 var paint     = dataflows.color;
 
-var minimist  = require ('minimist');
+var minimist  = require ('commop/lib/minimist');
 
 module.exports = {
 	launchContext: function () {

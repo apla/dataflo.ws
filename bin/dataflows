@@ -10,7 +10,7 @@ var paint     = dataflows.color;
 
 var path      = require('path');
 
-var minimist  = require ('minimist');
+var minimist  = require ('commop/lib/minimist');
 
 var $global   = common.$global;
 
@@ -20,7 +20,7 @@ var project;
 
 common.getProject = function (rootPath) {
 	if (!project) {
-		project = new Project(rootPath);
+		project = new Project (rootPath);
 	}
 	return project;
 };

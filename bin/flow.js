@@ -1,5 +1,5 @@
 var dataflows = require('dataflo.ws');
-var minimist = require('minimist');
+var minimist = require('commop/lib/minimist');
 
 module.exports = {
 	launchContext: function () {
