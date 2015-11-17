@@ -5,3 +5,25 @@ node_js:
   - "iojs"
   - "4.1"
   - "4.0"
+env:
+  - CXX=g++-4.8
+  - _CXXAUTO=1
+matrix:
+  include:
+    - node_js: "0.10"
+      env: _CXXAUTO=1
+    - node_js: "0.12"
+      env: _CXXAUTO=1
+    - node_js: "iojs"
+      env: CXX=g++-4.8
+    - node_js: "4.1"
+      env: CXX=g++-4.8
+    - node_js: "4.0"
+      env: CXX=g++-4.8
+addons:
+  apt:
+    sources:
+      - ubuntu-toolchain-r-test
+    packages:
+      - gcc-4.8
+      - g++-4.8
