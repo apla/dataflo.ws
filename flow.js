@@ -486,7 +486,7 @@ util.extend (dataflow.prototype, {
 				}
 
 				if (task.state == taskStateNames.scarce || task.state == taskStateNames.failed)
-					scarceTaskMessage += idx + ' ' + (task.logTitle) + ' => ' + task.unsatisfiedRequirements.join (', ') + '; ';
+					scarceTaskMessage += idx + ' ' + (task.logTitle) + ' => ' + task.unsatisfiedRequirements ? task.unsatisfiedRequirements.join (', ') : '' + '; ';
 			});
 			flow.log (scarceTaskMessage);
 		}
@@ -618,7 +618,7 @@ util.extend (dataflow.prototype, {
 				common.pathToVal(self.data, task.$setOnFail, failedValue || true);
 				self.haveCompletedTasks = true;
 			} else {
-				self.failed = true;
+				self.failed = "" + task.dfTaskNo;
 			}
 
 			if (self.isIdle)
