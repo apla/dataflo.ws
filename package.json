@@ -27,15 +27,14 @@
 	"dependencies": {
 		"multiparty": "*",
 		"mime": "*",
-		"minimist": "*",
-		"yargs": "*",
-		"tough-cookie": "*",
-		"ayepromise": "*"
+		"mmmagic": "*",
+		"tough-cookie": "*"
 	},
 	"devDependencies": {
 		"nodemailer": "^1.8.0",
-		"conf-fu": "^0.5.4",
+		"conf-fu": "^0.5.11",
 		"commop": "^1.2.0",
+		"ayepromise": "*",
 		"mocha": "*"
 	},
 	"scripts": {
