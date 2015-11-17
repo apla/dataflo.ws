@@ -39,7 +39,7 @@ var templates = {
 		]
 	},
 	"testHttpResource": {
-		"$class":"remoteResource",
+		"$class":"urlData",
 		"$method": "toBuffer"
 	}
 };

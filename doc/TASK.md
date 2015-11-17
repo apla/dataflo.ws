@@ -14,9 +14,9 @@ input parameters, output parameter and meta.
 	"$set": "record",
 	"$setOnEmpty": "noRecord"
 }, {
-	"$errback": "fetchRemoteResource",
+	"task": "urlData",
 	"if": "{$noRecord}",
-	"$args": "http://apiserver/db-records/123",
+	"url": "http://apiserver/db-records/123",
 	"$set": "recordDataResponse"
 }, {
 	"$function": "JSON.parse",
@@ -43,8 +43,8 @@ and dataflow description. You can read it like:
 
 ```
 recordDataResponse.data is a parameter of JSON.parse
-fetchRemoteResource provides recordDataResponse
-we need to launch JSON.parse after fetchRemoteResource is completed and recordDataResponse.data is true value
+urlData provides recordDataResponse
+we need to launch JSON.parse after urlData is completed and recordDataResponse.data is true value
 ```
 
 In the current stage we have only two expansions: true value (`{$key}`) and any value (`{*key}`);
@@ -67,7 +67,7 @@ and usually lies within `node_modules/task` directory.
 
 Task requirements need to be fulfilled before task launch. Those requirements can be
 input task parameters or just values in task configuration. Task will not receive second ones,
-they're only evaluated at task launch stage. `fetchRemoteResource` task won't launch unless
+they're only evaluated at task launch stage. `urlData` task won't launch unless
 key `{$noRecord}` is not set.
 
 ### Input parameters

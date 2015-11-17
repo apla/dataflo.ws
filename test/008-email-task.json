@@ -32,7 +32,7 @@
 				]
 			},
 			"testHttpResource": {
-				"$class":"remoteResource",
+				"$class":"urlData",
 				"$method": "toBuffer"
 			}
 		}
