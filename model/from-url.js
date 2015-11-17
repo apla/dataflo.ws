@@ -18,6 +18,10 @@ var model = module.exports = function (url, optionalParams) {
 		}
 	} else {
 		this.url = url;
+		if (!this.url.protocol) {
+			// assume http
+			this.url.protocol = 'http:';
+		}
 	}
 
 	// convert:

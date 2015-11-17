@@ -224,11 +224,11 @@ util.extend (httpModel.prototype, {
 
 		// Reformat the merged URL object's compound parts.
 		// Don't reorder the lines below.
-		params.search = urlUtils.format({
+		params.search = params.search || urlUtils.format({
 			query: params.query
 		});
 
-		params.path = urlUtils.format({
+		params.path = params.path || urlUtils.format({
 			pathname: params.pathname,
 			search: params.search
 		});
