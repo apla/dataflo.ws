@@ -8,7 +8,7 @@
 		"dataflow"
 	],
 	"bin": {
-		"dataflows": "bin/dataflows"
+		"dataflows": "bin/dataflows.js"
 	},
 	"repository": {
 		"type": "git",
