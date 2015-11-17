@@ -1,20 +1,25 @@
-var MODULE_NAME = 'dataflo.ws';
-var INITIATOR_PATH = 'initiator';
+"use strict";
 
 var path   = require ('path'),
 	fs     = require ('fs'),
+	os     = require ('os'),
 	util   = require ('util'),
 	common = require ('./common'),
-	color  = require ('./color'),
+	paint  = require ('./color'),
 	DF     = require ('./index'),
-	io     = require ('./io/easy');
+	io     = require ('./io/easy'),
+	confFu = require ('conf-fu');
 
+var MODULE_NAME = 'dataflo.ws';
+var INITIATOR_PATH = 'initiator';
 
-color.error     = color.bind (color, "red+white_bg");
-color.path      = color.cyan.bind (color);
-color.dataflows = color.green.bind (color, "dataflows");
+var paint   = confFu.paint;
 
-var util   = require ('util');
+// var io = require ('conf-fu/lib/fs-object');
+
+paint.error     = paint.bind (paint, "red+white_bg");
+paint.path      = paint.cyan.bind (paint);
+paint.dataflows = paint.green.bind (paint, "dataflows");
 
 function NodeDF () {
 
@@ -28,7 +33,7 @@ for (var staticFn in DF) {
 	}
 }
 
-NodeDF.color = DF.color = color;
+NodeDF.color = DF.color = paint;
 
 NodeDF.registry = DF.registry;
 
@@ -51,13 +56,13 @@ function registryLookup (instanceType, instanceName) {
 
 	// TODO: remove
 	if ($isClientSide) {
-			console.error (
-				'you need to run dataflows.register ("'
-				+instanceType+'", "'+instanceName
-				+'", instance) before using this task'
-			);
-			return;
-		}
+		console.error (
+			'you need to run dataflows.register ("'
+			+instanceType+'", "'+instanceName
+			+'", instance) before using this task'
+		);
+		return;
+	}
 
 
 		var fixedName = instanceName;
@@ -79,23 +84,23 @@ function registryLookup (instanceType, instanceName) {
 			}
 		}
 
-		var project;
-		var project_root;
+	var project = global.project;
+	var project_root;
 
-		if (common.getProject)
-			project = common.getProject();
+	if (common.getProject)
+		project = common.getProject();
 
-		if (project)
-			project_root = project.root;
+	if (project)
+		project_root = project.root;
 
-		instanceClass = getModule (instanceType, fixedName, false, project_root);
+	instanceClass = getModule (instanceType, fixedName, false, project_root);
 
 	DF.registry[instanceType][instanceName] = instanceClass;
 
 	return instanceClass;
 };
 
-function getModule (type, name, optional, root) {
+var getModule = NodeDF.getModule = function (type, name, optional, root) {
 	optional = optional || false;
 	var mod;
 
@@ -103,21 +108,24 @@ function getModule (type, name, optional, root) {
 		if (typeof project !== "undefined") {
 			root = project.root;
 		} else {
-			root = new io (path.dirname (require.main.filename));
+			root = new io ('./'); // path.dirname (require.main.filename)
 		}
 	}
 
 	var paths = [
-		path.join('dataflo.ws', type, name)
+		path.join(['dataflows', type, name].join ('-')),
+		path.join('dataflo.ws', type, name), // dataflo.ws => dataflows
 	];
 
 	if (name.match (/^\./)) {
-		paths.unshift (name);
-	}
-
-	if (root) {
-		paths.push (path.resolve(root.path ? root.path : root, type, name));
-		paths.push (path.resolve(root.path ? root.path : root, 'node_modules', type, name));
+		paths = [];
+	 } else {
+		if (root) {
+			var rootPath = root.path ? root.path : root;
+			paths.push (path.resolve (rootPath, 'node_modules', ['dataflows', type, name].join ('-')));
+			paths.push (path.resolve (rootPath, 'node_modules', type, name));
+			paths.push (path.resolve (rootPath, type, name));
+		}
 	}
 
 	paths.push (name);
@@ -133,9 +141,9 @@ function getModule (type, name, optional, root) {
 			} else {
 				console.error (
 					'requirement failed:',
-					color.error (e.toString()),
+					paint.error (e.toString()),
 					root
-						? "in " + color.path (root.relative (modPath).match (/^\.\./) ? modPath : root.path)
+						? "in " + paint.path (root.relative (modPath).match (/^\.\./) ? modPath : root.path)
 						: ""
 				);
 				return true;
@@ -144,7 +152,7 @@ function getModule (type, name, optional, root) {
 	});
 
 	if (!mod && !optional)
-		console.error ("module " + type + " " + name + " cannot be used");
+		console.error ("module " + type + " " + name + " cannot be used, cwd: "+process.cwd() + ", paths: " + paths.join (", "));
 
 	return mod;
 
@@ -176,3 +184,4 @@ module.exports.install = function (moduleName) {
 		}
 	});
 };
+

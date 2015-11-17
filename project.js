@@ -180,34 +180,10 @@ Project.prototype.findAndLoad = function (type, cb) {
 Project.prototype.connectors = {};
 Project.prototype.connections = {};
 
+// TODO: remove this in favor of dataflows
+
 Project.prototype.getModule = function (type, name, optional) {
-	var self = this;
-	optional = optional || false;
-	var mod;
-	var taskFound = [
-		path.join('dataflo.ws', type, name),
-		path.resolve(this.root.path, type, name),
-		path.resolve(this.root.path, 'node_modules', type, name),
-		name
-	].some (function (modPath) {
-		try {
-			mod = require(modPath);
-			return true;
-		} catch (e) {
-			// assuming format: Error: Cannot find module 'csv2array' {"code":"MODULE_NOT_FOUND"}
-			if (e.toString().indexOf(name + '\'') > 0 && e.code == "MODULE_NOT_FOUND") {
-				return false;
-			} else {
-				console.error ('requirement failed:', paint.error (e.toString()), "in", paint.path (self.root.relative (modPath)));
-				return true;
-			}
-		}
-	});
-
-	if (!mod && !optional)
-		console.error ("module " + type + " " + name + " cannot be used");
-
-	return mod;
+	return dataflows.getModule (type, name, optional, this.root);
 };
 
 Project.prototype.getInitiator = function (name) {
