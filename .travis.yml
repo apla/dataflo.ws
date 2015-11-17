@@ -1,13 +1,4 @@
 language: node_js
-node_js:
-  - "0.10"
-  - "0.12"
-  - "iojs"
-  - "4.1"
-  - "4.0"
-env:
-  - CXX=g++-4.8
-  - _CXXAUTO=1
 matrix:
   include:
     - node_js: "0.10"
