@@ -1,22 +1,86 @@
 var FS     = require('fs');
 var Path   = require('path');
 
-var io = module.exports = function (path) {
+var io = module.exports = function () {
 
-	this.path = path;
+	// https://github.com/petkaantonov/bluebird/wiki/Optimization-killers#32-leaking-arguments
+	var $_len = arguments.length;var args = new Array($_len); for(var $_i = 0; $_i < $_len; ++$_i) {args[$_i] = arguments[$_i];}
+
+	// arguments can be mix from io objects and strings
+	var lastArg = args[args.length - 1];
+	if (args.length > 1 && !(typeof lastArg === "string" || lastArg instanceof String)) {
+		this.options = args.pop ();
+	} else {
+		this.options = {};
+	}
+
+	//	console.log (process.cwd (), Path.resolve (process.cwd ()));
+	this.options.anchorDir = this.options.anchorDir || Path.resolve (process.cwd ());
+	this.setAnchorDir (this.options.anchorDir);
+
+	this.path = Path.join.apply (Path, args.map (function (arg) {
+		return arg.path ? arg.path : arg
+	}));
+
+	//	console.log (path);
 
 	// TODO: define setter for path
 
-	this.name = Path.basename (path);
+	this.name = Path.basename (this.path);
 
-	this.extension = Path.extname (path).substr (1);
+	this.extname   = Path.extname (this.path);
+	this.extension = this.extname.substr (1);
 
+	this.onlyName = Path.basename (this.name, this.extname);
 };
+
+// this function is needed when you want to get io object or undefined
+io.safe = (function() {
+	function F(args) {
+		try {
+			return io.apply (this, args);
+		} catch (e) {
+			return {error: true};
+		}
+	}
+
+	F.prototype = io.prototype;
+
+	return function () {
+		var o = new F (arguments);
+		if ('error' in o) {
+			return;
+		} else {
+			return o;
+		}
+	}
+})();
 
 io.prototype.relative = function (relPath) {
 	return Path.relative (this.path, relPath instanceof io ? relPath.path : relPath);
 };
 
+io.prototype.setAnchorDir = function (relPath) {
+	this.shortPath = function () {
+		var relative = Path.relative (relPath instanceof io ? relPath.path : relPath, this.path);
+		var absolute = Path.resolve (this.path);
+		if (relative.length < absolute.length && !relative.match (/^\.\./)) {
+			return relative;
+		} else {
+			return absolute;
+		}
+	}
+};
+
+
+io.prototype.shortPath = function (relPath) {
+	return Path.relative (this.path, relPath instanceof io ? relPath.path : relPath);
+};
+
+
+io.prototype.unlink = function (cb) {
+	fs.unlink(relPath.path | relPath, cb);
+}
 
 io.prototype.isFile = function () {
 	return this.stats ? this.stats.isFile () : null;
@@ -43,7 +107,36 @@ io.prototype.mkdir = function (mode, callback) {
 		callback = mode;
 		mode = 0777; // node defaults
 	}
-	return FS.mkdir (this.path, mode, callback && callback.bind (this));
+	return FS.mkdir (this.path, mode, callback);
+};
+
+io.prototype.mkpath = function (path, mode, callback) {
+	if ("function" === typeof mode && callback === undefined) {
+		callback = mode;
+		mode = 0777; // node defaults
+	}
+
+	if (!path) {
+		if (callback) callback ();
+		return;
+	}
+
+	var self = this;
+
+	var pathChunks = path.split (Path.sep);
+	var currentPathChunk = pathChunks.shift ();
+	FS.mkdir (Path.join (this.path, currentPathChunk), mode, function (err) {
+		if (err && err.code !== 'EEXIST') {
+			if (callback) callback (err);
+			return;
+		}
+		if (pathChunks.length === 0) {
+			if (callback) callback ();
+			return;
+		}
+		var children = self.fileIO (currentPathChunk);
+		children.mkpath (Path.join.apply (Path, pathChunks), mode, callback);
+	});
 };
 
 
@@ -63,11 +156,11 @@ io.prototype.readStream = function (options, cb) {
 		var readStream = null;
 
 		if (!err && stats.isFile()) {
-			readStream = FS.createReadStream (this.path, options);
+			readStream = FS.createReadStream (self.path, options);
 			readStream.pause();
 		}
 
-		cb.call (self, readStream, stats);
+		cb (readStream, stats);
 	});
 };
 
@@ -85,7 +178,7 @@ io.prototype.scanTree = function (cb) {
 	});
 };
 
-io.prototype.findUp = function (fileName, cb, errCb) {
+io.prototype.findUp = function (fileName, cb) {
 	var self = this;
 
 	if (!cb || cb.constructor != Function)
@@ -94,16 +187,15 @@ io.prototype.findUp = function (fileName, cb, errCb) {
 	var fileIO = this.fileIO (fileName);
 	fileIO.stat (function (err, stats) {
 		if (!err) {
-			var result = cb (this, stats);
-			if (result)
-				return;
+			cb (null, self, stats);
+			return;
 		}
 		if (self.parent().path == self.path) {
-			errCb ();
+			cb (true, self);
 			return;
 		}
 
-		self.parent().findUp(fileName, cb, errCb);
+		self.parent().findUp(fileName, cb);
 	});
 };
 
@@ -111,7 +203,7 @@ io.prototype.scanSubTree = function (err, stats, cb) {
 	var scanFurther = 0;
 	if (cb)
 		scanFurther = cb (this);
-//		console.log (scanFurther, this.isDirectory ());
+	// console.log (scanFurther, this.isDirectory ());
 	if (scanFurther && this.isDirectory ())
 		this.scanTree (cb);
 };
@@ -122,9 +214,9 @@ io.prototype.stat = function (cb) {
 	var a = arguments;
 	FS.stat (this.path, function (err, stats) {
 		self.stats = stats;
-//			console.log (self.path);
+		// console.log (self.path);
 		if (cb)
-			cb.call (self, err, stats, a[1]);
+			cb (err, stats, a[1]);
 	});
 };
 
@@ -135,14 +227,23 @@ io.prototype.parent = function () {
 io.prototype.readFile = function (cb) {
 	var self = this;
 	FS.readFile(this.path, function (err, data) {
-		cb.call (self, err, data);
+		cb (err, data);
 	});
 };
 
 io.prototype.writeFile = function (data, cb) {
 	var self = this;
-	FS.writeFile(this.path, data, function (err) {
-		if (cb)
-			cb.call (self, err);
-	});
+	FS.writeFile (this.path + '.tmp', data, (function (err) {
+		if (err) {
+			// console.log ('CANNOT WRITE FILE', err);
+			if (cb)
+				cb (err);
+			return;
+		}
+		FS.rename(this.path + '.tmp', this.path, function (err) {
+			// if (err) console.log ('CANNOT RENAME FILE', err);
+			if (cb)
+				cb (err);
+		});
+	}).bind (this));
 };
