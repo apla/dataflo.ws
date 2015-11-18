@@ -1,7 +1,7 @@
 {
 	"name": "dataflo.ws",
 	"description": "Zero-code JSON config-based dataflow engine for Node, PhoneGap and browser.",
-	"version": "0.70.0",
+	"version": "0.70.1",
 	"keywords": [
 		"flow-based-programming",
 		"workflow",
@@ -15,7 +15,7 @@
 		"url": "git://github.com/apla/dataflo.ws.git"
 	},
 	"peerDependencies": {
-		"conf-fu": "^0.5.11",
+		"conf-fu": "^0.5.12",
 		"commop": "^1.2.0",
 		"nodemailer": "^1.8.0"
 	},
@@ -32,7 +32,7 @@
 	},
 	"devDependencies": {
 		"nodemailer": "^1.8.0",
-		"conf-fu": "^0.5.11",
+		"conf-fu": "^0.5.12",
 		"commop": "^1.2.0",
 		"ayepromise": "*",
 		"mocha": "*"
