@@ -482,11 +482,12 @@ util.extend (dataflow.prototype, {
 					flow.taskStates[taskStateNames.scarce]--;
 					flow.taskStates[task.state]++;
 					flow.failed = true;
-					scarceTaskMessage += '(important) ';
 				}
 
-				if (task.state == taskStateNames.scarce || task.state == taskStateNames.failed)
-					scarceTaskMessage += idx + ' ' + (task.logTitle) + ' => ' + task.unsatisfiedRequirements ? task.unsatisfiedRequirements.join (', ') : '' + '; ';
+				if (task.state == taskStateNames.scarce || task.state == taskStateNames.failed) {
+					var appendMessage = "\ntask #" + idx + ' ' + (task.logTitle) + (task.important ? ', important' : '') + ' (' + (task.unsatisfiedRequirements ? task.unsatisfiedRequirements.join (', ') : task.unsatisfiedRequirements) + '); ';
+					scarceTaskMessage += appendMessage;
+				}
 			});
 			flow.log (scarceTaskMessage);
 		}
