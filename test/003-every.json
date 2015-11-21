@@ -1,4 +1,4 @@
-{
+{"tests": {
 	"test:00-expansion": {
 		"expect": "ok",
 		"description": "basic 'every' task test",
@@ -59,7 +59,14 @@
 			"$set": "letters"
 		}, {
 			"$function": "console.log",
-			"$args": ["{$letters}"]
+			"$args": ["{$letters}"],
+			"$set": "console.done"
+		}, {
+			"$function": "dfThrowUnlessEqual",
+			"$args": [
+				"{$letters.length}",
+				3
+			]
 		}]
 	},
 	"test:08-every-double-expansion": {
@@ -159,4 +166,4 @@
 			"$important": true
 		}]
 	}
-}
+}}
