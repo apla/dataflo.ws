@@ -186,20 +186,6 @@ try {
 	}
 }
 
-Number.prototype.hours = Number.prototype.hour
-	= function () {return this * 60 * 60 * 1e3}
-Number.prototype.minutes = Number.prototype.minute
-	= function () {return this * 60 * 1e3}
-Number.prototype.seconds = Number.prototype.second
-	= function () {return this * 1e3}
-
-Number.prototype.times = function (cb) {
-	var a = [];
-	for (var i = 0; i < this; i++)
-		a[i] = cb (i);
-	return a;
-}
-
 // especially for stupid loaders
 if (0)
 	module.exports = {};
@@ -341,5 +327,66 @@ module.exports.waitAll = function waitAll (events, callback) {
 
 	});
 }
+
+function pad(n) {
+	return n < 10 ? '0' + n.toString(10) : n.toString(10);
+}
+
+function formattedDate (lowRes) {
+	var time = [
+		pad(lowRes.getHours()),
+		pad(lowRes.getMinutes()),
+		pad(lowRes.getSeconds())
+	].join(':');
+	var date = [
+		lowRes.getFullYear(),
+		pad(lowRes.getMonth() + 1),
+		pad(lowRes.getDate())
+	].join ('-');
+	return [date, time].join(' ')
+}
+
+
+// one second low resolution timer
+// test: http://jsperf.com/low-res-timer
+
+function lowResTimer () {
+	lowResTimer.refCount ++;
+	//	console.log ('low res timer refcount++', lowResTimer.refCount);
+	lowResTimer.dateString = formattedDate (
+		lowResTimer.date = new Date ()
+	);
+
+	lowResTimer.interval = setInterval (function () {
+		lowResTimer.dateString = formattedDate (
+			lowResTimer.date = new Date ()
+		);
+	}, 10);
+	// Probably bug in nodejs
+	if (lowResTimer.interval.unref)
+		lowResTimer.interval.unref();
+}
+
+lowResTimer.refCount = 0;
+
+lowResTimer.free = function () {
+	lowResTimer.refCount --;
+	//	console.log ('low res timer refcount--', lowResTimer.refCount);
+	if (lowResTimer.refCount < 1) {
+		delete lowResTimer.date;
+		delete lowResTimer.dateString;
+		clearInterval (lowResTimer.interval);
+	}
+}
+
+lowResTimer.getDateString = function () {
+	return lowResTimer.dateString || formattedDate (new Date ());
+}
+
+lowResTimer.getDate = function () {
+	return lowResTimer.date || new Date ();
+}
+
+module.exports.lowResTimer = lowResTimer;
 
 module.exports.isEmpty = isEmpty;

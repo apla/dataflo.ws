@@ -2,6 +2,7 @@ var EventEmitter = require ('events').EventEmitter,
 	util         = require ('util'),
 	dataflows    = require ('./'),
 	common       = dataflows.common,
+	lowResTimer  = common.lowResTimer,
 	taskClass    = require ('./task/base'),
 	paint        = dataflows.color,
 	confFu       = require ('conf-fu'),
@@ -272,64 +273,6 @@ dataflow.nextId = function () {
 		seq = 0;
 	}
 	return seq;
-}
-
-function pad(n) {
-	return n < 10 ? '0' + n.toString(10) : n.toString(10);
-}
-
-function formattedDate (lowRes) {
-	var time = [
-		pad(lowRes.getHours()),
-		pad(lowRes.getMinutes()),
-		pad(lowRes.getSeconds())
-	].join(':');
-	var date = [
-		lowRes.getFullYear(),
-		pad(lowRes.getMonth() + 1),
-		pad(lowRes.getDate())
-	].join ('-');
-	return [date, time].join(' ')
-}
-
-// one second low resolution timer
-// test: http://jsperf.com/low-res-timer
-
-function lowResTimer () {
-	lowResTimer.refCount ++;
-//	console.log ('low res timer refcount++', lowResTimer.refCount);
-	lowResTimer.dateString = formattedDate (
-		lowResTimer.date = new Date ()
-	);
-
-	lowResTimer.interval = setInterval (function () {
-		lowResTimer.dateString = formattedDate (
-			lowResTimer.date = new Date ()
-		);
-	}, 100);
-	// Probably bug in nodejs
-	if (lowResTimer.interval.unref)
-		lowResTimer.interval.unref();
-}
-
-lowResTimer.refCount = 0;
-
-lowResTimer.free = function () {
-	lowResTimer.refCount --;
-//	console.log ('low res timer refcount--', lowResTimer.refCount);
-	if (lowResTimer.refCount < 1) {
-		delete lowResTimer.date;
-		delete lowResTimer.dateString;
-		clearInterval (lowResTimer.interval);
-	}
-}
-
-lowResTimer.getDateString = function () {
-	return lowResTimer.dateString || formattedDate (new Date ());
-}
-
-lowResTimer.getDate = function () {
-	return lowResTimer.date || new Date ();
 }
 
 dataflow.lastId = 0;
