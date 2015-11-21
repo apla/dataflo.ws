@@ -222,8 +222,8 @@ var dataflow = module.exports = function (config, reqParam) {
 		}
 
 		tasks = flowByToken.tasks;
-	} else if (!config.tasks || !config.tasks.length) {
-		config.tasks = [];
+	} else if (!tasks || !tasks.length) {
+		tasks = [];
 	}
 
 	function createDict () {
@@ -393,7 +393,7 @@ util.extend (dataflow.prototype, {
 
 		// check task states
 
-		if (!this.tasks) {
+		if (!this.tasks || !this.tasks.length) {
 			flow.emit ('failed', flow);
 			flow.logError (this.stage + ' failed immediately due empty task list');
 			flow.isIdle = true;

@@ -121,6 +121,40 @@ var dataflows = [{
 	failed: true,
 	completed: false
 }, {
+	description: "no tasks",
+	config: {
+	},
+	request: {
+		test: true
+	},
+	failed: true,
+	completed: false
+}, {
+	description: "flow unready because of absent requirements",
+	config: {
+		tasks: [{
+			className: "./test/task/002-fail-task",
+			require: "{$unexisting}",
+			produce: "data.fail"
+		}]
+	},
+	request: {
+		test: true
+	},
+	failed: true,
+	completed: false
+}, {
+	description: "no task",
+	config: {
+		tasks: [{
+		}]
+	},
+	request: {
+		test: true
+	},
+	failed: true,
+	completed: false
+}, {
 	description: "fail task is skipped by requirements",
 	config: {
 		tasks: [{
