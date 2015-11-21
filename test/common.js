@@ -1,4 +1,17 @@
-var functions = {
+var assert    = require('assert');
+
+var util      = require ('util');
+var path      = require ('path');
+
+var dataflows = require ("../");
+var flow      = require ("../flow");
+
+var dfProject = require ('../project');
+
+var paint = dataflows.color;
+
+
+var injects = {
 	dfHandleGet: function (params) {
 		// http server test:
 		// 1) just request, check for User-Agent
@@ -71,6 +84,106 @@ var functions = {
 	}
 };
 
-for (var fnName in functions) {
-	require.main.exports[fnName] = functions[fnName];
+function injectMain () {
+	for (var fnName in injects) {
+		require.main.exports[fnName] = injects[fnName];
+	}
 }
+
+function baseName (modulePath) {
+	return path.basename (modulePath, path.extname (modulePath));
+}
+
+function initTests (baseName) {
+
+	//process.on('uncaughtException', failure ('unhadled exception'));
+
+	var testData = require ("./"+baseName+".json");
+
+	return testData;
+}
+
+function runTests (config, dfParams, verbose) {
+
+	if (this.before)
+		before (this.before);
+
+	if (this.beforeEach)
+		beforeEach (this.beforeEach);
+
+	if (this.after)
+		after (this.after);
+
+	if (this.afterEach)
+		afterEach (this.afterEach);
+
+	Object.keys (config.tests).forEach (function (token) {
+		var item = config.tests[token];
+		var method = it;
+
+		if (item.only) {
+			method = it.only;
+			verbose = true;
+		}
+
+		if (!config.templates) config.templates = {task: {}};
+
+		method (item.description ? item.description + ' ('+token+')' : token, function (done) {
+
+			var df = new flow ({
+				tasks: item.tasks,
+				templates: config.templates.task,
+				logger: verbose || "VERBOSE" in process.env ? undefined : function () {}
+			}, dfParams);
+
+			if (!df.ready) {
+				console.log ("dataflow not ready");
+				assert (item.expect === "fail" ? true : false);
+				done ();
+				return;
+			}
+
+			function dfStatus (df) {
+				console.log ('dataflow token:', token);
+				if (df.failed) {
+					console.log ("failed tasks:");
+					df.tasks.forEach (function (task, idx) {
+						if (task.state === 5) { // error
+							console.log (idx + ': ' + util.inspect (task.originalConfig));
+						}
+					});
+				}
+				console.log ("flow data:");
+				delete (df.data.initiator);
+				delete (df.data.appMain);
+				delete (df.data.project);
+				console.log (util.inspect (df.data));
+			}
+
+			df.on ('completed', function () {
+				var passed = item.expect === "ok" ? true : false;
+				if (!passed) dfStatus (df);
+				assert (passed);
+				done ();
+			});
+
+			df.on ('failed', function () {
+				var passed = item.expect === "fail" ? true : false;
+				if (!passed) dfStatus (df);
+				assert (passed);
+				done ();
+			});
+
+			if (item.autoRun || item.autoRun == void 0)
+				df.run();
+
+		});
+	});
+}
+
+module.exports = {
+	injectMain: injectMain,
+	initTests:  initTests,
+	runTests:   runTests,
+	baseName:   baseName
+};

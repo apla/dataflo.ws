@@ -1,22 +1,9 @@
-var assert   = require('assert');
+var testCommon = require ("../test/common");
+testCommon.injectMain ();
 
-var util     = require ('util');
-var path     = require ('path');
+var baseName = testCommon.baseName (__filename);
 
-var baseName = path.basename (__filename, path.extname (__filename));
-
-var df     = require ("../");
-var flow   = require ("../flow");
-
-// dirty, but works
-// TODO: need to rewrite
-require ("./common");
-
-var verbose = true;
-
-var tests = [];
-
-//process.on('uncaughtException', failure ('unhadled exception'));
+var verbose = false;
 
 var dataflows = {
 	"test:14-timeout-repeat": {
@@ -43,59 +30,6 @@ var dataflows = {
 	}
 };
 
-var verbose = false;
+var testData = {tests: dataflows};
 
-describe (baseName + " running timeout repeat", function () {
-	Object.keys (dataflows).forEach (function (token) {
-		var item = dataflows[token];
-		var method = it;
-
-		if (typeof testOnly !== "undefined" && testOnly) {
-			if (testOnly === token) {
-				method = it.only;
-				verbose = true;
-			} else {
-				return;
-			}
-		}
-
-		method (item.description ? item.description + ' ('+token+')' : token, function (done) {
-
-			var df = new flow (
-				{
-					tasks: item.tasks,
-					// templates: templates,
-					logger: verbose || "VERBOSE" in process.env ? undefined : function () {}
-				}, {
-					// dataflow parameters
-				}
-			);
-
-			if (!df.ready) {
-				console.log ("dataflow not ready");
-				assert (item.expect === "no-dataflow" ? true : false);
-				done ();
-				return;
-			}
-
-			df.on ('completed', function () {
-				assert (item.expect === "ok" ? true : false);
-				done ();
-			});
-
-			df.on ('failed', function () {
-				assert (item.expect === "fail" ? true : false);
-				done ();
-			});
-
-			df.on ('exception', function () {
-				assert (item.expect === "exception" ? true : false);
-				done ();
-			});
-
-			if (item.autoRun || item.autoRun == void 0)
-				df.run();
-
-		});
-	});
-});
+describe (baseName + " running timeout repeat", testCommon.runTests.bind (testCommon, testData, {}, verbose));
