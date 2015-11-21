@@ -14,5 +14,8 @@ util.extend (okTask.prototype, {
 
 	run: function () {
 		this.completed (true);
+	},
+	emptyMethod: function () {
+		this.completed ();
 	}
 });

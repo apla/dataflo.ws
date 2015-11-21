@@ -175,13 +175,13 @@ util.extend (task.prototype, taskStateMethods, {
 		var argsType = Object.typeOf(args);
 
 		if (null == args) {
-			args = [ this ];
+			args = []; // args = [ this ]; // NO WAY!!!
 		} else if (
 			this.originalConfig.$args &&
 			Object.typeOf (this.originalConfig.$args) != 'Array' &&
 			Object.typeOf (this.originalConfig.$args) != 'Arguments'
 		) {
-			args = [ args ];
+			args = [args];
 		}
 
 		// console.log ('task:', taskClassName, 'function:', taskFnName, 'promise:', taskPromise, 'errback:', taskErrBack);
@@ -339,7 +339,7 @@ util.extend (task.prototype, taskStateMethods, {
 	 * @param {Object} result The product of the task.
 	 */
 	completed: function (result) {
-		this.state = 4;
+		this.state = taskStateNames.complete;
 
 		var mustProduce = this.mustProduce;
 
@@ -368,6 +368,8 @@ util.extend (task.prototype, taskStateMethods, {
 		//@behrad set $empty on completion of all task types
 		if (common.isEmpty (result)) {
 			this.empty();
+			// TODO: return here, we don't need to emit complete
+			// or emit flowData event
 		}
 
 		/**
@@ -391,7 +393,7 @@ util.extend (task.prototype, taskStateMethods, {
 	 *
 	 */
 	skipped: function (result) {
-		this.state = 6;
+		this.state = taskStateNames.skipped;
 
 		/**
 		 * Triggered when the task is {@link #skipped}.
@@ -412,8 +414,8 @@ util.extend (task.prototype, taskStateMethods, {
 	 * @method empty
 	 */
 	empty: function () {
-		this.state = 6; // completed
-		this.emit('empty', this);
+		this.state = 6; // skipped, not completed? WTF?
+		this.emit ('empty', this);
 	},
 
 	/**

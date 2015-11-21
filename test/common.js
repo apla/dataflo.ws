@@ -38,8 +38,11 @@ var injects = {
 		}
 	},
 	dfThrowUnlessDefined: function () {
-		if (typeof arguments[0] == "undefined")
-			throw ('not defined');
+		for (var argIdx = 0; argIdx < arguments.length; argIdx ++) {
+			if (typeof arguments[argIdx] == "undefined")
+				throw ('argument '+argIdx+' not defined');
+		}
+
 	},
 	dfThrowNow: function () {
 		throw ('defined');
@@ -79,8 +82,8 @@ var injects = {
 			}
 		}, delay);
 	},
-	dfDataObject: function () {
-		return {a: ['b', 'c']};
+	dfDataObject: function (data) {
+		return data || {a: ['b', 'c']};
 	}
 };
 

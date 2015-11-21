@@ -8,7 +8,12 @@ var flow   = require ("../flow");
 
 var baseName = path.basename (__filename, path.extname (__filename));
 
+var testCommon = require ("../test/common");
+testCommon.injectMain ();
+
 var tests = [];
+
+var verbose = false;
 
 //process.on('uncaughtException', failure ('unhadled exception'));
 
@@ -130,16 +135,25 @@ var dataflows = [{
 	failed: true,
 	completed: false
 }, {
+	description: "it is ok not to run anything when no importnat task is defined",
+	config: {
+		tasks: [{
+			className: "./test/task/002-ok-task",
+			if: "{$unexisting}",
+			produce: "data.ok"
+		}]
+	},
+	failed: false,
+	completed: true
+}, {
 	description: "flow unready because of absent requirements",
 	config: {
 		tasks: [{
-			className: "./test/task/002-fail-task",
-			require: "{$unexisting}",
-			produce: "data.fail"
+			className: "./test/task/002-ok-task",
+			important: true,
+			if: "{$unexisting}",
+			produce: "data.ok"
 		}]
-	},
-	request: {
-		test: true
 	},
 	failed: true,
 	completed: false
@@ -171,13 +185,60 @@ var dataflows = [{
 	},
 	failed: true,
 	completed: false
+}, {
+	description: "data merge test",
+	// only: true,
+	config: {
+		tasks: [{
+			fn: "dfDataObject",
+			$args: {"a": "b"},
+			$mergeWith: "data"
+		}, {
+			fn: "dfDataObject",
+			$args: {"c": "d"},
+			$mergeWith: "data"
+		}, {
+			fn: "dfDataObject",
+			$mergeWith: "data"
+		}, {
+			fn: "console.log",
+			important: true,
+			$args: ["{$data.a}", "{$data.c}"],
+		}]
+	},
+	failed: false,
+	completed: true
+}, {
+	description: "empty data branch",
+	config: {
+		tasks: [{
+			task: "./test/task/002-ok-task",
+			method: "emptyMethod",
+			setOnEmpty: "empty"
+		}, {
+			fn: "console.log",
+			important: true,
+			$args: ["{$empty}"],
+		}]
+	},
+	failed: false,
+	completed: true
+
 //}, {
 
 }];
 
 describe (baseName + " running dataflow", function () {
 	dataflows.map (function (item) {
-		it (item.description, function (done) {
+
+		var method = it;
+
+		if (item.only) {
+			method = it.only;
+			verbose = true;
+		}
+
+		method (item.description, function (done) {
 
 			var df = new flow (
 				{
@@ -188,20 +249,40 @@ describe (baseName + " running dataflow", function () {
 				}
 			);
 
-			if (!df.ready) {
-				console.log ("dataflow not ready");
-				assert (item.failed === true);
-				done ();
-				return;
+//			if (!df.ready) {
+//				console.log ("dataflow not ready");
+//				assert (item.failed === true);
+//				done ();
+//				return;
+//			}
+
+			function dfStatus (df) {
+				if (df.failed) {
+					console.log ("failed tasks:");
+					df.tasks.forEach (function (task, idx) {
+						if (task.state === 5) { // error
+							console.log (idx + ': ' + util.inspect (task.originalConfig));
+						}
+					});
+				}
+				console.log ("flow data:");
+				delete (df.data.initiator);
+				delete (df.data.appMain);
+				delete (df.data.project);
+				console.log (util.inspect (df.data));
 			}
 
 			df.on ('completed', function () {
-				assert (item.completed === true);
+				var passed = item.completed === true ? true : false;
+				if (!passed || verbose) dfStatus (df);
+				assert (passed);
 				done ();
 			});
 
 			df.on ('failed', function () {
-				assert (item.failed === true);
+				var passed = item.failed === true ? true : false;
+				if (!passed || verbose) dfStatus (df);
+				assert (passed);
 				done ();
 			});
 

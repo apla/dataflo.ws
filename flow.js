@@ -395,6 +395,7 @@ util.extend (dataflow.prototype, {
 
 
 		if (!flow.failed) {
+
 		if (this.taskStates[taskStateNames.ready] || this.taskStates[taskStateNames.running]) {
 			// it is save to continue, wait for running/ready task
 			// console.log ('have running tasks');
@@ -435,18 +436,6 @@ util.extend (dataflow.prototype, {
 				}
 			});
 			flow.log (scarceTaskMessage);
-		}
-
-		if (flow.verbose) {
-			var requestDump = '???';
-			try {
-				requestDump = JSON.stringify (flow.request)
-			} catch (e) {
-				if ((""+e).match (/circular/))
-					requestDump = 'CIRCULAR'
-				else
-					requestDump = e
-			};
 		}
 
 		if (this.failed) {
@@ -573,11 +562,15 @@ util.extend (dataflow.prototype, {
 
 		task.on ('complete', function (t, result) {
 
-			if (result) {
+			if (!dataflow.isEmpty (result)) {
 				if (t.produce || t.$set) {
 					common.pathToVal (self.data, t.produce || t.$set, result);
 				} else if (t.$mergeWith) {
 					common.pathToVal (self.data, t.$mergeWith, result, common.mergeObjects);
+				}
+			} else {
+				if (t.$empty || t.$setOnEmpty || t.setOnEmpty) {
+					common.pathToVal(self.data, t.$empty || t.$setOnEmpty || t.setOnEmpty, true);
 				}
 			}
 
@@ -589,9 +582,9 @@ util.extend (dataflow.prototype, {
 				self.haveCompletedTasks = true;
 		});
 
-		task.on('empty', function (t) {
-			if (t.$empty || t.$setOnEmpty) {
-				common.pathToVal(self.data, t.$empty || t.$setOnEmpty, true);
+		task.on ('empty', function (t) {
+			if (t.$empty || t.$setOnEmpty || t.setOnEmpty) {
+				common.pathToVal(self.data, t.$empty || t.$setOnEmpty || t.setOnEmpty, true);
 			}
 		});
 
