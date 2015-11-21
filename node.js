@@ -158,30 +158,3 @@ var getModule = NodeDF.getModule = function (type, name, optional, root) {
 
 }
 
-// - - -
-
-/**
- * Makes symlinks from modules to base dataflo.ws directory.
- */
-module.exports.install = function (moduleName) {
-	var baseDir = path.dirname(require.resolve(MODULE_NAME));
-	var nodePath = path.dirname(baseDir);
-	var moduleDir = path.join(nodePath, moduleName);
-
-	instanceTypes.forEach(function (dir) {
-		var srcDir = path.join(moduleDir, dir);
-		var destDir = path.join(baseDir, dir);
-
-		if (fs.existsSync(srcDir)) {
-			var files = fs.readdirSync(srcDir);
-			files.forEach(function (fileName) {
-				var srcPath = path.join(srcDir, fileName);
-				var destPath = path.join(destDir, fileName);
-				if (!fs.existsSync(destPath)) {
-					fs.symlinkSync(srcPath, destPath);
-				}
-			});
-		}
-	});
-};
-
