@@ -261,6 +261,14 @@ var dataflow = module.exports = function (config, reqParam) {
 
 	this.tasks = tasks.map (taskClass.prepare.bind (taskClass, self, dataflows, taskGen));
 
+	this.tasks.forEach (function (task) {
+		if (!task) {
+			self.failed = true;
+			self.ready  = false;
+			// self.emit ('failed', self);
+			self.logError (self.stage + ' task is undefined');
+		}
+	});
 };
 
 util.inherits (dataflow, EventEmitter);
@@ -352,13 +360,7 @@ util.extend (dataflow.prototype, {
 
 		this.tasks.forEach (function (task, idx) {
 
-			if (!task) {
-				flow.failed = true;
-				// flow.emit ('failed', flow);
-				flow.logError (flow.stage + ' task is undefined');
-				flow.taskStates[taskStateNames.failed]++;
-				return;
-			}
+			// task must be defined here
 
 			if (task.subscribed === void(0)) {
 				flow.addEventListenersToTask (task);
