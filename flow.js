@@ -508,8 +508,8 @@ util.extend (dataflow.prototype, {
 			task.logTitle,
 			'(' + task.state + ')',
 			paint.error (
-				util.inspect (msg).replace (/(^'|'$)/g, "").replace (/\\'/, "'"),
-				util.inspect (options || '').replace (/(^'|'$)/g, "").replace (/\\'/, "'")
+				util.inspect (msg).replace (/(^'|'$)/g, "").replace (/\\'/g, "'"),
+				util.inspect (options || '').replace (/(^'|'$)/g, "").replace (/\\'/g, "'")
 			),
 			lastFrame
 		);
