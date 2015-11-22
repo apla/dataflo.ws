@@ -5,11 +5,9 @@ matrix:
       env: _CXXAUTO=1
     - node_js: "0.12"
       env: _CXXAUTO=1
-    - node_js: "iojs"
+    - node_js: "4.2"
       env: CXX=g++-4.8
-    - node_js: "4.1"
-      env: CXX=g++-4.8
-    - node_js: "4.0"
+    - node_js: "5.0"
       env: CXX=g++-4.8
 addons:
   apt:
