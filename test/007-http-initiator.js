@@ -10,7 +10,7 @@ var dataflows = require ("../");
 
 var paint = dataflows.color;
 
-var testData = testCommon.initTests (baseName);
+var testData = testCommon.initTests (__dirname, baseName);
 
 var verbose = false;
 

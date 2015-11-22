@@ -97,11 +97,11 @@ function baseName (modulePath) {
 	return path.basename (modulePath, path.extname (modulePath));
 }
 
-function initTests (baseName) {
+function initTests (dirName, baseName) {
 
 	//process.on('uncaughtException', failure ('unhadled exception'));
 
-	var testData = require ("./"+baseName+".json");
+	var testData = require (path.join (dirName, baseName+".json"));
 
 	return testData;
 }
@@ -127,6 +127,8 @@ function runTests (config, dfParams, verbose) {
 		if (item.only) {
 			method = it.only;
 			verbose = true;
+		} else if (item.skip) {
+			method = it.skip;
 		}
 
 		if (!config.templates) config.templates = {task: {}};

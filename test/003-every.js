@@ -3,7 +3,7 @@ testCommon.injectMain ();
 
 var baseName = testCommon.baseName (__filename);
 
-var testData = testCommon.initTests (baseName);
+var testData = testCommon.initTests (__dirname, baseName);
 
 var verbose = false;
 
