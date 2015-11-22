@@ -193,6 +193,23 @@
 				"timeout": 1000,
 				"$set": "noTimeoutObj"
 			}, {
+				"$template": "testHttpResource",
+				"url": "http://{$initiator.http.domain}:{$initiator.http.port}/test/timeout",
+				"successCodes": "2xx",
+				"timeout": 1000,
+				"method": "toFile",
+				"//TODO": "make sure isSameUrlLoading is called",
+				"$set": "noTimeoutObj2"
+			}, {
+				"$template": "testHttpResource",
+				"url": "http://{$initiator.http.domain}:{$initiator.http.port}/test/timeout",
+				"successCodes": "2xx",
+				"timeout": 1000,
+				"after": "{$noTimeoutObj2}",
+				"method": "toFile",
+				"//TODO": "make sure isSameUrlLoading is called",
+				"$set": "noTimeoutObj3"
+			}, {
 				"$function": "console.log",
 				"$args": [
 					"{$noTimeoutObj.data}"

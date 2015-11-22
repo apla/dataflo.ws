@@ -53,7 +53,11 @@ util.extend (cacheTask.prototype, {
 			return this.cacheFilePath;
 
 		var shasum = crypto.createHash('sha1');
-		shasum.update(this.url.href);
+		shasum.update (this.url.href);
+		if (this.bodyData) shasum.update (JSON.stringify (this.bodyData));
+
+		// TODO: any request excluding GET must contain random number
+
 		this.cacheFile = this.cachePath.file_io (shasum.digest('hex'));
 		this.cacheFilePath = this.cacheFile.path;
 		this.cacheFileName = path.basename(this.cacheFile.path);
