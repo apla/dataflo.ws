@@ -1,5 +1,7 @@
 var util = require ('util');
 
+var confFu = require ('conf-fu');
+
 Object.PLATFORM_NATIVE_TYPES = {
 	// Buffer seems to be the only custom type in the Node core
 	'Buffer': true
@@ -33,18 +35,7 @@ Object.is = function (type, obj) {
 	return type == Object.typeOf(obj);
 };
 
-function isEmpty(obj) {
-	var type = Object.typeOf(obj);
-	return (
-		('Undefined' == type)                              ||
-		('Null'      == type)                              ||
-		('Boolean'   == type && false === obj)             ||
-		('Number'    == type && (0 === obj || isNaN(obj))) ||
-		('String'    == type && 0 == obj.length)           ||
-		('Array'     == type && 0 == obj.length)           ||
-		('Object'    == type && 0 == Object.keys(obj).length)
-	);
-}
+var isEmpty = confFu.isEmpty;
 
 var Project;
 var projectRoot;
@@ -221,23 +212,7 @@ var getByPath = module.exports.getByPath = function (path, origin) {
 	return validPath && { value: value, scope: scope, key: key };
 };
 
-var pathToVal = module.exports.pathToVal = function (dict, path, value, method) {
-	var chunks = 'string' == typeof path ? path.split('.') : path;
-	var chunk = chunks[0];
-	var rest = chunks.slice(1);
-	if (chunks.length == 1) {
-		var oldValue = dict[chunk];
-		if (value !== undefined) {
-			if (method !== undefined) {
-				method(value, dict, chunk);
-			} else {
-				dict[chunk] = value;
-			}
-		}
-		return oldValue;
-	}
-	return pathToVal(dict[chunk], rest, value, method);
-};
+var pathToVal = module.exports.pathToVal = confFu.pathToVal;
 
 String.prototype.interpolate = function (dict, marks) {
 	if (!marks)
