@@ -51,7 +51,7 @@ var httpdi = module.exports = function httpdIConstructor (config, flowOptions) {
 		if (typeof project !== "undefined") {
 			this.static.root    = project.root.fileIO (this.static.root || 'www');
 		} else {
-			var io = require (path.join (__dirname, '../io/easy'));
+			var io = require ('fsobject');
 			this.static.root    = new io (this.static.root || 'www');
 		}
 

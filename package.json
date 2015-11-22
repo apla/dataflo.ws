@@ -35,8 +35,14 @@
 		"conf-fu": "^0.5.12",
 		"commop": "^1.2.0",
 		"ayepromise": "*",
-		"mocha": "*"
+		"mocha": "*",
+		"fsobject": "^1.0.0",
+		"paintbrush": "^1.0.0"
 	},
+	"bundledDependencies": [
+		"fsobject",
+		"paintbrush"
+	],
 	"scripts": {
 		"test": "NODE_PATH=..:$NODE_PATH /usr/bin/env mocha --reporter list",
 		"make-docs": "NODE_PATH=..:$NODE_PATH /usr/bin/env mr-doc -s ./ -o docs/ -n 'dataflo.ws'"

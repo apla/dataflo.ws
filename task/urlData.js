@@ -5,7 +5,7 @@ var crypto   = require ('crypto'),
 	os       = require ('os'),
 	task     = require ('./base'),
 	urlModel = require ('../model/from-url'),
-	io       = require ('../io/easy');
+	io       = require ('fsobject');
 
 
 var cacheTask = module.exports = function (config) {

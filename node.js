@@ -5,9 +5,9 @@ var path   = require ('path'),
 	os     = require ('os'),
 	util   = require ('util'),
 	common = require ('./common'),
-	paint  = require ('./color'),
+	paint  = require ('paintbrush'),
 	DF     = require ('./index'),
-	io     = require ('./io/easy'),
+	io     = require ('fsobject'),
 	confFu = require ('conf-fu');
 
 var MODULE_NAME = 'dataflo.ws';

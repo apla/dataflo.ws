@@ -4,7 +4,7 @@ var path   = require ('path'),
 	fs     = require ('fs'),
 	os     = require ('os'),
 	util   = require ('util'),
-	io     = require ('./io/easy'),
+	io     = require ('fsobject'),
 	confFu = require ('conf-fu');
 
 var MODULE_NAME = 'dataflo.ws';
