@@ -1,7 +1,7 @@
 {
 	"name": "dataflo.ws",
 	"description": "Zero-code JSON config-based dataflow engine for Node, PhoneGap and browser.",
-	"version": "0.71.0",
+	"version": "0.72.0",
 	"keywords": [
 		"flow-based-programming",
 		"workflow",
@@ -23,13 +23,17 @@
 		"npm": ">=1.2.10"
 	},
 	"preferGlobal": true,
+	"optionalDependencies": {
+		"mime": "*",
+		"mmmagic": "*"
+	},
 	"dependencies": {
 		"multiparty": "*",
-		"mime": "*",
-		"mmmagic": "*",
 		"tough-cookie": "*"
 	},
 	"devDependencies": {
+		"mime": "*",
+		"mmmagic": "*",
 		"conf-fu": "^0.5.12",
 		"commop": "^1.2.0",
 		"ayepromise": "*",
