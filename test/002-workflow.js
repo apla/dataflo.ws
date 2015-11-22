@@ -243,7 +243,7 @@ describe (baseName + " running dataflow", function () {
 			var df = new flow (
 				{
 					tasks: item.config.tasks,
-					logger: "VERBOSE" in process.env ? undefined : function () {}
+					logger: ("VERBOSE" in process.env) || verbose ? undefined : function () {}
 				}, {
 					request: item.request
 				}
@@ -265,6 +265,7 @@ describe (baseName + " running dataflow", function () {
 						}
 					});
 				}
+				if (verbose) console.log (df);
 				console.log ("flow data:");
 				delete (df.data.initiator);
 				delete (df.data.appMain);

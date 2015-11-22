@@ -31,7 +31,7 @@ try {
  *
  * Initiates HTTP server-related dataflows.
  */
-var httpdi = module.exports = function httpdIConstructor (config) {
+var httpdi = module.exports = function httpdIConstructor (config, flowOptions) {
 	// we need to launch httpd
 
 	this.host = config.host;
@@ -41,6 +41,8 @@ var httpdi = module.exports = function httpdIConstructor (config) {
 		this.port  = config.port;
 
 	this.flows  = config.workflows || config.dataflows || config.flows;
+
+	this.flowOptions = flowOptions || {};
 
 	// I don't want to serve static files by default
 	if (config.static) {
@@ -119,7 +121,8 @@ httpdi.prototype.runPrepare = function (df, request, response, prepareCfg) {
 
 		prepareCfg.forEach(function(p, index, arr) {
 
-			var innerDfConfig = util.extend (true, {}, prepare[p]);
+			var innerDfConfig = util.extend (true, {}, this.flowOptions);
+			util.extend (true, innerDfConfig, prepare[p]);
 
 			if (!innerDfConfig || !innerDfConfig.tasks) {
 				console.error (paint.error('request canceled:'), 'no prepare task named "'+p+'"');
@@ -143,7 +146,7 @@ httpdi.prototype.runPrepare = function (df, request, response, prepareCfg) {
 
 			dfChain.push(innerDf);
 
-		});
+		}.bind (this));
 
 		if (prepareFailure) {
 			return;
@@ -271,7 +274,9 @@ httpdi.prototype.createPresenter = function (df, request, response, state) {
 	var presenterDf = new flow ({
 		id:    df.id,
 		tasks: tasks,
-		stage: 'presentation'
+		stage: 'presentation',
+		logger: this.flowOptions.logger,
+		verbose: this.flowOptions.verbose
 	}, reqParams);
 
 	presenterDf.on ('completed', function () {
@@ -325,9 +330,11 @@ httpdi.prototype.createFlow = function (cfg, req, res) {
 		}
 	}
 
+	var flowConfig = util.extend (true, {}, this.flowOptions);
+	util.extend (true, flowConfig, cfg);
 
 	var df = new flow(
-		util.extend (true, {}, cfg),
+		flowConfig,
 		{ request: req, response: res }
 	);
 

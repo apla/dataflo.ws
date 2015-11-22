@@ -84,7 +84,7 @@ function checkTaskParams (params, dict, prefix, marks) {
 			}
 		});
 
-	} else { // params is hash
+	} else { // params is Object
 		modifiedParams = {};
 
 		Object.keys(params).forEach(function (key) {
@@ -456,10 +456,10 @@ util.extend (dataflow.prototype, {
 
 	},
 	stageMarker: {prepare: "[]", dataflow: "()", presentation: "{}"},
-	_log: function (level, msg) {
-//		if (this.quiet || process.quiet) return;
+	buildLogString: function (msg) {
+
 		var toLog = [].slice.call (arguments);
-		var level = toLog.shift() || 'log';
+
 		toLog.unshift (
 			this.stageMarker[this.stage][0] + this.idPrefix + this.coloredId + this.stageMarker[this.stage][1]
 		);
@@ -472,8 +472,17 @@ util.extend (dataflow.prototype, {
 				this.getDateString ()
 			);
 		}
+		return toLog;
+	},
+	_log: function (level, msg) {
+//		if (this.quiet || process.quiet) return;
 
-		console[level].apply (console, toLog);
+		var toLog = [].slice.call (arguments);
+		var level = toLog.shift() || 'log';
+
+		toLog = this.buildLogString.apply (this, toLog);
+
+		(console[level] || console.log).apply (console, toLog);
 	},
 	log: function () {
 		var args = [].slice.call (arguments);
