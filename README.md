@@ -1,7 +1,9 @@
 *dataflo.ws*: dataflow processing for javascript
 =============================================
 
-![build](https://travis-ci.org/apla/dataflo.ws.svg)
+[![build](https://travis-ci.org/apla/dataflo.ws.svg)](https://travis-ci.org/apla/dataflo.ws)
+[![NPM Version](http://img.shields.io/npm/v/dataflo.ws.svg?style=flat)](https://www.npmjs.org/package/dataflo.ws)
+[![codecov.io](https://codecov.io/github/apla/dataflo.ws/coverage.svg?branch=master)](https://codecov.io/github/apla/dataflo.ws?branch=master)
 
 example
 -------------------------------

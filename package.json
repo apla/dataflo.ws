@@ -37,6 +37,7 @@
 		"ayepromise": "*",
 		"istanbul": "*",
 		"mocha": "*",
+		"codecov.io": "*",
 		"fsobject": "^1.0.0",
 		"paintbrush": "^1.0.0"
 	},
@@ -45,7 +46,7 @@
 		"paintbrush"
 	],
 	"scripts": {
-		"test": "NODE_PATH=..:$NODE_PATH /usr/bin/env istanbul cover _mocha -- -R list",
+		"test": "NODE_PATH=..:$NODE_PATH /usr/bin/env istanbul cover _mocha -- -R list && cat ./coverage/coverage.json | codecov",
 		"make-docs": "NODE_PATH=..:$NODE_PATH /usr/bin/env mr-doc -s ./ -o docs/ -n 'dataflo.ws'"
 	},
 	"homepage": "https://github.com/apla/dataflo.ws",
