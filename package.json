@@ -1,7 +1,7 @@
 {
 	"name": "dataflo.ws",
 	"description": "Zero-code JSON config-based dataflow engine for Node, PhoneGap and browser.",
-	"version": "0.70.1",
+	"version": "0.71.0",
 	"keywords": [
 		"flow-based-programming",
 		"workflow",
@@ -35,6 +35,7 @@
 		"conf-fu": "^0.5.12",
 		"commop": "^1.2.0",
 		"ayepromise": "*",
+		"istanbul": "*",
 		"mocha": "*",
 		"fsobject": "^1.0.0",
 		"paintbrush": "^1.0.0"
@@ -44,7 +45,7 @@
 		"paintbrush"
 	],
 	"scripts": {
-		"test": "NODE_PATH=..:$NODE_PATH /usr/bin/env mocha --reporter list",
+		"test": "NODE_PATH=..:$NODE_PATH /usr/bin/env istanbul cover _mocha -- -R list",
 		"make-docs": "NODE_PATH=..:$NODE_PATH /usr/bin/env mr-doc -s ./ -o docs/ -n 'dataflo.ws'"
 	},
 	"homepage": "https://github.com/apla/dataflo.ws",
