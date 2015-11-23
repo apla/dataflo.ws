@@ -16,3 +16,6 @@ addons:
     packages:
       - gcc-4.8
       - g++-4.8
+cache:
+  directories:
+    - node_modules
