@@ -13,10 +13,6 @@ var path   = require ('path'),
 var MODULE_NAME = 'dataflo.ws';
 var INITIATOR_PATH = 'initiator';
 
-var paint   = confFu.paint;
-
-// var io = require ('conf-fu/lib/fs-object');
-
 paint.error     = paint.bind (paint, "red+white_bg");
 paint.path      = paint.cyan.bind (paint);
 paint.dataflows = paint.green.bind (paint, "dataflows");
