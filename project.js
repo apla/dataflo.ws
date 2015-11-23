@@ -80,11 +80,13 @@ function logVariables (conf) {
 	];
 
 	console.log.apply (console, messageChunks);
+
+	this.emit ('failed');
 }
 
 Project.prototype.configNotReady = function (conf) {
 	if (!this.fixes) {
-		logVariables (conf);
+		logVariables.call (this, conf);
 		return;
 	}
 
@@ -96,8 +98,8 @@ Project.prototype.configNotReady = function (conf) {
 	// otherwise, notify user
 	confFix.on ("notReady", function () {
 		// console.log ("not ready");
-		logVariables (confFix);
-	});
+		logVariables.call (this, confFix);
+	}.bind (this));
 }
 
 Project.prototype.configError = function (conf, eOrigin, eType, eData, eFile) {
@@ -133,48 +135,6 @@ function generatedInstance () {
 		(process.env.USER || process.env.USERNAME),
 		(process.env.HOSTNAME || process.env.COMPUTERNAME || os.hostname())
 	].join ('@');
-}
-
-
-/**
- * Find and load configuration files with predefined names, like project and fixup
- * @param {String} type affect what type of config to load — project or fixup
- */
-Project.prototype.findAndLoad = function (type, cb) {
-
-	var dirToRead;
-	if (type === "project") {
-		dirToRead = this.configDir;
-	} else {
-		dirToRead = path.join (this.configDir, this.instance);
-	}
-
-	fs.readdir (dirToRead, function (err, files) {
-		var configFileName;
-		files.some (function (fileName) {
-			if (path.basename (fileName, path.extname (fileName)) === type) {
-				configFileName = fileName;
-				return true;
-			}
-		});
-
-		// TODO: check for supported formats after migration to conf-fu
-
-		if (configFileName && type === "project") {
-			this.loadConfig (new io (path.join (dirToRead, configFileName)));
-			return;
-		} else if (type === "fixup" && cb) {
-			cb (new io (path.join (dirToRead, configFileName || "fixup.json")));
-			return;
-		}
-
-		var message = "Can't find "+type+" config in " + this.configDir + " folder. Please relaunch `dataflows init`";
-		console.error (paint.dataflows(), paint.error (message));
-		// process.kill ();
-		this.emit ('error', message);
-
-	}.bind (this));
-	// var configFile = this.root.fileIO (path.join(this.configDir, 'project'))
 }
 
 Project.prototype.connectors = {};

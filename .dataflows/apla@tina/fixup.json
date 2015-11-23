@@ -1,0 +1,51 @@
+{
+	"debug": true,
+	"initiator": {
+		"http": {
+			"port": "51123",
+			"domain": "dataflo.ws",
+			"flows": {
+				"2": {
+					"flows": {
+						"0": {
+							"presenter": {
+								"headers": {
+									"Set-Cookie": "auth=123; expires=Fri Jan 31 2031 00:00:00 GMT; path=/; domain=<$initiator.http.domain>"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"token": {
+			"flows": {
+				"http-initiator": {
+					"tasks": {
+						"0": {
+							"url": "http://<$initiator.http.domain>:<$initiator.http.port>/favicon.ico"
+						},
+						"2": {
+							"url": "http://<$initiator.http.domain>:<$initiator.http.port>/index.html"
+						},
+						"4": {
+							"url": "http://<$initiator.http.domain>:<$initiator.http.port>/test/post"
+						},
+						"6": {
+							"url": "http://<$initiator.http.domain>:<$initiator.http.port>/test/post"
+						},
+						"10": {
+							"url": "http://<$initiator.http.domain>:<$initiator.http.port>/test/redirect"
+						},
+						"13": {
+							"url": "http://<$initiator.http.domain>:<$initiator.http.port>/test/timeout"
+						},
+						"15": {
+							"url": "http://<$initiator.http.domain>:<$initiator.http.port>/test/timeout"
+						}
+					}
+				}
+			}
+		}
+	}
+}
