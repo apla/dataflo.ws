@@ -30,7 +30,7 @@ var descriptor = {
 				// we don't need date here
 				toLog[0] = "|http daemon|";
 
-				toLog = paint.fillString ('grey', toLog.join (' '));
+				toLog = paint.fillUnpainted ('grey', toLog.join (' '));
 
 				(console[level] || console.log).call (console, toLog);
 
