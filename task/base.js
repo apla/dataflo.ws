@@ -135,7 +135,7 @@ util.extend (task.prototype, taskStateMethods, {
 		/**
 		 * Apply $function to $args in $scope.
 		 */
-		var origin = null;
+		var origin = dataflows.global ();
 		// WTF???
 		var taskFnName = this.functionName;
 		var fnPath = taskFnName.split('#', 2);
@@ -146,7 +146,7 @@ util.extend (task.prototype, taskStateMethods, {
 		} else if (this.$origin) {
 			origin = this.$origin;
 		} else {
-			origin = $global.$mainModule.exports;
+			origin = dataflows.main ();
 		}
 
 		var method;
@@ -156,7 +156,7 @@ util.extend (task.prototype, taskStateMethods, {
 		 * Try to look up $function in the global scope.
 		 */
 		if (!method || 'function' !== typeof method.value) {
-			method = common.getByPath (taskFnName);
+			method = common.getByPath (taskFnName, dataflows.global ());
 		}
 
 		if (!method || 'function' !== typeof method.value) {
@@ -287,7 +287,7 @@ util.extend (task.prototype, taskStateMethods, {
 		this.id = "" + this.flowId + ":" + config.idx;
 
 		var idxLog = (config.idx < 10 ? " " : "") + config.idx;
-		if ($isServerSide) {
+		if (dataflows.nodePlatform) {
 			idxLog = "\x1B[0;3" + (parseInt(config.idx) % 8)  + "m" + idxLog + "\x1B[0m";
 		}
 

@@ -33,6 +33,12 @@ NodeDF.color = DF.color = paint;
 
 NodeDF.registry = DF.registry;
 
+NodeDF.nodePlatform = true;
+
+NodeDF.global = function () {return global;}
+
+NodeDF.main = function () {return require.main.exports;}
+
 DF.instanceTypes.forEach (function (instanceType) {
 	// NodeDF.registry[instanceType] = {};
 	NodeDF[instanceType] = function (instanceName) {
@@ -49,17 +55,6 @@ function registryLookup (instanceType, instanceName) {
 	if (instanceClass) {
 		return instanceClass;
 	}
-
-	// TODO: remove
-	if ($isClientSide) {
-		console.error (
-			'you need to run dataflows.register ("'
-			+instanceType+'", "'+instanceName
-			+'", instance) before using this task'
-		);
-		return;
-	}
-
 
 		var fixedName = instanceName;
 		if (instanceType == 'initiator') {

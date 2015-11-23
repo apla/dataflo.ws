@@ -37,25 +37,6 @@ Object.is = function (type, obj) {
 
 var isEmpty = confFu.isEmpty;
 
-var Project;
-var projectRoot;
-var projectInstance;
-
-if (!util.inherits) {
-	util.inherits = function (ctor, superCtor) {
-		ctor.super_ = superCtor;
-		ctor.prototype = Object.create (superCtor.prototype, {
-			constructor: {
-			value: ctor,
-			enumerable: false,
-			writable: true,
-			configurable: true
-		}});
-	};
-	// http://stackoverflow.com/questions/13201775/looking-for-a-javascript-implementation-of-nodes-util-inherits
-	// B.prototype = Object.create(A.prototype);  B.prototype.constructor = B;
-}
-
 if (!util.extend) {
 util.extend = function extend () {
 	var hasOwnProperty = Object.prototype.hasOwnProperty;
@@ -150,39 +131,6 @@ if (!util.clone) {
 	}
 }
 
-try {
-	if (process.pid) {
-		global.$isClientSide = false;
-		global.$isServerSide = true;
-		global.$mainModule   = process.mainModule;
-		global.$scope        = 'process.mainModule';
-		global.$stash        = {};
-		global.$isCordova    = false;
-		global.$global       = global;
-	} else {
-		throw 'WTF?';
-	}
-} catch (e) {
-	window.$isClientSide = true;
-	window.$isServerSide = false;
-	window.$mainModule   = window;
-	window.$scope        = 'window';
-	window.$stash        = {};
-	window.$global       = window;
-	try {
-		if (window.PhoneGap || window.Cordova || window.cordova) window.$isCordova = true;
-	} catch (e) {
-		console.log (e);
-		window.$isCordova = false;
-	}
-}
-
-// especially for stupid loaders
-if (0)
-	module.exports = {};
-
-module.exports.$global = $global;
-
 // overwrite subject with values from object (merge object with subject)
 var mergeObjects = module.exports.mergeObjects = function (object, subjectParent, subjectKey) {
 	// subject parent here for js's lack of pass by reference
@@ -196,7 +144,7 @@ var mergeObjects = module.exports.mergeObjects = function (object, subjectParent
 };
 
 var getByPath = module.exports.getByPath = function (path, origin) {
-	var value = origin || $global;
+	var value = origin;
 	var scope, key;
 	var validPath = path.split('.').every(function (prop) {
 		scope = value;
@@ -290,7 +238,7 @@ module.exports.waitAll = function waitAll (events, callback) {
 		var eventLogName = eventName + ' ' + event[2];
 		remaining.push (eventLogName);
 		if (typeof subject === "function") {
-			subject (_listener.bind ($global, eventLogName));
+			subject (_listener.bind (dataflows.global (), eventLogName));
 		} else {
 			if (subject.addEventListener) {
 				subject.addEventListener (eventName, _listener.bind (subject, eventLogName), false);

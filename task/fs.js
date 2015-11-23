@@ -5,7 +5,8 @@ var fs     = require('fs'),
 	exists = fs.exists || path.exists,
 	_c     = require('constants'),
 	common = require('../common'),
-	task = require ('./base');
+	task = require ('./base'),
+	dataflows = require ('../');
 
 
 var $global = common.$global;
@@ -17,7 +18,7 @@ var FileTask = function (cfg) {
 function resolvePath (pathToResolve) {
 	var resolveArgs = [pathToResolve];
 	if (typeof project !== "undefined") {
-		resolveArgs.unshift ($global.project.root.path);
+		resolveArgs.unshift (dataflows.root.path);
 	}
 	return path.resolve.apply (path, resolveArgs);
 }

@@ -28,14 +28,31 @@ define (function (require, exports, module) {
 	DF.common = common;
 	DF.color  = color;
 
+	DF.browserPlatform = true;
+	DF.cordovaPlatform = (typeof window !== "undefined") && (window.PhoneGap || window.Cordova || window.cordova) && true;
+
 //	var flow  = require ('./flow');
 //	DF.flow   = flow;
+
+	DF.main = function () {
+		return window;
+	}
+
+	DF.global = function () {
+		return window;
+	}
 
 	DF.instanceTypes = [ 'initiator', 'task' ];
 
 	function registryLookup (instanceType, instanceName) {
 		var instanceClass = DF.registry[instanceType] &&
 			DF.registry[instanceType][instanceName];
+
+//			console.error (
+//				'you need to run dataflows.register ("'
+//				+instanceType+'", "'+instanceName
+//				+'", instance) before using this task'
+//			);
 
 		var error;
 		if (!instanceClass) {

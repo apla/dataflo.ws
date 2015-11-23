@@ -8,8 +8,6 @@ var EventEmitter = require ('events').EventEmitter,
 	confFu       = require ('conf-fu'),
 	tokenInitiator;
 
-// var $global = common.$global;
-
 var taskStateNames = taskClass.prototype.stateNames;
 
 function isVoid(val) {
@@ -184,7 +182,7 @@ var dataflow = module.exports = function (config, reqParam) {
 		);
 	}
 	this.coloredId = idChunks.map (function (item) {
-		if ($isServerSide) {
+		if (dataflows.nodePlatform) {
 			return "\x1B[0;3" + (parseInt(item, 16) % 8)  + "m" + item + "\x1B[0m";
 		} else {
 
@@ -230,10 +228,9 @@ var dataflow = module.exports = function (config, reqParam) {
 	function createDict () {
 		// TODO: very bad idea: reqParam overwrites flow.data
 		var dict = util.extend (true, self.data, reqParam);
-		// dict.global  = $global;
-		dict.appMain = $mainModule.exports;
+		dict.appMain = dataflows.main ();
 
-		if ($isServerSide) {
+		if (dataflows.nodePlatform) {
 			try { dict.project = project; } catch (e) {}
 		}
 
@@ -317,9 +314,9 @@ util.extend (dataflow.prototype, {
 	 */
 	runDelayed: function () {
 		var self = this;
-		if ($isClientSide) {
+		if (dataflows.browserPlatform) {
 			setTimeout (this.run.bind (this), 0);
-		} else if ($isServerSide) {
+		} else if (dataflows.nodePlatform) {
 			process.nextTick (this.run.bind (this));
 		}
 	},
@@ -465,7 +462,7 @@ util.extend (dataflow.prototype, {
 		);
 
 		// TODO: also check for bad clients (like ie9)
-		if ($isCordova) {
+		if (dataflows.cordovaPlatform) {
 			toLog = [toLog.join (' ')];
 		} else {
 			toLog.unshift (

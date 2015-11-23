@@ -63,6 +63,9 @@ Project.prototype.configReady = function (conf) {
 
 	this.config = conf.config;
 
+	dataflows.config = this.config;
+	dataflows.root   = this.root;
+
 	this.emit ('ready');
 }
 
