@@ -1,0 +1,230 @@
+{
+	"initiator": {
+		"http": {
+			"port": "50299",
+			"domain": "127.0.0.1",
+			"static": {
+				"root": "./test"
+			},
+
+			"prepare": 	{
+				"post": {
+					"tasks": [{
+						"$class": "post",
+						"request": "{$request}",
+						"$set": "request.body"
+					}]
+				}
+			},
+			"flows":[{
+				"path": ""
+			}, {
+				"path": "^(\\w+)$",
+				"prepare": ["post"],
+				"tasks": [{
+					"$function": "dfHandleGet",
+					"require":   "{$request.GET}"
+				}],
+				"presenter": "json"
+			}, {
+				"path": "test",
+				"flows": [{
+					"path": "redirect",
+					"tasks":[{
+						"$class": "redirect",
+						"url": "/test/redirected",
+						"output": "{$response}"
+					}],
+					"presenter": {
+						"headers": {
+							"Set-Cookie": "auth=123; expires=Fri, 31 Jan 2031 00:00:00 GMT; path=/; domain=127.0.0.1"
+						}
+					}
+				}, {
+					"path": "redirected",
+					"presenter": {
+						"type": "json",
+						"vars": "{$request.headers}",
+						"verbose": true
+					}
+				}, {
+					"path": "pdfdownload",
+					"data": {
+						"empty response": true
+					},
+					"presenter": {
+						"type": "fileasis",
+						"contentType": "application/pdf",
+						"file": ""
+					}
+				}, {
+					"path": "type-json",
+					"data": {
+						"test": "data",
+						"test2": "data2",
+						"test3": null
+					},
+					"presenter": {
+						"type": "json",
+						"vars": {
+							"test": "{$test}",
+							"test3": "{*test3}"
+						}
+					}
+				}, {
+					"path": "json-dump",
+					"data": {
+						"empty response": true
+					},
+					"presenter": {
+						"type": "json",
+						"dump": true
+					}
+				}, {
+					"path": "post",
+					"prepare": ["post"],
+					"tasks": [{
+						"$function": "dfHandleGet",
+						"$logTitle": "12345",
+						"require":   "{$request.POST}"
+					}],
+					"presenter": {
+						"type": "json",
+						"vars": "{$request.body}"
+					}
+
+				}]
+			}]
+		}
+	},
+	"templates": {
+		"task": {
+			"jsonParseAndMerge": {
+				"$origin":    "{$global.JSON}",
+				"$function":  "parse",
+				"$mergeWith": "result"
+			},
+			"jsonParseAndSet": {
+				"$origin":    "{$global.JSON}",
+				"$function":  "parse",
+				"$set":       "result"
+			},
+			"indexEqItem": {
+				"$function": "throwUnlessEqual",
+				"$args": [
+					"[*every.index]",
+					"[*every.item]"
+				]
+			},
+			"testHttpResource": {
+				"$class":"urlData",
+				"$method": "toBuffer"
+			}
+		}
+	},
+	"tests": {
+		"static": {
+			"expect": "ok",
+			"tasks": [{
+				"$template": "testHttpResource",
+				"url": "http://{$initiator.http.domain}:{$initiator.http.port}/favicon.ico",
+				"successCodes": "2xx",
+				"$setOnFail": "favicon"
+			}, {
+				"$function": "dfThrowUnlessEqual",
+				"$args": [404, "{$favicon.code}", "favicon http response:"],
+				"$important": true
+			}, {
+				"$template": "testHttpResource",
+				"url": "http://{$initiator.http.domain}:{$initiator.http.port}/009-presenter.json",
+				"successCodes": "2xx",
+				"$set": "indexPage"
+			}, {
+				"$function": "JSON.parse",
+				"$args": ["{$indexPage.data}"],
+				"$important": true
+			}, {
+				"$function": "dfThrowUnlessEqual",
+				"$args": [200, "{$indexPage.code}", "index page http response:"],
+				"$important": true
+			}, {
+				"$template": "testHttpResource",
+				"//": "protocol must be http, this task is the same as before, just with splitted params",
+				"url": {
+					"host": "{$initiator.http.domain}",
+					"port": "{$initiator.http.port}",
+					"path": "/009-presenter.json"
+				},
+				"successCodes": "2xx",
+				"$set": "indexPageSplitParams"
+			}, {
+				"$function": "JSON.parse",
+				"$args": ["{$indexPageSplitParams.data}"],
+				"$important": true
+			}, {
+				"$function": "dfThrowUnlessEqual",
+				"$args": [200, "{$indexPageSplitParams.code}", "index page http response:"],
+				"$important": true
+			}]
+		},
+		"post": {
+			"expect": "ok",
+			"tasks": [{
+				"$template": "testHttpResource",
+				"url": "http://{$initiator.http.domain}:{$initiator.http.port}/test/post",
+				"successCodes": "2xx",
+				"$setOnFail": "postNoDataObj"
+			}, {
+				"$function": "dfThrowUnlessEqual",
+				"$args": [500, "{$postNoDataObj.code}", "post page http response:"],
+				"$important": true
+			}, {
+				"$template": "testHttpResource",
+				"url": "http://{$initiator.http.domain}:{$initiator.http.port}/test/post",
+				"bodyData": {
+					"a": "b",
+					"c": "d"
+				},
+				"successCodes": "2xx",
+				"$set": "postObj"
+			}, {
+				"$function": "dfShowBuffer",
+				"$args":   "{$postObj.data}"
+			}, {
+				"$function": "JSON.parse",
+				"$args": ["{$postObj.data}"],
+				"$set": "postData"
+			}, {
+				"$function": "dfThrowUnlessEqual",
+				"$args": ["b", "{$postData.fields.a}", "post page http response:"],
+				"$important": true
+			}, {
+				"$function": "dfThrowUnlessEqual",
+				"$args": ["d", "{$postData.fields.c}", "post page http response:"],
+				"$important": true
+			}]
+		},
+		"redirect": {
+			"expect": "ok",
+			"tasks": [{
+				"$template": "testHttpResource",
+				"url": "http://{$initiator.http.domain}:{$initiator.http.port}/test/redirect",
+				"successCodes": "2xx",
+				"$set": "redirectObj"
+			}, {
+				"$function": "JSON.parse",
+				"$args": ["{$redirectObj.data}"],
+				"$set": "redirectData"
+			}, {
+				"$function": "console.log",
+				"$args": [
+					"{$redirectData}"
+				]
+			}, {
+				"$function": "dfThrowUnlessEqual",
+				"$args": ["auth=123", "{$redirectData.cookie}", "redirect cookie page http response:"],
+				"$important": true
+			}]
+		}
+	}
+}
