@@ -48,6 +48,20 @@ var dataflows = [{
 	failed: false,
 	completed: true
 }, {
+	description: "task without run method",
+	config: {
+		tasks: [{
+			className: "./test/task/002-task-methodless",
+			produce: "data.ok"
+		}, {
+			className: "./test/task/002-task-methodless",
+			method: "methodName",
+			produce: "data.skip"
+		}]
+	},
+	failed: false,
+	completed: true
+}, {
 	description: "two skipped tasks",
 	config: {
 		tasks: [{

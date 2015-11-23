@@ -128,6 +128,75 @@
 			"$set": "errback222"
 		}]
 	},
+	"every-collect-fail": {
+		"expect": "fail",
+		"tasks": [{
+			"$every": [1, 2, 4],
+			"$tasks": [{
+				"$function": "dfDataObject",
+				"$set": "object"
+			}],
+			"$collect": "object",
+			"$collectObject": "object",
+			"$set": "object"
+		}]
+	},
+	"every-collect-fail2": {
+		"expect": "fail",
+		"tasks": [{
+			"$every": [1, 2, 4],
+			"$tasks": [{
+				"$function": "dfDataObject",
+				"$set": "object"
+			}],
+			"$collectArray": "object",
+			"$collectObject": "object",
+			"$set": "object"
+		}]
+	},
+	"every-collect-object": {
+		"expect": "ok",
+		"tasks": [{
+			"$every": [1, 2, 4],
+			"$tasks": [{
+				"$function": "dfDataObject",
+				"$set": "object"
+			}],
+			"$collectObject": "object",
+			"$set": "object"
+		}, {
+			"fn": "console.log",
+			"$args": "{$object}"
+		}]
+	},
+	"every-collect-concurrency": {
+		"expect": "ok",
+		"tasks": [{
+			"$every": [1, 2, 4],
+			"concurrency": 1,
+			"$tasks": [{
+				"$function": "dfDataObject",
+				"$set": "object"
+			}],
+			"$collectObject": "object",
+			"$set": "object"
+		}, {
+			"fn": "console.log",
+			"$args": "{$object}"
+		}]
+	},
+	"every-without-tasks": {
+		"expect": "fail",
+		"tasks": [{
+			"$every": [1, 2, 4],
+			"concurrency": 1,
+			"$collectObject": "object",
+			"$set": "object"
+		}, {
+			"fn": "console.log",
+			"$args": "{$object}"
+		}]
+	},
 	"test:12-every-collect": {
 		"expect": "ok",
 		"tasks": [{
