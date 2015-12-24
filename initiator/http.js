@@ -314,19 +314,20 @@ httpdi.prototype.createFlow = function (cfg, req, res) {
 	if (!cfg.tasks) {
 		if (!cfg.presenter) {
 			return;
-		} else {
-			var df = {
-				//id:,
-				data: {},
-				//error: ,
-				presenter: cfg.presenter
-			};
-			var presenter = self.createPresenter(df, req, res, 'completed');
-			if (presenter) {
-				presenter.runDelayed ();
-				self.emit('detected', req, res, presenter);
-				return presenter;
-			}
+		}
+
+		var df = {
+			//id:,
+			data: {},
+			//error: ,
+			presenter: cfg.presenter
+		};
+
+		var presenter = self.createPresenter(df, req, res, 'completed');
+		if (presenter) {
+			presenter.runDelayed ();
+			self.emit('detected', req, res, presenter);
+			return presenter;
 		}
 	}
 
@@ -385,11 +386,10 @@ httpdi.prototype.createFlowByCode = function (code, req, res) {
 	}
 	var codeDfConfig = this.flows._codeFlows[res.statusCode];
 	if (codeDfConfig) {
-		if (!codeDfConfig.tasks) { codeDfConfig.tasks = []; }
-		var df = this.createFlow(codeDfConfig, req, res);
+		var df = this.createFlow (codeDfConfig, req, res);
 		if (df) {
-			df.on ('completed', this.finishRequest.bind (this, res));
-			df.on ('failed',    this.finishRequest.bind (this, res));
+			// df.on ('completed', this.finishRequest.bind (this, res));
+			// df.on ('failed',    this.finishRequest.bind (this, res));
 			return true;
 		}
 	}
