@@ -426,11 +426,12 @@ httpdi.prototype.hierarchical = function (req, res) {
 
 	var pathPartsRemains = pathParts.slice (this.hierarchical.checkedLevel + 1);
 
-	// console.log (this.hierarchical.path, this.hierarchical.checkedLevel, pathParts, pathPartsRemains);
+	// console.log (this.hierarchical.path, this.hierarchical.checkedLevel, pathParts, pathPartsRemains, config);
 
 	if (config) {
 		req.capture = capture;
 		req.pathInfo = pathPartsRemains.join ('/');
+		req.fileName = pathParts[pathParts.length - 1];
 		return this.createFlow (config, req, res);
 	}
 
@@ -456,10 +457,11 @@ httpdi.prototype.hierarchical.walkList = function (
 };
 
 httpdi.prototype.hierarchical.findByPath = function (
-	tree, pathParts, level, capture
+	tree, pathParts, level, capture, withPathInfo
 ) {
 	if (!tree)
 		tree = this.tree;
+	withPathInfo = withPathInfo || tree.pathInfo;
 	var list = tree.workflows || tree.dataflows || tree.flows;
 	this.checkedLevel = level;
 	var branch = null;
@@ -496,11 +498,15 @@ httpdi.prototype.hierarchical.findByPath = function (
 		}.bind (this)
 	);
 
-	if ((branch && branch.static && this.checkedLevel >= 0) || this.checkedLevel >= pathParts.length - 1) {
+	if (withPathInfo && this.checkedLevel >= pathParts.length - 1) {
+		// last level check is failed, but we don't fallback to 404 and use pathInfo
+		this.checkedLevel --;
+		return tree;
+	} else if ((branch && branch.static && this.checkedLevel >= 0) || this.checkedLevel >= pathParts.length - 1) {
 		return branch;
 	} else {
 		return branch && this.findByPath(
-			branch, pathParts, this.checkedLevel + 1, capture
+			branch, pathParts, this.checkedLevel + 1, capture, withPathInfo
 		);
 	}
 };
