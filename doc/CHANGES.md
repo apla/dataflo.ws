@@ -1,3 +1,7 @@
+0.72.6 2016-02-19 apla
+
+ * Test and minor fix for pathInfo
+
 0.72.5 2016-02-19 apla
 
  * Now you can ask for pathInfo within flow configuration for http initiator

@@ -47,18 +47,6 @@ var injects = {
 	dfThrowNow: function () {
 		throw ('defined');
 	},
-	dfHandleGet: function (params) {
-		// http server test:
-		// 1) just request, check for User-Agent
-		// 2) get request with query string
-		// 3) post request
-		if (params.cookieAndRedirect) {
-			return true;
-		}
-		// if (checkCookie) {
-
-		// }
-	},
 	dfGetPromise: function (delay, arg, result) {
 		var ayepromise = require ("ayepromise");
 
@@ -84,6 +72,13 @@ var injects = {
 	},
 	dfDataObject: function (data) {
 		return data || {a: ['b', 'c']};
+	},
+	dfRequestInfo: function (req) {
+		return {
+			pathInfo: req.pathInfo,
+			capture:  req.capture,
+			fileName: req.fileName
+		}
 	}
 };
 

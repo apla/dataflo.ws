@@ -498,7 +498,7 @@ httpdi.prototype.hierarchical.findByPath = function (
 		}.bind (this)
 	);
 
-	if (withPathInfo && this.checkedLevel >= pathParts.length - 1) {
+	if (!branch && withPathInfo) {
 		// last level check is failed, but we don't fallback to 404 and use pathInfo
 		this.checkedLevel --;
 		return tree;

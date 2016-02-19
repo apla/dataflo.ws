@@ -72,7 +72,22 @@
 						"type": "json",
 						"vars": "{$request.body}"
 					}
-
+				}, {
+					"path": "path-info",
+					"pathInfo": true,
+					"flows": [{
+						"path": "x",
+						"pathInfo": false
+					}],
+					"tasks":[{
+						"fn": "dfRequestInfo",
+						"$args": "{$request}",
+						"$set": "requestInfo"
+					}],
+					"presenter": {
+						"type": "json",
+						"vars": "{$requestInfo}"
+					}
 				}]
 			}]
 		}
@@ -232,6 +247,43 @@
 				"$args": [504, "{$timeoutObj.code}", "timeout page http response:"],
 				"$important": true
 
+			}]
+		},
+		"pathInfo": {
+			"expect": "ok",
+			"tasks": [{
+				"$template": "testHttpResource",
+				"url": "http://{$initiator.http.domain}:{$initiator.http.port}/test/path-info/a/b/c/d/e/f",
+				"successCodes": "2xx",
+				"$set": "pathInfoPage"
+			}, {
+				"$function": "dfThrowUnlessEqual",
+				"$args": [200, "{$pathInfoPage.code}", "path-info page http response:"],
+				"$important": true
+			}, {
+				"$function": "dfShowBuffer",
+				"$args":   "{$pathInfoPage.data}"
+			}, {
+				"$function": "JSON.parse",
+				"$args": ["{$pathInfoPage.data}"],
+				"$set": "pathInfoData"
+			}, {
+				"$function": "dfThrowUnlessEqual",
+				"$args": ["a/b/c/d/e/f", "{$pathInfoData.pathInfo}", "path-info value:"],
+				"$important": true
+			}, {
+				"$function": "dfThrowUnlessEqual",
+				"$args": ["f", "{$pathInfoData.fileName}", "path-info fileName:"],
+				"$important": true
+			}, {
+				"$template": "testHttpResource",
+				"url": "http://{$initiator.http.domain}:{$initiator.http.port}/test/path-info/x/y/z",
+				"successCodes": "2xx",
+				"$setOnFail": "pathInfoFailPage"
+			}, {
+				"$function": "dfThrowUnlessEqual",
+				"$args": [404, "{$pathInfoFailPage.code}", "path-info override"],
+				"$important": true
 			}]
 		}
 	}
