@@ -1,3 +1,5 @@
+ * Slighly more uniform logging
+
 0.72.6 2016-02-19 apla
 
  * Test and minor fix for pathInfo

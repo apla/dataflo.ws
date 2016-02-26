@@ -413,11 +413,12 @@ util.extend (dataflow.prototype, {
 
 		flow.stopped = this.getDateAndStopTimer().getTime();
 
-		var scarceTaskMessage = 'unsatisfied requirements: ';
+		var scarceTaskMessage = ' ! unsatisfied requirements: ';
 
 		// TODO: display scarce tasks unsatisfied requirements
 		if (this.taskStates[taskStateNames.scarce]) {
-			flow.tasks.map (function (task, idx) {
+			var taskRequirementsFail = [];
+			flow.tasks.forEach (function (task, idx) {
 				if (task.state != taskStateNames.scarce && task.state != taskStateNames.skipped)
 					return;
 				if (task.important) {
@@ -428,10 +429,17 @@ util.extend (dataflow.prototype, {
 				}
 
 				if (task.state == taskStateNames.scarce || task.state == taskStateNames.failed) {
-					var appendMessage = "\ntask #" + idx + ' ' + (task.logTitle) + (task.important ? ', important' : '') + ' (' + (task.unsatisfiedRequirements ? task.unsatisfiedRequirements.join (', ') : task.unsatisfiedRequirements) + '); ';
-					scarceTaskMessage += appendMessage;
+					taskRequirementsFail.push ("task #" + idx + ' ' + (task.logTitle) + (task.important ? ', important' : '') + ' (' + (task.unsatisfiedRequirements ? task.unsatisfiedRequirements.join (', ') : task.unsatisfiedRequirements) + '); ');
+					// scarceTaskMessage += appendMessage;
 				}
 			});
+
+			if (taskRequirementsFail.length === 1) {
+				scarceTaskMessage += ' ' + taskRequirementsFail[0];
+			} else if (taskRequirementsFail.length > 1) {
+				scarceTaskMessage += "\n\t" + taskRequirementsFail.join ("\n\t");
+			}
+
 			flow.log (scarceTaskMessage);
 		}
 
@@ -440,13 +448,13 @@ util.extend (dataflow.prototype, {
 
 			flow.emit ('failed', flow);
 			var failedtasksCount = this.taskStates[taskStateNames.failed]
-			flow.logError (this.stage + ' failed in ' + (flow.stopped - flow.started) + 'ms; failed ' + failedtasksCount + ' ' + (failedtasksCount == 1 ? 'task': 'tasks') +' out of ' + flow.tasks.length);
+			flow.logError (' - ' + this.stage + ' failed in ' + (flow.stopped - flow.started) + 'ms; failed ' + failedtasksCount + ' ' + (failedtasksCount == 1 ? 'task': 'tasks') +' out of ' + flow.tasks.length);
 
 		} else {
 			// dataflow stopped and not failed
 
 			flow.emit ('completed', flow);
-			flow.log (this.stage + ' completed in ' + (flow.stopped - flow.started) + 'ms');
+			flow.log (' + ' + this.stage + ' completed in ' + (flow.stopped - flow.started) + 'ms');
 		}
 
 		flow.isIdle = true;
