@@ -1,3 +1,6 @@
+0.72.7 2016-02-26 apla
+
+ * Fixed timeout error message
  * Slighly more uniform logging
 
 0.72.6 2016-02-19 apla

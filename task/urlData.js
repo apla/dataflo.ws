@@ -105,7 +105,6 @@ cacheTask.prototype.initModel = function () {
 		// });
 	this.model.on ('error', function (error) {
 //			console.log (error);
-		this.clearOperationTimeout();
 		this.finishWith (error, 'failed');
 	}.bind (this));
 
@@ -187,7 +186,6 @@ cacheTask.prototype.toBuffer = function () {
 				self.res = {};
 				self.res.srcName = srcName ? srcName : "";
 				console.log("self.res -> ", self.res);*/
-				self.clearOperationTimeout();
 				// self.res.cacheFilePath = self.cacheFilePath
 				// self.completed (self.res);
 				self.finishWith ({
@@ -198,29 +196,31 @@ cacheTask.prototype.toBuffer = function () {
 			// model error handling at @method initModel
 		}
 
-		self.emit ('log', 'start loading from ' + self.url.href + ' to memory buffer');
+		self.emit ('log', 'loading from ' + self.url.href + ' to memory');
 
 		self.activityCheck ('model.fetch start');
 		self.model.fetch ({to: self.download});
 	};
 
 cacheTask.prototype.finishWith = function (result, method, metaJSON) {
-		var self = this;
-		var model = self.model,
-			ds;
+	var model = this.model,
+		ds;
+
+	// clear operation timeout just before task completion
+	this.clearOperationTimeout();
 
 	var meta;
 	if (metaJSON) {
 		meta = JSON.parse (metaJSON);
 	}
 
-		if (model)
-			ds = self.model.dataSource;
-		if (ds && ds.addResultFields) {
-			ds.addResultFields (result, meta);
-		}
+	if (model)
+		ds = this.model.dataSource;
+	if (ds && ds.addResultFields) {
+		ds.addResultFields (result, meta);
+	}
 
-//		method = method || 'completed';
+	// method = method || 'completed';
 	if (!method)
 		if (ds && ds.isSuccessResponse && ds.isSuccessResponse ()) {
 			method = 'completed';
@@ -228,8 +228,8 @@ cacheTask.prototype.finishWith = function (result, method, metaJSON) {
 			method = 'failed';
 		}
 
-		self[method] (result);
-	};
+	this[method] (result);
+};
 /**
  * @method toFile
  * Downloads a given URL into a uniquely named file.
@@ -262,7 +262,6 @@ cacheTask.prototype.toFile = function () {
 				self.res = {};
 				self.res.srcName = srcName ? srcName : "";
 				console.log("self.res -> ", self.res);*/
-				self.clearOperationTimeout();
 				self.cacheFile.chmod (0640, function (err) {
 					// TODO: check for exception (and what's next?)
 					delete cacheTask.caching[self.cacheFilePath];
@@ -307,8 +306,6 @@ cacheTask.prototype.toFile = function () {
 					return self.cacheMiss ();
 				}
 
-				self.clearOperationTimeout();
-
 				self.emit ('log', 'file already downloaded from ' + self.url.href + ' to ' + self.cacheFilePath);
 				delete cacheTask.caching[self.cacheFilePath];
 
@@ -336,7 +333,7 @@ cacheTask.prototype.cacheMiss = function () {
 		return;
 	}
 
-	this.emit ('log', 'start caching from ' + this.url.href + ' to ' + this.cacheFilePath);
+	this.emit ('log', 'caching from ' + this.url.href + ' to ' + this.cacheFilePath);
 
 	this.activityCheck ('model.fetch start');
 	this.model.fetch ({to: writeStream});
