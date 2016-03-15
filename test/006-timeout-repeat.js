@@ -18,7 +18,7 @@ var dataflows = {
 		}]
 	},
 	"test:15-timeout-repeat": {
-		"expect": "fail",
+		"expect": "ok",
 		"tasks": [{
 			"task": "./test/task/timeout2times",
 			"$method": "start",

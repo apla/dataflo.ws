@@ -200,6 +200,27 @@ var dataflows = [{
 	failed: true,
 	completed: false
 }, {
+	description: "fail task set value on fail with retries",
+	config: {
+		tasks: [{
+			task: "./test/task/002-fail-task",
+			retries: 3,
+			delay: 10,
+			$setOnFail: "expected",
+			$set: "unexpected"
+		}, {
+			task: "./test/task/002-ok-task",
+			if: "{$expected}",
+			important: true,
+			$set: "data.ok"
+		}]
+	},
+	request: {
+		test: true
+	},
+	failed: false,
+	completed: true
+}, {
 	description: "data merge test",
 	// only: true,
 	config: {

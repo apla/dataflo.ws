@@ -563,7 +563,7 @@ util.extend (dataflow.prototype, {
 			if (task.retries !== null)
 				self.logTaskError (task, 'canceled, retries = ' + task.retries);
 
-			if (!task.retries && task.$setOnFail) {
+			if ((!task.retries || (task.attempts - task.retries === 1)) && task.$setOnFail) {
 				common.pathToVal(self.data, task.$setOnFail, failedValue || true);
 				self.haveCompletedTasks = true;
 			} else {
