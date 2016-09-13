@@ -27,6 +27,7 @@ var tokenInitiator = module.exports = function (config) {
 util.inherits (tokenInitiator, EventEmitter);
 
 tokenInitiator.prototype.prepare = function () {
+	this.ready = true;
 	this.emit ('ready');
 }
 

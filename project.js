@@ -1,11 +1,12 @@
 "use strict";
 
-var path   = require ('path'),
-	fs     = require ('fs'),
-	os     = require ('os'),
-	util   = require ('util'),
-	io     = require ('fsobject'),
-	confFu = require ('conf-fu');
+var path    = require ('path'),
+	fs      = require ('fs'),
+	os      = require ('os'),
+	util    = require ('util'),
+	cluster = require ('cluster'),
+	io      = require ('fsobject'),
+	confFu  = require ('conf-fu');
 
 var MODULE_NAME = 'dataflo.ws';
 var INITIATOR_PATH = 'initiator';
@@ -16,6 +17,23 @@ var dataflows = require ('./');
 var paint     = dataflows.color;
 
 var Project = function (rootPath) {
+
+	// ask master for the config file
+	if (cluster.isWorker) {
+		process.send ({request: 'config'});
+
+
+		// response must be instantiated after fork.
+		// take a look bin/daemon.js
+		process.on ('message', function configHandler (msg) {
+			if (msg.request && msg.request === 'config') {
+				this.configReady (msg.response, new io (msg.response.root));
+				process.removeListener ('message', configHandler);
+			}
+		}.bind (this));
+
+		return;
+	}
 
 	var rootSearch = new io (rootPath || process.env.PROJECT_ROOT || process.cwd());
 
@@ -43,11 +61,11 @@ var Project = function (rootPath) {
 		this.fixes = 0;
 		this.fatal = false;
 
-		conf.on ('ready', this.configReady.bind (this, conf));
+		conf.on ('ready', this.configReady.bind (this, conf, projectRoot));
 
-		conf.on ('notReady', this.configNotReady.bind (this, conf));
+		conf.on ('notReady', this.configNotReady.bind (this, conf, projectRoot));
 
-		conf.on ('error', this.configError.bind (this, conf));
+		conf.on ('error', this.configError.bind (this, conf, projectRoot));
 
 	}.bind (this));
 
@@ -57,11 +75,12 @@ module.exports = Project;
 
 util.inherits (Project, EventEmitter);
 
-Project.prototype.configReady = function (conf) {
+Project.prototype.configReady = function (conf, projectRoot) {
 	// console.log (conf, conf.configFile.path, conf.fixupFile.path);
 	// console.log (conf.config.initiator.http.flows);
 
 	this.config = conf.config;
+	this.root = projectRoot;
 
 	dataflows.config = this.config;
 	dataflows.root   = this.root;

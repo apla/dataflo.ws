@@ -10,18 +10,31 @@ var EventEmitter = require ('events').EventEmitter,
  *
  * Initiates WebSocket server-related dataflows.
  */
-var SocketInitiator = module.exports = function (config, initiators) {
-	// we need to launch socket.io
+var SocketInitiator = module.exports = function (config, initiators, initiatorKey) {
 
-	// initiators start in random order. socket.io
-	// can launch in dependent mode from httpdi,
-	// so we need to start socket.io after httpdi gets initialized
-	process.nextTick (this.init.bind (this, config, initiators));
+	// we need to launch socket.io
+	this.init (config, initiators);
 }
 
 SocketInitiator.connections = {};
 
 util.inherits (SocketInitiator, EventEmitter);
+
+SocketInitiator.keyNames = function (config) {
+	if (config.useHttpServer) {
+		return ['http'];
+	} else {
+		return ['socketio'];
+	}
+}
+
+SocketInitiator.maxWorkers = function (config) {
+	if (config.useHttpServer) {
+		return 0;
+	} else {
+		return;
+	}
+}
 
 SocketInitiator.prototype.init = function (config, initiators) {
 
@@ -111,6 +124,10 @@ SocketInitiator.prototype.listen = function () {
 		console.log ('socket.io server is running on ' + this.port + ' port');
 	}
 
+	// There is no public event for listen event, so we emit immediately
+	// I hope nobody is waiting for socket.io to start in standalone mode
+	this.ready = true;
+
 	this.emit ('ready', this);
 }
 
@@ -157,8 +174,9 @@ SocketInitiator.prototype.runPresenter = function (df, state, socket) {
 
 		try {
 
-			header = (presenter.header.interpolate(df, false, true).length == 0) ?
-					presenter.header : presenter.header.interpolate(df);
+			header = (presenter.header.interpolate(df, false, true).length == 0)
+				? presenter.header
+				: presenter.header.interpolate(df);
 
 			vars = presenter.vars.interpolate(df);
 

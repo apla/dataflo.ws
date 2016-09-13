@@ -89,12 +89,14 @@ httpdi.prototype.started = function () {
 	var listenHost = this.host ? this.host : '127.0.0.1';
 	var listenPort = this.port === 80 ? '' : ':'+this.port;
 	console.log(
-		'http initiator running at',
+		'http worker',
+		process.pid,
+		'running at',
 		paint.path (
 			'http://'+listenHost+listenPort+'/'
 		),
 		this.static
-		? "and serving static files from " + paint.path (this.static.root.path) // project.root.relative (this.static.root)
+			? "and serving static files from " + paint.path (this.static.root.path) // project.root.relative (this.static.root)
 			: ""
 	);
 

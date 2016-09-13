@@ -89,5 +89,7 @@ timeri.prototype.ready = function () {
 		}
 	});
 
+	self.ready = true;
+
 	self.emit ('ready', this);
 }
