@@ -629,10 +629,10 @@ task.prepare = function (flow, dataflows, gen, taskParams, idx, array) {
 
 	// console.log (taskParams);
 
-	var taskClassName = actualTaskParams.className || actualTaskParams.$class || actualTaskParams.task;
-	var taskFnName = actualTaskParams.functionName || actualTaskParams.$function || actualTaskParams.fn;
+	var taskClassName = actualTaskParams.className || actualTaskParams.$class || actualTaskParams.task || actualTaskParams.$task;
+	var taskFnName = actualTaskParams.functionName || actualTaskParams.$function || actualTaskParams.fn || actualTaskParams.$fn;
 	var taskPromise = actualTaskParams.promise || actualTaskParams.$promise;
-	var taskErrBack = actualTaskParams.errback || actualTaskParams.$errback;
+	var taskErrBack = actualTaskParams.errback || actualTaskParams.$errback || actualTaskParams.callback || actualTaskParams.$callback;
 
 	//	console.log ('task:', taskClassName, 'function:', taskFnName, 'promise:', taskPromise, 'errback:', taskErrBack);
 
