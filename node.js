@@ -11,7 +11,6 @@ var path   = require ('path'),
 	confFu = require ('conf-fu');
 
 var MODULE_NAME = 'dataflo.ws';
-var INITIATOR_PATH = 'initiator';
 
 paint.error     = paint.bind (paint, "red+white_bg");
 paint.path      = paint.cyan.bind (paint);

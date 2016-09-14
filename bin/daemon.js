@@ -8,9 +8,49 @@ var dataflows = require ('dataflo.ws');
 var minimist  = require ('commop/lib/minimist');
 
 // globals
-var initiators = [];
-var workers    = {};
-var workerInitiators = {};
+var services = [];
+var workers  = {};
+
+function getWorkerCount (config, serviceName) {
+	var serviceConfig = config.service[serviceName];
+		var service = dataflows.service (serviceName);
+
+		// maxWorkers can be 0 (no child should fork for this service)
+		// 1 (only single fork is allowed)
+		// and undefined (use maxForks as reference)
+
+		// maxWorkers is a function because service can calculate number
+		// of forks needed based on service configuration.
+
+		var serviceWorkers;
+		if (service.maxWorkers === undefined) {
+			serviceWorkers = maxForks;
+		} else if (typeof service.maxWorkers === 'function') {
+			serviceWorkers = service.maxWorkers();
+		} else if (service.maxWorkers.constructor === Number) {
+			serviceWorkers = service.maxWorkers;
+		}
+
+		// some services depends on others, like websocket on http
+		// in this case websocket service don't need it's own workers,
+		// but rely on http ones.
+		var keyNames = service.keyNames ? service.keyNames (serviceConfig) : [serviceName];
+
+		if (cluster.isMaster)
+			console.log (
+				'service %s requested %d worker%s for',
+				serviceName,
+				serviceWorkers,
+				serviceWorkers === 1 ? '' : 's',
+				keyNames
+			);
+
+		for (var childId = 0; childId < serviceWorkers; childId++) {
+			keyNames.forEach (function (key) {
+				services.push (key);
+			});
+		}
+}
 
 module.exports = {
 	launchContext: function () {
@@ -23,7 +63,7 @@ module.exports = {
 	},
 	launch: function (conf) {
 		var ctx = this.launchContext();
-		var daemonName = getRealDaemonName (ctx.configKey, conf);
+		var appName = getRealAppName (ctx.configKey, conf);
 
 		if ('fork' in ctx.args) {
 			if (!ctx.args.fork) {
@@ -35,76 +75,68 @@ module.exports = {
 			}
 		}
 
-		// We've just received daemon name, let's enumerate initiators.
-		// In master we should fork initiator processes, but with respect
-		// for initiator expectations. For example, usb initiator should be
-		// single process and websocket initiator don't need to be forked when
+		// deprecations
+		if (conf.daemon) {
+			console.error ('`daemon` key in configuration is deprecated in favor of `app`');
+			if (conf.app) {
+				console.error ('`app` key in configuration cannot coexists with `daemon`');
+				process.exit (1);
+				return;
+			}
+
+			conf.app = {};
+			for (var k in conf.daemon) {
+				conf.app[k] = conf.daemon[k];
+				conf.app[k].services = conf.daemon[k].initiator || conf.daemon[k].initiators;
+				delete conf.app[k].initiator;
+				delete conf.app[k].initiators;
+			}
+			delete conf.daemon;
+		}
+
+		if (conf.initiator) {
+			console.error ('`initiator` key in configuration is deprecated in favor of `service`');
+			if (conf.service) {
+				console.error ('`service` key in configuration cannot coexists with `initiator`');
+				process.exit (1);
+				return;
+			}
+			conf.service = conf.initiator;
+			delete conf.initiator;
+		}
+
+		// We've just received app name, let's enumerate services.
+		// In master we should fork service processes, but with respect
+		// for service expectations. For example, usb service should be
+		// single process and websocket service don't need to be forked when
 		// websocket is running on top of existing http server.
 
-		var daemonConf = conf.daemon[daemonName];
-		var initiatorTypes = daemonConf.initiator;
+		var appConf = conf.app[appName];
+		var serviceNames = appConf.services;
 
-		initiatorTypes.forEach(function (initiatorType) {
-			var initiatorConf = conf.initiator[initiatorType];
-			var initiatorClass = dataflows.initiator (initiatorType);
-
-			// maxWorkers can be 0 (no child should fork with this initiator)
-			// 1 (only single fork is allowed)
-			// and undefined (use maxForks as reference)
-
-			// maxWorkers is a function because initiator can calculate number
-			// of forks needed.
-
-			var initiatorWorkers;
-			if (initiatorClass.maxWorkers === undefined) {
-				initiatorWorkers = maxForks;
-			} else if (typeof initiatorClass.maxWorkers === 'function') {
-				initiatorWorkers = initiatorClass.maxWorkers();
-			} else if (initiatorClass.maxWorkers.constructor === Number) {
-				initiatorWorkers = initiatorClass.maxWorkers;
-			}
-
-			// this is a initiator key names which activating initiator
-			var keyNames = initiatorClass.keyNames ? initiatorClass.keyNames (initiatorConf) : [initiatorType];
-
-			if (cluster.isMaster)
-			console.log (
-				'initiator %s requested %d worker%s for',
-				initiatorType,
-				initiatorWorkers,
-				initiatorWorkers === 1 ? '' : 's',
-				keyNames
-			);
-
-			for (var childId = 0; childId < initiatorWorkers; childId++) {
-				keyNames.forEach (function (key) {
-					initiators.push (key);
-				});
-			}
-		});
+		serviceNames.forEach (getWorkerCount.bind (this, conf));
 
 		if (cluster.isMaster) {
-			// Fork workers. TODO: make worker number configurable
 
-			forkInitiatorChild ();
+			forkWorker ();
 
-			cluster.on('exit', function (worker, code, signal) {
+			cluster.on ('exit', function (workerIPC, code, signal) {
 
-				// if initiator died before ready event, don't spawn a new worker.
-				if (!workers[worker.process.pid].ready) {
+				// if service died before ready event, don't spawn a new worker.
+				if (!workers[workerIPC.process.pid].ready) {
 
 				}
 
-				console.log('worker ' + worker.process.pid + ' died, code: ' + code + ', signal:' + signal);
-				if (code != 0 && workers[worker.process.pid].ready) {
+				console.log('worker ' + workerIPC.process.pid + ' died, code: ' + code + ', signal:' + signal);
+				if (code != 0 && workers[workerIPC.process.pid].ready) {
 					setTimeout (function () {
 						console.log ("spawning a replacement worker");
-						forkInitiatorChild ();
+						forkWorker ();
 					}, 500);
 				}
 
-				initiators.push (workers[worker.process.pid]);
-				delete workers[worker.process.pid];
+				services.push (workers[workerIPC.process.pid]);
+				delete workers[workerIPC.process.pid];
 
 			});
 
@@ -113,24 +145,13 @@ module.exports = {
 			// process.on ('SIGBREAK', killWorkers);
 			// process.on ('SIGINT',   gracefullyRestartWorkers);
 
-			// use signal/watch initiator for this
+			// use signal/watch service for this
 			// process.on ('SIGHUP',   gracefullyRestartWorkers);
 
 		} else {
 			// Workers can share any TCP connection
 
-			// Ask master for a initiator name
-			process.send ({request: 'initiator'});
-
-			// let's get initiator key
-			process.on ('message', function keyHandler (msg) {
-				if (msg.request && msg.request === 'initiator') {
-
-					runDaemon (conf, daemonName, msg.response);
-
-					process.removeListener ('message', keyHandler);
-				}
-			});
+			var worker = new Worker (conf, appName);
 
 		}
 
@@ -145,22 +166,22 @@ module.exports = {
 	}
 }
 
-function getRealDaemonName (requestedDaemonName, conf) {
-	var configDaemonNames = Object.keys(conf.daemon);
-	var daemonName = requestedDaemonName;
-	if (requestedDaemonName == undefined && configDaemonNames.length == 1)
-		daemonName = configDaemonNames[0];
-	if (!conf.daemon || !conf.daemon[daemonName]) {
-		// TODO: add description for daemon config generation
+function getRealAppName (requestedAppName, conf) {
+	var configAppNames = Object.keys(conf.app || conf.daemon);
+	var appName = requestedAppName;
+	if (requestedAppName == undefined && configAppNames.length == 1)
+		appName = configAppNames[0];
+	if ((!conf.app || !conf.app[appName]) && (!conf.daemon || !conf.daemon[appName])) {
+		// TODO: add description for app config generation
 		console.error(
-			'No daemon named "%s" found in configuration', daemonName
+			'No app named "%s" found in configuration', appName
 		);
-		var logDaemonNames = configDaemonNames.join ('", "');
-		console.error ('You can select one from those daemon configurations: "%s"', logDaemonNames);
+		var logAppNames = configAppNames.join ('", "');
+		console.error ('You can select one from those app configurations: "%s"', logAppNames);
 		process.exit();
 	}
 
-	return daemonName;
+	return appName;
 }
 
 function killWorkers () {
@@ -186,7 +207,7 @@ function gracefullyRestartWorkers () {
 
 		// TODO: set timeout and kill worker
 
-		var newWorker = forkInitiatorChild ();
+		var newWorker = forkWorker ();
 		newWorker.once ("listening", function() {
 			console.log("replacement worker online.");
 			i++;
@@ -196,17 +217,17 @@ function gracefullyRestartWorkers () {
 	f();
 }
 
-function forkInitiatorChild () {
-	var worker = cluster.fork();
-	worker.on ('message', function (msg) {
+function forkWorker () {
+	var workerIPC = cluster.fork();
+	workerIPC.on ('message', function (msg) {
 		if (msg.status && msg.status === 'ready') {
-			workers[worker.process.pid].ready = true;
-			if (initiators.length)
-				forkInitiatorChild ();
+			workers[workerIPC.process.pid].ready = true;
+			if (services.length)
+				forkWorker ();
 		}
 
 		if (msg.request && msg.request === 'config') {
-			worker.send ({
+			workerIPC.send ({
 				request: msg.request,
 				response: {
 					config: project.config,
@@ -215,81 +236,23 @@ function forkInitiatorChild () {
 			});
 		}
 
-		// initiators should contain at least one item
-		if (msg.request && msg.request === 'initiator') {
-			var initiatorType = initiators.shift ();
-			// console.log ('worker asking for initiator type', initiatorType);
-			workers[worker.process.pid] = {
-				type: initiatorType,
+		// services should contain at least one item
+		if (msg.request && msg.request === 'service') {
+			var serviceName = services.shift ();
+			// console.log ('worker asking for service name', serviceName);
+			workers[workerIPC.process.pid] = {
+				type: serviceName,
 				ready: false
 			};
-			worker.send ({
+			workerIPC.send ({
 				request: msg.request,
-				response: initiatorType
+				response: serviceName
 			});
 		}
 
 	});
 
-	return worker;
-}
-
-function runDaemon (conf, daemonName, initiatorKey) {
-
-	var daemonConf = conf.daemon[daemonName];
-	var initiatorTypes = daemonConf.initiator;
-
-	function loadInitiator (initiatorType) {
-		var initiatorConf = conf.initiator[initiatorType];
-		var initiatorClass = dataflows.initiator (initiatorType);
-
-		// initiator constructor must be function
-		if ('function' !== typeof initiatorClass) {
-			console.error('Cannot load initiator "%s"', initiatorType);
-			process.exit (1);
-			return;
-		}
-
-		if (!loadInitiator.busy) {
-			var worker = new initiatorClass (initiatorConf, workerInitiators);
-
-			workerInitiators[initiatorType] = worker;
-			worker.on ('ready', function () {
-				loadInitiator.busy = false;
-				if (loadInitiator.queue.length) {
-					var initiatorType = loadInitiator.queue.shift ();
-					loadInitiator (initiatorType);
-				} else {
-					loadInitiator.callback && loadInitiator.callback ();
-				}
-			});
-			loadInitiator.busy = true;
-		} else {
-			loadInitiator.queue.push (initiatorType);
-		}
-	}
-
-	loadInitiator.queue = [];
-	loadInitiator.callback = function () {
-		process.send ({status: 'ready'});
-	}
-
-	if (initiatorTypes.indexOf (initiatorKey) >= 0) {
-		loadInitiator (initiatorKey);
-	}
-
-	initiatorTypes.filter (function (initiatorType) {
-		var initiatorClass = dataflows.initiator (initiatorType);
-		var keyNames = initiatorClass.keyNames ? initiatorClass.keyNames (initiatorConf) : [initiatorType];
-
-		if (initiatorKey === initiatorType) {
-			return false;
-		}
-
-		if (keyNames.indexOf (initiatorKey) >= 0 || keyNames.indexOf ('*') >= 0) {
-			return true;
-		}
-	}).forEach (loadInitiator);
+	return workerIPC;
 }
 
 function setupWatcher () {
@@ -326,4 +289,96 @@ function setupWatcher () {
 		.on('ready', function() { log('Initial scan complete. Ready for changes.'); })
 		.on('raw', function(event, path, details) { log('Raw event info:', event, path, details); })
 
+}
+
+function Worker (conf, appName) {
+
+	this.conf    = conf;
+	this.appName = appName;
+
+	this.requestServiceName (
+		conf,
+		appName,
+		this.startServices.bind (this)
+	);
+}
+
+Worker.services = {};
+
+Worker.prototype.requestServiceName = function (conf, appName, callback) {
+	// Ask master for a service name
+	process.send ({request: 'service'});
+
+	// let's get service name
+	process.on ('message', function keyHandler (msg) {
+		if (msg.request && msg.request === 'service') {
+
+			callback (msg.response);
+
+			process.removeListener ('message', keyHandler);
+		}
+	});
+}
+
+Worker.prototype.launchService = function (serviceType) {
+	var conf = this.conf;
+	var serviceConfig = conf.service[serviceType];
+	var service = dataflows.service (serviceType);
+
+	// service constructor must be function
+	if ('function' !== typeof service) {
+		console.error('Cannot load service "%s"', serviceType);
+		process.exit (1);
+		return;
+	}
+
+	if (!this.busy) {
+		var worker = new service (serviceConfig, Worker.services);
+
+		Worker.services[serviceType] = worker;
+		worker.on ('ready', function () {
+			this.busy = false;
+			if (this.queue.length) {
+				var serviceType = this.queue.shift ();
+				this.launchService (serviceType);
+			} else {
+				this.callback && this.callback ();
+			}
+		}.bind (this));
+		this.busy = true;
+	} else {
+		this.queue.push (serviceType);
+	}
+}
+
+Worker.prototype.startServices = function (serviceName) {
+
+	var conf = this.conf;
+	var appConfig = conf.app[this.appName];
+	var serviceNames = appConfig.services;
+	var serviceConfig = conf.service[serviceName];
+
+	this.queue = [];
+	this.callback = function () {
+		process.send ({status: 'ready'});
+	}
+
+	if (serviceNames.indexOf (serviceName) >= 0) {
+		this.launchService (serviceName);
+	}
+
+	serviceNames.filter (function (otherServiceName) {
+		var service = dataflows.service (otherServiceName);
+		var keyNames = service.keyNames
+		? service.keyNames (serviceConfig)
+		: [otherServiceName];
+
+		if (serviceName === otherServiceName) {
+			return false;
+		}
+
+		if (keyNames.indexOf (serviceName) >= 0 || keyNames.indexOf ('*') >= 0) {
+			return true;
+		}
+	}).forEach (this.launchService.bind (this));
 }

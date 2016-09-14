@@ -8,7 +8,6 @@ if (typeof define === "undefined") {
 define (function (require, exports, module) {
 
 	var MODULE_NAME = 'dataflo.ws';
-	var INITIATOR_PATH = 'initiator';
 
 	var common = require ('./common'),
 		color  = {};
@@ -42,7 +41,11 @@ define (function (require, exports, module) {
 		return window;
 	}
 
-	DF.instanceTypes = [ 'initiator', 'task' ];
+	DF.instanceTypes = [
+		'initiator', // 'initiator' is deprecated in favor of 'service'
+		'service',
+		'task'
+	];
 
 	function registryLookup (instanceType, instanceName) {
 		var instanceClass = DF.registry[instanceType] &&
