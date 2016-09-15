@@ -11,12 +11,12 @@ module.exports = {
 	},
 	defaultConfig: {
 		debug: "<#false for production>",
-		daemon: {
+		app: {
 			http: {
-				initiator: ['http']
+				services: ['http']
 			}
 		},
-		initiator: {
+		service: {
 			token: {
 				flows: {
 
