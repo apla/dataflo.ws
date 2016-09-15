@@ -20,7 +20,7 @@ var masterServices = [];
 
 function getWorkerCount (config, serviceName) {
 	var serviceConfig = config.service[serviceName];
-		var service = dataflows.service (serviceName);
+	var service = dataflows.service (serviceConfig.module || serviceName);
 
 		// maxWorkers can be 0 (no child should fork for this service)
 		// 1 (only single fork is allowed)
@@ -378,7 +378,7 @@ Worker.prototype.requestServiceName = function (conf, appName, callback) {
 Worker.prototype.launchService = function (serviceType) {
 	var conf = this.conf;
 	var serviceConfig = conf.service[serviceType];
-	var service = dataflows.service (serviceType);
+	var service = dataflows.service (serviceConfig.module || serviceType);
 
 	// service constructor must be function
 	if ('function' !== typeof service) {
@@ -423,7 +423,9 @@ Worker.prototype.startServices = function (serviceName) {
 	}
 
 	serviceNames.filter (function (otherServiceName) {
-		var service = dataflows.service (otherServiceName);
+		var service = dataflows.service (
+			conf.service[otherServiceName].module || otherServiceName
+		);
 		var keyNames = service.keyNames
 		? service.keyNames (serviceConfig)
 		: [otherServiceName];
