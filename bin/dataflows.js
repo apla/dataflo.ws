@@ -95,7 +95,7 @@ function launchScript (conf, err) {
 
 var mainModule = dataflows.main ();
 
-project.on ('ready', function () {
+project.once ('ready', function () {
 	var conf = project.config;
 
 	// load local modules
@@ -124,7 +124,7 @@ project.on ('ready', function () {
 	launchScript(conf);
 });
 
-project.on ('failed', function (err) {
+project.once ('failed', function (err) {
 	// if (err === 'unpopulated variables')
 	// 	return;
 	// now we can launch script;
