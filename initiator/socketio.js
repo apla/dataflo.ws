@@ -20,11 +20,11 @@ SocketInitiator.connections = {};
 
 util.inherits (SocketInitiator, EventEmitter);
 
-SocketInitiator.keyNames = function (config) {
+SocketInitiator.attachTo = function (config) {
 	if (config.useHttpServer) {
-		return ['http'];
+		return 'http';
 	} else {
-		return ['socketio'];
+		return 'socketio';
 	}
 }
 

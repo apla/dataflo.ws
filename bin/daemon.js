@@ -7,9 +7,16 @@ var maxForks = os.cpus().length;
 var dataflows = require ('dataflo.ws');
 var minimist  = require ('commop/lib/minimist');
 
-// globals
+var Worker = require ('../service/worker');
+
+var paint = dataflows.color;
+
+// application service queue
 var services = [];
+// workers
 var workers  = {};
+// services for master process
+var masterServices = [];
 
 function getWorkerCount (config, serviceName) {
 	var serviceConfig = config.service[serviceName];
@@ -34,22 +41,30 @@ function getWorkerCount (config, serviceName) {
 		// some services depends on others, like websocket on http
 		// in this case websocket service don't need it's own workers,
 		// but rely on http ones.
-		var keyNames = service.keyNames ? service.keyNames (serviceConfig) : [serviceName];
+		var serviceAttach = service.attachTo ? service.attachTo (serviceConfig) : [serviceName];
+
+		if (serviceAttach.constructor !== Array) {
+			serviceAttach = [serviceAttach];
+		}
 
 		if (cluster.isMaster)
 			console.log (
-				'service %s requested %d worker%s for',
-				serviceName,
-				serviceWorkers,
+				'service %s requested %s worker%s for',
+				paint.yellow (serviceName),
+				paint.yellow (serviceWorkers),
 				serviceWorkers === 1 ? '' : 's',
-				keyNames
+				serviceAttach
 			);
 
 		for (var childId = 0; childId < serviceWorkers; childId++) {
-			keyNames.forEach (function (key) {
+			serviceAttach.forEach (function (key) {
 				services.push (key);
 			});
 		}
+
+	if (service.attachToMaster || serviceAttach.indexOf ('*') >= 0) {
+		masterServices.push (serviceName);
+	}
 }
 
 module.exports = {
@@ -118,6 +133,12 @@ module.exports = {
 
 		if (cluster.isMaster) {
 
+			// launch master services
+			masterServices.forEach (function (serviceName) {
+				new Worker (conf, appName, serviceName);
+			});
+
+			// launch worker services
 			forkWorker ();
 
 			cluster.on ('exit', function (workerIPC, code, signal) {
@@ -217,6 +238,14 @@ function gracefullyRestartWorkers () {
 	f();
 }
 
+var mainModule = dataflows.main ();
+
+mainModule.master = {
+	reloadConfig: function () {
+		console.log ('TODO: reload project config');
+	}
+};
+
 function forkWorker () {
 	var workerIPC = cluster.fork();
 	workerIPC.on ('message', function (msg) {
@@ -226,28 +255,48 @@ function forkWorker () {
 				forkWorker ();
 		}
 
-		if (msg.request && msg.request === 'config') {
-			workerIPC.send ({
-				request: msg.request,
-				response: {
-					config: project.config,
-					root:   project.root.path
-				}
-			});
-		}
+		if (msg.request) {
 
-		// services should contain at least one item
-		if (msg.request && msg.request === 'service') {
-			var serviceName = services.shift ();
-			// console.log ('worker asking for service name', serviceName);
-			workers[workerIPC.process.pid] = {
-				type: serviceName,
-				ready: false
-			};
-			workerIPC.send ({
-				request: msg.request,
-				response: serviceName
-			});
+			switch (msg.request) {
+				case 'reload':
+
+					workerIPC.send ({
+						request: msg.request,
+						response: {
+							config: project.config,
+							root:   project.root.path
+						}
+					});
+
+					break;
+
+				// send project configuration upon worker request
+				case 'config':
+
+					workerIPC.send ({
+						request: msg.request,
+						response: {
+							config: project.config,
+							root:   project.root.path
+						}
+					});
+
+					break;
+
+				// services should contain at least one item
+				case 'service':
+					var serviceName = services.shift ();
+					// console.log ('worker asking for service name', serviceName);
+					workers[workerIPC.process.pid] = {
+						type: serviceName,
+						ready: false
+					};
+					workerIPC.send ({
+						request: msg.request,
+						response: serviceName
+					});
+					break;
+			}
 		}
 
 	});
@@ -291,10 +340,18 @@ function setupWatcher () {
 
 }
 
-function Worker (conf, appName) {
+// put this code into service/worker.js
 
-	this.conf    = conf;
-	this.appName = appName;
+function Worker (conf, appName, serviceName) {
+
+	this.conf     = conf;
+	this.appName  = appName;
+
+	this.services = {};
+
+	// serviceName is provided only for master process
+	if (serviceName)
+		return this.launchService (serviceName);
 
 	this.requestServiceName (
 		conf,
@@ -302,8 +359,6 @@ function Worker (conf, appName) {
 		this.startServices.bind (this)
 	);
 }
-
-Worker.services = {};
 
 Worker.prototype.requestServiceName = function (conf, appName, callback) {
 	// Ask master for a service name
@@ -333,9 +388,9 @@ Worker.prototype.launchService = function (serviceType) {
 	}
 
 	if (!this.busy) {
-		var worker = new service (serviceConfig, Worker.services);
+		var worker = new service (serviceConfig, this.services);
 
-		Worker.services[serviceType] = worker;
+		this.services[serviceType] = worker;
 		worker.on ('ready', function () {
 			this.busy = false;
 			if (this.queue.length) {
