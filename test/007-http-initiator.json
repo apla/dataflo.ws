@@ -1,5 +1,5 @@
 {
-	"initiator": {
+	"service": {
 		"http": {
 			"port": "50299",
 			"domain": "127.0.0.1",
@@ -122,7 +122,7 @@
 			"expect": "ok",
 			"tasks": [{
 				"$template": "testHttpResource",
-				"url": "http://{$initiator.http.domain}:{$initiator.http.port}/favicon.ico",
+				"url": "http://{$service.http.domain}:{$service.http.port}/favicon.ico",
 				"successCodes": "2xx",
 				"$setOnFail": "favicon"
 			}, {
@@ -131,7 +131,7 @@
 				"$important": true
 			}, {
 				"$template": "testHttpResource",
-				"url": "http://{$initiator.http.domain}:{$initiator.http.port}/000-string.interpolate.js",
+				"url": "http://{$service.http.domain}:{$service.http.port}/000-string.interpolate.js",
 				"successCodes": "2xx",
 				"$set": "indexPage"
 			}, {
@@ -144,7 +144,7 @@
 			"expect": "ok",
 			"tasks": [{
 				"$template": "testHttpResource",
-				"url": "http://{$initiator.http.domain}:{$initiator.http.port}/test/post",
+				"url": "http://{$service.http.domain}:{$service.http.port}/test/post",
 				"successCodes": "2xx",
 				"$setOnFail": "postNoDataObj"
 			}, {
@@ -153,7 +153,7 @@
 				"$important": true
 			}, {
 				"$template": "testHttpResource",
-				"url": "http://{$initiator.http.domain}:{$initiator.http.port}/test/post",
+				"url": "http://{$service.http.domain}:{$service.http.port}/test/post",
 				"bodyData": {
 					"a": "b",
 					"c": "d"
@@ -181,7 +181,7 @@
 			"expect": "ok",
 			"tasks": [{
 				"$template": "testHttpResource",
-				"url": "http://{$initiator.http.domain}:{$initiator.http.port}/test/redirect",
+				"url": "http://{$service.http.domain}:{$service.http.port}/test/redirect",
 				"successCodes": "2xx",
 				"$set": "redirectObj"
 			}, {
@@ -203,13 +203,13 @@
 			"expect": "ok",
 			"tasks": [{
 				"$template": "testHttpResource",
-				"url": "http://{$initiator.http.domain}:{$initiator.http.port}/test/timeout",
+				"url": "http://{$service.http.domain}:{$service.http.port}/test/timeout",
 				"successCodes": "2xx",
 				"timeout": 1000,
 				"$set": "noTimeoutObj"
 			}, {
 				"$template": "testHttpResource",
-				"url": "http://{$initiator.http.domain}:{$initiator.http.port}/test/timeout",
+				"url": "http://{$service.http.domain}:{$service.http.port}/test/timeout",
 				"successCodes": "2xx",
 				"timeout": 1000,
 				"method": "toFile",
@@ -217,7 +217,7 @@
 				"$set": "noTimeoutObj2"
 			}, {
 				"$template": "testHttpResource",
-				"url": "http://{$initiator.http.domain}:{$initiator.http.port}/test/timeout",
+				"url": "http://{$service.http.domain}:{$service.http.port}/test/timeout",
 				"successCodes": "2xx",
 				"timeout": 1000,
 				"after": "{$noTimeoutObj2}",
@@ -232,7 +232,7 @@
 				"$important": true
 			}, {
 				"$template": "testHttpResource",
-				"url": "http://{$initiator.http.domain}:{$initiator.http.port}/test/timeout",
+				"url": "http://{$service.http.domain}:{$service.http.port}/test/timeout",
 				"successCodes": "2xx",
 				"timeout": 100,
 				"$setOnFail": "timeoutObj"
@@ -253,7 +253,7 @@
 			"expect": "ok",
 			"tasks": [{
 				"$template": "testHttpResource",
-				"url": "http://{$initiator.http.domain}:{$initiator.http.port}/test/path-info/a/b/c/d/e/f",
+				"url": "http://{$service.http.domain}:{$service.http.port}/test/path-info/a/b/c/d/e/f",
 				"successCodes": "2xx",
 				"$set": "pathInfoPage"
 			}, {
@@ -277,7 +277,7 @@
 				"$important": true
 			}, {
 				"$template": "testHttpResource",
-				"url": "http://{$initiator.http.domain}:{$initiator.http.port}/test/path-info/x/y/z",
+				"url": "http://{$service.http.domain}:{$service.http.port}/test/path-info/x/y/z",
 				"successCodes": "2xx",
 				"$setOnFail": "pathInfoFailPage"
 			}, {

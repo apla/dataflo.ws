@@ -9,7 +9,6 @@ var path    = require ('path'),
 	confFu  = require ('conf-fu');
 
 var MODULE_NAME = 'dataflo.ws';
-var INITIATOR_PATH = 'initiator';
 
 var EventEmitter = require ('events').EventEmitter;
 
@@ -166,6 +165,10 @@ Project.prototype.connections = {};
 
 Project.prototype.getModule = function (type, name, optional) {
 	return dataflows.getModule (type, name, optional, this.root);
+};
+
+Project.prototype.getService = function (name) {
+	return this.getModule ('service', name);
 };
 
 Project.prototype.getInitiator = function (name) {

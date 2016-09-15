@@ -6,7 +6,7 @@ var EventEmitter = require ('events').EventEmitter,
 	taskClass    = require ('./task/base'),
 	paint        = dataflows.color,
 	confFu       = require ('conf-fu'),
-	tokenInitiator;
+	tokenService;
 
 var taskStateNames = taskClass.prototype.stateNames;
 
@@ -205,18 +205,18 @@ var dataflow = module.exports = function (config, reqParam) {
 
 	// TODO: optimize usage - find placeholders and check only placeholders
 	if (config.tasksFrom) {
-		if (!tokenInitiator) tokenInitiator = require ('initiator/token');
+		if (!tokenService) tokenService = require ('service/token');
 
 		var flowByToken;
 
 		if (
-			!project.config.initiator
-			|| !project.config.initiator.token
-			|| !project.config.initiator.token.flows
-			|| !(flowByToken = project.config.initiator.token.flows[config.tasksFrom])
+			!project.config.service
+			|| !project.config.service.token
+			|| !project.config.service.token.flows
+			|| !(flowByToken = project.config.service.token.flows[config.tasksFrom])
 			|| !flowByToken.tasks
 		) {
-			this.log ('"tasksFrom" parameter requires to have "initiator/token/flows'+config.tasksFrom+'" configuration in project');
+			this.log ('"tasksFrom" parameter requires to have "service.token.flows.'+config.tasksFrom+'" configuration in project');
 			this.ready = false;
 		}
 
@@ -310,7 +310,7 @@ util.extend (dataflow.prototype, {
 		return date;
 	},
 	/**
-	 * @method run Initiators call this method to launch the dataflow.
+	 * @method run Services call this method to launch the dataflow.
 	 */
 	runDelayed: function () {
 		var self = this;

@@ -1,5 +1,5 @@
 {
-	"initiator": {
+	"service": {
 		"http": {
 			"port": "50299",
 			"domain": "127.0.0.1",
@@ -127,7 +127,7 @@
 			"expect": "ok",
 			"tasks": [{
 				"$template": "testHttpResource",
-				"url": "http://{$initiator.http.domain}:{$initiator.http.port}/favicon.ico",
+				"url": "http://{$service.http.domain}:{$service.http.port}/favicon.ico",
 				"successCodes": "2xx",
 				"$setOnFail": "favicon"
 			}, {
@@ -136,7 +136,7 @@
 				"$important": true
 			}, {
 				"$template": "testHttpResource",
-				"url": "http://{$initiator.http.domain}:{$initiator.http.port}/009-presenter.json",
+				"url": "http://{$service.http.domain}:{$service.http.port}/009-presenter.json",
 				"successCodes": "2xx",
 				"$set": "indexPage"
 			}, {
@@ -151,8 +151,8 @@
 				"$template": "testHttpResource",
 				"//": "protocol must be http, this task is the same as before, just with splitted params",
 				"url": {
-					"host": "{$initiator.http.domain}",
-					"port": "{$initiator.http.port}",
+					"host": "{$service.http.domain}",
+					"port": "{$service.http.port}",
 					"path": "/009-presenter.json"
 				},
 				"successCodes": "2xx",
@@ -171,7 +171,7 @@
 			"expect": "ok",
 			"tasks": [{
 				"$template": "testHttpResource",
-				"url": "http://{$initiator.http.domain}:{$initiator.http.port}/test/post",
+				"url": "http://{$service.http.domain}:{$service.http.port}/test/post",
 				"successCodes": "2xx",
 				"$setOnFail": "postNoDataObj"
 			}, {
@@ -180,7 +180,7 @@
 				"$important": true
 			}, {
 				"$template": "testHttpResource",
-				"url": "http://{$initiator.http.domain}:{$initiator.http.port}/test/post",
+				"url": "http://{$service.http.domain}:{$service.http.port}/test/post",
 				"bodyData": {
 					"a": "b",
 					"c": "d"
@@ -208,7 +208,7 @@
 			"expect": "ok",
 			"tasks": [{
 				"$template": "testHttpResource",
-				"url": "http://{$initiator.http.domain}:{$initiator.http.port}/test/redirect",
+				"url": "http://{$service.http.domain}:{$service.http.port}/test/redirect",
 				"successCodes": "2xx",
 				"$set": "redirectObj"
 			}, {

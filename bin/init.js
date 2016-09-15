@@ -30,7 +30,7 @@ module.exports = {
 					secret: "<#please generate unique string>",
 					cookieTemplate: {
 						name: "session",
-						domain: "<$initiator.http.domain>",
+						domain: "<$service.http.domain>",
 						path: "/",
 						expirePeriod: "+172800000",
 						httpOnly: true

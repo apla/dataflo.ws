@@ -1,7 +1,7 @@
 {
-	"daemon": {
+	"app": {
 		"test": {
-			"initiator": [ "timer", "repl", "http" ]
+			"services": [ "timer", "repl", "http" ]
 		}
 	},
 	"templates": {
@@ -29,7 +29,7 @@
 			}
 		}
 	},
-	"initiator": {
+	"service": {
 		"token": {
 			"flows": "<test/00-anything.json>"
 		},
@@ -69,7 +69,7 @@
 					}],
 					"presenter": {
 						"headers": {
-							"Set-Cookie": "auth=123; expires=Fri, 31 Jan 2031 00:00:00 GMT; path=/; domain=<$initiator.http.domain>"
+							"Set-Cookie": "auth=123; expires=Fri, 31 Jan 2031 00:00:00 GMT; path=/; domain=<$service.http.domain>"
 						}
 					}
 				}, {

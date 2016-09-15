@@ -3,7 +3,7 @@ testCommon.injectMain ();
 
 var baseName = testCommon.baseName (__filename);
 
-var httpi     = require ("../initiator/http");
+var httpi     = require ("../service/http");
 var flow      = require ("../flow");
 
 var dataflows = require ("../");
@@ -20,7 +20,7 @@ var descriptor = {
 
 	before: function (done) {
 		// runs before all tests in this block
-		httpDaemon = new httpi (testData.initiator.http, {
+		httpDaemon = new httpi (testData.service.http, {
 			logger: function () {
 				var toLog = [].slice.call (arguments);
 				var level = toLog.shift() || 'log';
@@ -45,8 +45,8 @@ var descriptor = {
 };
 
 
-describe (baseName + " running http initiator tests", testCommon.runTests.bind (descriptor, testData, {
+describe (baseName + " running http service tests", testCommon.runTests.bind (descriptor, testData, {
 	// dataflow parameters
-	initiator: testData.initiator // for host name and port
+	service: testData.service // for host name and port
 }, verbose));
 

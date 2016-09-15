@@ -11,13 +11,13 @@ module.exports = {
 		};
 	},
 	launch: function (conf) {
-		var tokenIConf = conf.initiator['token'];
-		var tokenIClass = dataflows.initiator('token');
+		var tokenIConf = conf.service['token'];
+		var tokenIClass = dataflows.service('token');
 
 		if ('function' == typeof tokenIClass) {
 			var processor = new tokenIClass(tokenIConf);
 		} else {
-			console.error('Cannot load initiator "%s"', 'token');
+			console.error('Cannot load service "%s"', 'token');
 		}
 
 		var context = this.launchContext();

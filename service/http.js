@@ -84,17 +84,60 @@ util.inherits (httpdi, EventEmitter);
 
 httpdi.connections = {};
 
+httpdi.prototype.listen = function () {
+
+	var self = this;
+
+	this.server = http.createServer (function (req, res) {
+		req.pause ();
+		// console.log ('serving: ' + req.method + ' ' + req.url + ' for ', req.connection.remoteAddress + ':' + req.connection.remotePort);
+
+		// here we need to find matching flows
+		// for received request
+
+		req.url = url.parse (req.url, true);
+		// use for flow match
+		req[req.method] = true;
+
+		self.findHandler (req, res);
+	});
+
+	var listenArgs = [this.port];
+
+	if (this.host) {
+		listenArgs.push (this.host);
+	}
+
+	listenArgs.push (this.started.bind (this));
+
+	this.server.listen.apply (this.server, listenArgs);
+};
+
+
 httpdi.prototype.started = function () {
 	// called from server listen
-	var listenHost = this.host ? this.host : '127.0.0.1';
-	var listenPort = this.port === 80 ? '' : ':'+this.port;
+	// var listenHost = this.host ? this.host : '127.0.0.1';
+	var listenHost = this.server.address().address;
+
+	// allow dynamic port
+	// var listenPort = this.port === 80 ? '' : ':'+this.port;
+	var listenPort = this.server.address().port;
+
+	var printableHost = listenHost;
+	if (printableHost === '0.0.0.0') {
+		printableHost = '127.0.0.1';
+	} else if (printableHost === '::') {
+		printableHost = '::1';
+	}
+
 	console.log(
 		'http worker',
 		process.pid,
 		'running at',
-		paint.path (
-			'http://'+listenHost+listenPort+'/'
-		),
+		listenHost+':'+listenPort,
+		'('+paint.path (
+			'http://'+printableHost+':'+listenPort+'/'
+		)+')',
 		this.static
 			? "and serving static files from " + paint.path (this.static.root.path) // project.root.relative (this.static.root)
 			: ""
@@ -680,35 +723,4 @@ httpdi.prototype.handleStatic = function (req, res) {
 		self.handleFileStream (stats, readStream, req, res);
 	});
 
-};
-
-httpdi.prototype.listen = function () {
-
-	var self = this;
-
-	this.server = http.createServer (function (req, res) {
-		req.pause ();
-		// console.log ('serving: ' + req.method + ' ' + req.url + ' for ', req.connection.remoteAddress + ':' + req.connection.remotePort);
-
-		// here we need to find matching flows
-		// for received request
-
-		req.url = url.parse (req.url, true);
-		// use for flow match
-		req[req.method] = true;
-
-		self.findHandler (req, res);
-	});
-
-	var listenArgs = [this.port];
-
-	if (this.host) {
-		listenArgs.push (this.host);
-	}
-
-	listenArgs.push (function () {
-		self.started ();
-	});
-
-	this.server.listen.apply (this.server, listenArgs);
 };

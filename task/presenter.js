@@ -46,8 +46,8 @@ util.extend (presenterTask.prototype, {
 		var httpStatic;
 		try {
 			httpStatic =
-				project.config.initiator.http.static.root.path ||
-				project.config.initiator.http.static.root;
+				project.config.service.http.static.root.path ||
+				project.config.service.http.static.root;
 		} catch (e) {}
 
 		if (httpStatic) {
